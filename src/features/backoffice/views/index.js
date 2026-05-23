@@ -1,0 +1,12 @@
+export { DashboardView } from "./DashboardView.jsx";
+export { OrdersView } from "./OrdersView.jsx";
+export { TablesView } from "./TablesView.jsx";
+export { DeliveryView } from "./DeliveryView.jsx";
+export { ReportsView } from "./ReportsView.jsx";
+export { ProductsView } from "./ProductsView.jsx";
+export { ProductCategoriesView } from "./ProductCategoriesView.jsx";
+export { ProvidersView } from "../providers/ProvidersView.jsx";
+export { UsersView } from "./UsersView.jsx";
+export { SettingsView } from "./SettingsView.jsx";
+export { CashierView } from "./CashierView.jsx";
+export { KitchenView } from "./KitchenView.jsx";
