@@ -308,4 +308,36 @@ export const backofficeApi = {
     const data = payload?.data ?? payload?.Data ?? payload;
     return data;
   },
+
+  /** Reset completo de datos operativos (similar a seed-demo.js --reset) */
+  resetDatosOperativos: async () => {
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/api/v1/mantenimiento/reset-datos`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "Content-Type": "application/json",
+      },
+    });
+    const text = await res.text();
+    let payload = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = null;
+    }
+    if (!res.ok) {
+      const msg =
+        payload?.message ||
+        payload?.Message ||
+        payload?.error ||
+        payload?.Error ||
+        `Error HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
+    const data = payload?.data ?? payload?.Data ?? payload;
+    return data;
+  },
 };

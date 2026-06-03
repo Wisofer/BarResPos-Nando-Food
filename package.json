@@ -17,6 +17,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:linux": "vite build && electron-builder --linux",
+    "build:windows": "vite build && electron-builder --windows",
     "lint": "eslint .",
     "preview": "vite preview"
   },

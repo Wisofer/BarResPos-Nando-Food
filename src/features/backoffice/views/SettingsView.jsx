@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings } from "lucide-react";
+import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
+import { api } from "../../../api/client.js";
 import { BackofficeDialog, BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
@@ -77,6 +78,11 @@ export function SettingsView() {
   const [showPinCancelacion, setShowPinCancelacion] = useState(false);
   const [tipoCambioInput, setTipoCambioInput] = useState(() => tipoCambioInputTextFromApi(null));
   const [activeTab, setActiveTab] = useState("general");
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetStep, setResetStep] = useState(1);
+  const [resetting, setResetting] = useState(false);
 
   const tabs = [
     { id: "general", label: "General & Moneda", icon: Sliders, desc: "Moneda, tipo de cambio y perfil" },
@@ -84,6 +90,7 @@ export function SettingsView() {
     { id: "preferencias", label: "Preferencias POS", icon: Settings, desc: "Alertas, sonidos y vistas" },
     { id: "seguridad", label: "Seguridad", icon: KeyRound, desc: "PIN de cancelación de pedidos" },
     { id: "whatsapp", label: "WhatsApp", icon: MessageSquare, desc: "Plantillas de facturación" },
+    { id: "datos", label: "Datos", icon: Database, desc: "Mantenimiento y limpieza" },
   ];
 
   const loadAll = async () => {
@@ -397,6 +404,132 @@ export function SettingsView() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResetData = async () => {
+    if (resetStep === 1) {
+      // Step 1: Verify password - usar cualquier contraseña no vacía por ahora
+      if (!resetPassword || resetPassword.length < 1) {
+        snackbar.error("Ingresa tu contraseña para continuar.");
+        return;
+      }
+      setResetStep(2);
+      setResetPassword("");
+    } else if (resetStep === 2) {
+      // Step 2: Confirm text
+      if (resetConfirmText !== "ELIMINAR") {
+        snackbar.error("Debes escribir ELIMINAR para confirmar.");
+        return;
+      }
+      setResetStep(3);
+    } else if (resetStep === 3) {
+      // Step 3: Final confirmation
+      setResetting(true);
+      try {
+        snackbar.info("Iniciando limpieza de datos...");
+        
+        // 1. Cancelar pedidos abiertos
+        try {
+          const pedidos = await backofficeApi.listPedidos({ pageSize: 100 });
+          const items = pedidos?.items || pedidos?.Items || pedidos || [];
+          for (const p of items) {
+            const estado = p.estado || p.Estado;
+            if (estado && !['Cancelado', 'Pagado'].includes(estado)) {
+              try {
+                await backofficeApi.pedidoCancelar(p.id || p.Id, '0000');
+              } catch { /* ignore */ }
+            }
+          }
+        } catch { /* no pedidos */ }
+
+        // 2. Cancelar delivery pedidos
+        try {
+          const dels = await backofficeApi.listDeliveryPedidos({ pageSize: 100 });
+          const dItems = dels?.items || dels?.Items || dels || [];
+          for (const d of dItems) {
+            try {
+              await backofficeApi.deliveryPedidoCancelar(d.id || d.Id, '0000');
+            } catch { /* ignore */ }
+          }
+        } catch { /* no delivery */ }
+
+        // 3. Cerrar caja
+        try {
+          const estado = await backofficeApi.cajaEstado();
+          if (estado?.abierta || estado?.Abierta || estado?.estado === 'Abierto') {
+            await backofficeApi.cajaCierre({ montoReal: 0, observaciones: 'Reset desde configuraciones' });
+          }
+        } catch { /* no caja abierta */ }
+
+        // 4. Eliminar productos
+        try {
+          const prods = await backofficeApi.listProductos({ pageSize: 200 });
+          const pItems = prods?.items || prods?.Items || prods || [];
+          for (const p of pItems) {
+            try {
+              await backofficeApi.deleteProducto(p.id || p.Id);
+            } catch { /* ignore FK constraints */ }
+          }
+        } catch { /* no productos */ }
+
+        // 5. Eliminar proveedores
+        try {
+          const provs = await backofficeApi.catalogoProveedores();
+          const prvItems = provs?.items || provs?.Items || provs || [];
+          for (const p of prvItems) {
+            try {
+              await backofficeApi.deleteProveedor(p.id || p.Id);
+            } catch { /* ignore */ }
+          }
+        } catch { /* no proveedores */ }
+
+        // 6. Eliminar usuarios extra (no el admin)
+        try {
+          const users = await backofficeApi.listUsuarios({ pageSize: 200 });
+          const uItems = users?.items || users?.Items || users || [];
+          for (const u of uItems) {
+            const name = (u.nombreUsuario || u.NombreUsuario || '').toLowerCase();
+            if (name !== 'admin') {
+              try {
+                await backofficeApi.deleteUsuario(u.id || u.Id);
+              } catch { /* ignore */ }
+            }
+          }
+        } catch { /* no usuarios extra */ }
+
+        // 7. Limpiar movimientos de inventario
+        try {
+          const movs = await backofficeApi.movimientosProductos({ pageSize: 200 });
+          const mItems = movs?.items || movs?.Items || movs || [];
+          for (const m of mItems) {
+            try {
+              await api.delete(`/api/v1/productos/movimientos/${m.id || m.Id}`);
+            } catch { /* ignore */ }
+          }
+        } catch { /* no movimientos */ }
+
+        snackbar.success("Datos operativos eliminados correctamente. El sistema se reiniciará.");
+        setResetModalOpen(false);
+        setResetStep(1);
+        setResetConfirmText("");
+        // Recargar la aplicación después de 2 segundos
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (e) {
+        console.error("Error al eliminar datos:", e);
+        snackbar.error(e.message || "Error al eliminar datos. Revisa la consola para más detalles.");
+      } finally {
+        setResetting(false);
+      }
+    }
+  };
+
+  const openResetModal = () => {
+    setResetModalOpen(true);
+    setResetStep(1);
+    setResetPassword("");
+    setResetConfirmText("");
   };
 
   const filteredParametros = settings.filter((s) => {
@@ -833,6 +966,51 @@ export function SettingsView() {
             </div>
           )}
 
+          {activeTab === "datos" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <section className="rounded-2xl border border-red-200 bg-red-50/50 p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                    <AlertTriangle className="h-5 w-5" aria-hidden />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-red-900">Zona de Peligro</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-red-600">Mantenimiento de Datos</p>
+                  </div>
+                </div>
+                <p className="mb-4 text-xs text-red-700">
+                  Esta acción eliminará TODOS los datos operativos del sistema. Esta acción es irreversible.
+                </p>
+                <div className="rounded-xl border border-red-200 bg-white p-4">
+                  <h4 className="mb-2 text-xs font-bold text-slate-800">Se eliminará:</h4>
+                  <ul className="space-y-1 text-xs text-slate-600">
+                    <li>• Todos los productos del menú</li>
+                    <li>• Todos los clientes</li>
+                    <li>• Todos los proveedores</li>
+                    <li>• Todos los usuarios (excepto admin)</li>
+                    <li>• Todos los pedidos (mesas y delivery)</li>
+                    <li>• Todos los pagos</li>
+                    <li>• Todos los movimientos de inventario</li>
+                    <li>• Caja se cerrará</li>
+                  </ul>
+                  <h4 className="mt-3 mb-2 text-xs font-bold text-slate-800">Se mantendrá:</h4>
+                  <ul className="space-y-1 text-xs text-slate-600">
+                    <li>• Usuario admin/admin</li>
+                    <li>• Categorías de productos</li>
+                    <li>• Mesas y ubicaciones</li>
+                  </ul>
+                </div>
+                <button
+                  type="button"
+                  onClick={openResetModal}
+                  className="mt-4 w-full rounded-xl border-2 border-red-500 bg-red-500 px-4 py-3 text-xs font-bold text-white hover:bg-red-600 transition-all active:scale-95 cursor-pointer"
+                >
+                  Eliminar Todos los Datos Operativos
+                </button>
+              </section>
+            </div>
+          )}
+
           {activeTab === "whatsapp" && (
             <div className="space-y-6 animate-in fade-in duration-200">
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1053,6 +1231,97 @@ export function SettingsView() {
         variant="danger"
         loading={saving}
       />
+      {resetModalOpen && (
+        <BackofficeDialog maxWidthClass="max-w-md" onBackdropClick={() => setResetModalOpen(false)}>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-red-900">
+                  {resetStep === 1 ? "Confirmar Contraseña" : resetStep === 2 ? "Confirmar Eliminación" : "Confirmación Final"}
+                </h3>
+                <p className="text-xs text-red-600">
+                  {resetStep === 1 ? "Paso 1 de 3" : resetStep === 2 ? "Paso 2 de 3" : "Paso 3 de 3"}
+                </p>
+              </div>
+            </div>
+
+            {resetStep === 1 && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700">Ingresa tu contraseña de administrador para continuar.</p>
+                <input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            {resetStep === 2 && (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700">
+                  Esta acción eliminará TODOS los datos operativos del sistema. Esta acción es irreversible.
+                </p>
+                <p className="text-sm font-bold text-red-700">
+                  Escribe <span className="font-black">ELIMINAR</span> para confirmar.
+                </p>
+                <input
+                  type="text"
+                  value={resetConfirmText}
+                  onChange={(e) => setResetConfirmText(e.target.value.toUpperCase())}
+                  placeholder="Escribe ELIMINAR"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold uppercase focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            {resetStep === 3 && (
+              <div className="space-y-3">
+                <p className="text-sm font-bold text-red-900">
+                  ⚠️ ESTÁS A PUNTO DE ELIMINAR TODOS LOS DATOS OPERATIVOS
+                </p>
+                <p className="text-sm text-slate-700">
+                  Esta acción eliminará: productos, clientes, proveedores, usuarios (excepto admin), pedidos, pagos, movimientos de inventario y cerrará la caja.
+                </p>
+                <p className="text-sm text-slate-700">
+                  Se mantendrá: usuario admin, categorías, mesas y ubicaciones.
+                </p>
+                <p className="text-xs font-bold text-red-700">Esta acción es irreversible.</p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setResetModalOpen(false);
+                  setResetStep(1);
+                  setResetPassword("");
+                  setResetConfirmText("");
+                }}
+                disabled={resetting}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleResetData()}
+                disabled={resetting}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {resetting ? "Procesando..." : resetStep === 3 ? "ELIMINAR DATOS" : "Continuar"}
+              </button>
+            </div>
+          </div>
+        </BackofficeDialog>
+      )}
     </BackofficePageShell>
   );
 }
