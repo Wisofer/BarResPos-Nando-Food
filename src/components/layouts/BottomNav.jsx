@@ -22,7 +22,9 @@ export function BottomNav({ onMenuClick }) {
       aria-label="Navegación principal"
     >
       <div className="flex h-16 items-center justify-around">
-        {tabs.map(({ to, icon: Icon, label }) => (
+        {tabs.map(({ to, icon, label }) => {
+          const IconComp = icon;
+          return (
           <NavLink
             key={to}
             to={to}
@@ -38,12 +40,13 @@ export function BottomNav({ onMenuClick }) {
           >
             {({ isActive }) => (
               <>
-                <Icon className="h-6 w-6 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                <IconComp className="h-6 w-6 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
                 <span className="text-[10px] font-medium truncate max-w-full px-0.5">{label}</span>
               </>
             )}
           </NavLink>
-        ))}
+          );
+        })}
         <button
           type="button"
           onClick={onMenuClick}

@@ -1,33 +1,39 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { whatsappTemplatesApi } from "../api/whatsappTemplates.js";
 
 export function useWhatsAppTemplates(params = {}) {
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await whatsappTemplatesApi.list(params);
+      if (!mountedRef.current) return;
       setTemplates(Array.isArray(data) ? data : []);
     } catch (e) {
+      if (!mountedRef.current) return;
       setError(e?.message || "Error al cargar plantillas");
       setTemplates([]);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
-  }, [params.onlyActive]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(params)]);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchList();
+    return () => { mountedRef.current = false; };
   }, [fetchList]);
 
   const getDefault = useCallback(async () => {
     try {
       return await whatsappTemplatesApi.getDefault();
-    } catch (e) {
+    } catch {
       return null;
     }
   }, []);

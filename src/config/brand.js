@@ -16,6 +16,8 @@ export const CLIENTS_CACHE_KEY = "barrest-clients";
 export const SALES_CACHE_PREFIX = "barrest-sales";
 export const PRODUCTS_CACHE_KEY = "barrest-products";
 export const HISTORY_CACHE_PREFIX = "barrest-history";
+export const RESERVATIONS_CACHE_PREFIX = "barrest-reservations";
+export const INVOICES_CACHE_PREFIX = "barrest-invoices";
 
 // Pagination
 export const DEFAULT_PAGE_SIZE = 20;

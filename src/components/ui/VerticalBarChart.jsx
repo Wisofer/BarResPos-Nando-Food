@@ -5,7 +5,7 @@ import { useMemo } from "react";
  * data = [{ label, value }]. value is numeric.
  */
 export function VerticalBarChart({
-  data,
+  data = [],
   maxValue,
   valueFormat = (v) => String(v),
   barClassName = "bg-primary-500",

@@ -26,6 +26,16 @@ export default defineConfig({
           // Recargar la ventana del Renderer cuando el preload cambie
           options.reload();
         },
+        vite: {
+          build: {
+            rollupOptions: {
+              output: {
+                format: "cjs",
+                entryFileNames: "[name].js",
+              },
+            },
+          },
+        },
       },
     ]),
     renderer(),

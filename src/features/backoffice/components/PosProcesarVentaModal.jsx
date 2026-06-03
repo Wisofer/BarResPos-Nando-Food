@@ -19,6 +19,7 @@ export function PosProcesarVentaModal({
   onGuardar,
 }) {
   const [descuento, setDescuento] = useState("");
+  const [tipoDescuento, setTipoDescuento] = useState("porcentaje"); // "porcentaje" o "monto"
   const [montoRecibido, setMontoRecibido] = useState("");
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [moneda, setMoneda] = useState("C$");
@@ -31,13 +32,21 @@ export function PosProcesarVentaModal({
     [lines]
   );
 
-  const descuentoNum = Math.max(0, Number(descuento) || 0);
-
   const totalDesdeBackend =
     totalOrdenBackend != null && Number.isFinite(Number(totalOrdenBackend)) ? Number(totalOrdenBackend) : null;
-  /** Base imponible: preferimos total del sistema si existe; si no, suma de líneas. Luego restamos descuento. */
+  /** Base imponible: preferimos total del sistema si existe; si no, suma de líneas. */
   const baseAntesDescuento =
     totalDesdeBackend != null && totalDesdeBackend > 0 ? totalDesdeBackend : subtotalLineas;
+
+  const descuentoValor = Math.max(0, Number(descuento) || 0);
+
+  const descuentoNum = useMemo(() => {
+    if (tipoDescuento === "porcentaje") {
+      return baseAntesDescuento * (descuentoValor / 100);
+    }
+    return descuentoValor;
+  }, [tipoDescuento, descuentoValor, baseAntesDescuento]);
+
   const totalAPagarCordobas = Math.max(0, baseAntesDescuento - descuentoNum);
   const totalAPagarMoneda = isUsd ? totalAPagarCordobas / tc : totalAPagarCordobas;
 
@@ -48,20 +57,27 @@ export function PosProcesarVentaModal({
 
   useEffect(() => {
     if (!open) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setDescuento("");
     setComentario("");
     setTipoPago("Efectivo");
     setMoneda("C$");
+    setTipoDescuento("porcentaje");
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [open, totalAPagarMoneda, moneda]);
 
   useEffect(() => {
     if (tipoPago !== "Efectivo") {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [tipoPago, totalAPagarMoneda, open]);
 
@@ -132,18 +148,66 @@ export function PosProcesarVentaModal({
               <span>Subtotal</span>
               <span>{formatCurrency(subtotalLineas, currencySymbol)}</span>
             </div>
-            <label className="flex items-center justify-between gap-2 text-left">
-              <span className="text-xs font-medium text-slate-600">Total descuento</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={descuento}
-                onChange={(e) => setDescuento(e.target.value)}
-                className="w-28 rounded border border-slate-300 px-2 py-1 text-right text-sm"
-                disabled={busy}
-              />
-            </label>
+            <div className="flex flex-col gap-1 border-y border-slate-100 py-1.5 my-1 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-slate-600">Descuento aplicado</span>
+                <div className="flex items-center gap-1.5">
+                  {/* Toggle de Tipo de Descuento */}
+                  <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 select-none">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDescuento("");
+                        setTipoDescuento("porcentaje");
+                      }}
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold transition duration-150 ${
+                        tipoDescuento === "porcentaje"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                      }`}
+                      disabled={busy}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDescuento("");
+                        setTipoDescuento("monto");
+                      }}
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold transition duration-150 ${
+                        tipoDescuento === "monto"
+                          ? "bg-amber-500 text-white shadow-sm"
+                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                      }`}
+                      disabled={busy}
+                    >
+                      {currencySymbol}
+                    </button>
+                  </div>
+
+                  {/* Input de Valor */}
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max={tipoDescuento === "porcentaje" ? "100" : undefined}
+                      step="any"
+                      value={descuento}
+                      onChange={(e) => setDescuento(e.target.value)}
+                      placeholder="0"
+                      className="w-24 rounded border border-slate-300 px-2 py-1 text-right text-xs font-semibold focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
+                      disabled={busy}
+                    />
+                  </div>
+                </div>
+              </div>
+              {tipoDescuento === "porcentaje" && descuentoValor > 0 && (
+                <div className="text-[10px] text-slate-500 text-right">
+                  Equivale a: <span className="font-semibold text-slate-700">{formatCurrency(descuentoNum, currencySymbol)}</span>
+                </div>
+              )}
+            </div>
             {totalDesdeBackend != null && totalDesdeBackend > 0 && Math.abs(totalDesdeBackend - subtotalLineas) > 0.01 && (
               <p className="text-[11px] text-amber-700">Total en sistema: {formatCurrency(totalDesdeBackend, currencySymbol)} (líneas: {formatCurrency(subtotalLineas, currencySymbol)})</p>
             )}

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+const { contextBridge, ipcRenderer } = require('electron')
 
 // Exponemos APIs del sistema seguras a la aplicación de React
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -15,5 +15,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on(channel, subscription)
       return () => ipcRenderer.removeListener(channel, subscription)
     }
+  },
+  openExternal: (url) => {
+    ipcRenderer.send('open-external', url)
   }
 })

@@ -62,14 +62,22 @@ export function OrdersView({ currencySymbol = "C$" }) {
   const listBusy = om.loading && om.listHasLoadedOnce;
 
   return (
-    <BackofficePageShell maxWidth="7xl" className={`space-y-4 pb-8 transition-opacity ${listBusy ? "pointer-events-none opacity-60" : ""}`} aria-busy={listBusy || undefined}>
+    <BackofficePageShell
+      maxWidth="7xl"
+      className={`space-y-3 pb-8 transition-opacity ${listBusy ? "pointer-events-none opacity-60" : ""}`}
+      aria-busy={listBusy || undefined}
+    >
       {om.error && (
-        <div className="rounded-xl border border-red-200/80 bg-red-50/90 px-4 py-2.5 text-sm text-red-800" role="alert">
+        <div
+          className="rounded-2xl border border-red-100 bg-red-50/80 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
           {om.error}
         </div>
       )}
 
-      <div className="space-y-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      {/* Card principal: título + KPIs + filtros */}
+      <div className="space-y-5 overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6">
         <OrdersListHeader onExport={om.handleExport} exporting={om.exporting} />
         <OrdersKpiGrid cards={om.cards} currencySymbol={currencySymbol} />
         <div className="h-px bg-slate-100" aria-hidden />
@@ -85,19 +93,23 @@ export function OrdersView({ currencySymbol = "C$" }) {
         />
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="p-0">
-          <OrdersListTable
-            rows={om.filteredOrders}
-            isAdmin={om.isAdmin}
-            busyAction={om.busyAction}
-            onView={om.openDetail}
-            onEdit={om.openEditFromRow}
-            onCancel={om.cancelOrder}
+      {/* Card de la tabla */}
+      <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+        <OrdersListTable
+          rows={om.filteredOrders}
+          isAdmin={om.isAdmin}
+          busyAction={om.busyAction}
+          onView={om.openDetail}
+          onEdit={om.openEditFromRow}
+          onCancel={om.cancelOrder}
+        />
+        <div className="border-t border-slate-100 px-5 py-3.5">
+          <OrdersPaginationBar
+            page={om.page}
+            setPage={om.setPage}
+            pageInfo={om.pageInfo}
+            disabled={om.loading}
           />
-        </div>
-        <div className="border-t border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-          <OrdersPaginationBar page={om.page} setPage={om.setPage} pageInfo={om.pageInfo} disabled={om.loading} />
         </div>
       </div>
 

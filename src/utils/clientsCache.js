@@ -42,5 +42,5 @@ export function setCachedClients(search, data) {
         at: Date.now(),
       })
     );
-  } catch {}
+  } catch { /* storage may be unavailable */ }
 }

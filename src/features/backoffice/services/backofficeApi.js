@@ -56,16 +56,18 @@ export const backofficeApi = {
   deleteProducto: (id) => api.delete(`/api/v1/productos/${id}`),
   /** GET exportar-excel: opcional categoriaId, search. */
   exportProductosExcel: async (params) => {
+    const t = getToken();
     const res = await fetch(`${getApiUrl()}/api/v1/productos/exportar-excel${qs(params)}`, {
-      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     if (!res.ok) throw new Error("No se pudo exportar productos.");
     return res.blob();
   },
   /** GET exportar-excel: estado, desde, hasta, tipo, etc. */
   exportPedidosExcel: async (params) => {
+    const t = getToken();
     const res = await fetch(`${getApiUrl()}/api/v1/pedidos/exportar-excel${qs(params)}`, {
-      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     if (!res.ok) throw new Error("No se pudo exportar pedidos.");
     return res.blob();
@@ -123,8 +125,9 @@ export const backofficeApi = {
   /** Mismo criterio de fechas que `movimientosProductos` (GET movimientos/excel). */
   exportMovimientosProductosExcel: async (params) => {
     const q = qsMovimientosInventario(params);
+    const t = getToken();
     const res = await fetch(`${getApiUrl()}/api/v1/productos/movimientos/excel${q}`, {
-      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     if (!res.ok) throw new Error("No se pudo exportar movimientos de inventario.");
     return res.blob();
@@ -156,8 +159,9 @@ export const backofficeApi = {
   /** BarRestPOS: GET /api/v1/caja/historial/excel?desde&hasta */
   exportarCajaHistorialExcel: async (params) => {
     const q = qs(params || {});
+    const t = getToken();
     const res = await fetch(`${getApiUrl()}/api/v1/caja/historial/excel${q}`, {
-      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
     });
     if (!res.ok) {
       throw new Error("No se pudo exportar el historial de caja.");
@@ -170,7 +174,7 @@ export const backofficeApi = {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   },
   ventasProcesarPago: (body) => api.post("/api/v1/ventas/procesar-pago", body),
   ventasGestionarPago: (body) => api.post("/api/v1/ventas/gestionar-pago", body),
@@ -204,9 +208,10 @@ export const backofficeApi = {
   reportesVentasPorCategoriaDesglose: (params) => api.get(`/api/v1/reportes/ventas-por-categoria/desglose${qs(params)}`),
   /** Mismo rango de fechas que el reporte por categoría; `exportar=true` en query. */
   exportReportesCategoriaDesgloseExcel: async (params) => {
+    const t = getToken();
     const res = await fetch(
       `${getApiUrl()}/api/v1/reportes/ventas-por-categoria/desglose${qs({ ...params, exportar: "true" })}`,
-      { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} },
+      { headers: t ? { Authorization: `Bearer ${t}` } : {} },
     );
     if (!res.ok) throw new Error("No se pudo exportar el desglose por categoría.");
     return res.blob();
@@ -270,5 +275,37 @@ export const backofficeApi = {
       }
     }
     return text;
+  },
+  subirLogo: async (archivo) => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/api/v1/configuraciones/logo`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: form,
+    });
+    const text = await res.text();
+    let payload = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = null;
+    }
+    if (!res.ok) {
+      const msg =
+        payload?.message ||
+        payload?.Message ||
+        payload?.error ||
+        payload?.Error ||
+        `Error HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
+    const data = payload?.data ?? payload?.Data ?? payload;
+    return data;
   },
 };

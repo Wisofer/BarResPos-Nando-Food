@@ -3,7 +3,7 @@ import { useMemo } from "react";
 /**
  * Simple horizontal bar chart. data = [{ label, value }]. value is numeric.
  */
-export function BarChart({ data, maxValue, valueFormat = (v) => v, height = 8, barClassName = "bg-primary-500" }) {
+export function BarChart({ data = [], maxValue, valueFormat = (v) => v, barClassName = "bg-primary-500" }) {
   const max = useMemo(() => maxValue ?? Math.max(...data.map((d) => d.value), 1), [data, maxValue]);
 
   return (

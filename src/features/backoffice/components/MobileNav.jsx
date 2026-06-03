@@ -1,5 +1,6 @@
 import { LogOut, Menu, X } from "lucide-react";
-import { APP_NAME } from "../../../config/brand.js";
+import { useAppLogo } from "../../../hooks/useAppLogo";
+import { useAppName } from "../../../hooks/useAppName";
 import { NAV_ITEMS } from "../constants.js";
 
 /**
@@ -9,13 +10,15 @@ import { NAV_ITEMS } from "../constants.js";
  */
 
 export function MobileNav({ open, setOpen, activeView, onChangeView, onLogout, sessionLoading, navItems = NAV_ITEMS, topBarEnd = null }) {
+  const logoUrl = useAppLogo();
+  const appName = useAppName();
   return (
     <div className="min-w-0 lg:hidden" data-backoffice-mobilenav>
       <header className="mb-4 flex min-h-[52px] items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2 py-2 shadow-sm sm:gap-3 sm:px-3 sm:py-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-          <img src="assets/images/nandofood.png" alt={`${APP_NAME} logo`} className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9" />
+          <img src={logoUrl} alt={`${appName} logo`} className="h-8 w-8 shrink-0 rounded-lg object-contain sm:h-9 sm:w-9" />
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-slate-800 sm:text-sm">{APP_NAME}</p>
+            <p className="truncate text-xs font-bold text-slate-800 sm:text-sm">{appName}</p>
             <p className="truncate text-[10px] text-slate-500 sm:text-[11px]">Panel administrativo</p>
           </div>
         </div>
@@ -39,9 +42,9 @@ export function MobileNav({ open, setOpen, activeView, onChangeView, onLogout, s
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <img src="assets/images/nandofood.png" alt={`${APP_NAME} logo`} className="h-11 w-11 rounded-xl object-contain" />
+              <img src={logoUrl} alt={`${appName} logo`} className="h-11 w-11 rounded-xl object-contain" />
               <div>
-                <p className="text-lg font-bold text-slate-800">{APP_NAME}</p>
+                <p className="text-lg font-bold text-slate-800">{appName}</p>
                 <p className="text-xs text-slate-500">Panel administrativo</p>
               </div>
             </div>

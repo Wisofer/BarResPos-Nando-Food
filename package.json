@@ -2,12 +2,12 @@
   "name": "barrespos",
   "private": true,
   "version": "0.0.0",
-  "description": "Sistema de Punto de Venta Mi Pulperia POS",
+  "description": "Sistema de Punto de Venta para Bar y Restaurante",
   "author": {
     "name": "William Borge",
-    "email": "william@mipulperia.com"
+    "email": "wisofer17@gmail.com"
   },
-  "homepage": "https://mipulperia.com",
+  "homepage": "https://www.cowib.es",
   "main": "dist-electron/main.js",
   "type": "module",
   "engines": {
@@ -67,6 +67,15 @@
       "dist/**/*",
       "dist-electron/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../BarResPos-Nando-Food-Backend/bin/Debug/net9.0",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "linux": {
       "icon": "build/icon.png",

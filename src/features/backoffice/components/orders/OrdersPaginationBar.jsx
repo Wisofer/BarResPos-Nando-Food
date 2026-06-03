@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 /**
  * Pie del listado: total de registros y paginación solo si hay más de una página.
  */
@@ -9,34 +11,35 @@ export function OrdersPaginationBar({ page, setPage, pageInfo, disabled }) {
 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <p className="text-xs text-slate-500">
-        Total <span className="font-medium text-slate-700 tabular-nums">{totalItems}</span> registro{totalItems === 1 ? "" : "s"}
+      <p className="text-xs text-slate-400">
+        <span className="font-semibold text-slate-600 tabular-nums">{totalItems}</span>{" "}
+        registro{totalItems === 1 ? "" : "s"} en total
         {showPageNav ? (
-          <span className="ml-1 text-slate-400">
-            · Página {page} de {totalPages}
-          </span>
+          <span className="ml-1 text-slate-300">· Pág. {page}/{totalPages}</span>
         ) : null}
       </p>
       {showPageNav && (
-        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:shrink-0">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={page <= 1 || disabled}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
+            aria-label="Página anterior"
           >
-            Anterior
+            <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="min-w-[5.5rem] px-1 text-center text-sm tabular-nums text-slate-600" aria-hidden>
+          <span className="min-w-[4rem] px-2 text-center text-xs font-semibold tabular-nums text-slate-500">
             {page} / {totalPages}
           </span>
           <button
             type="button"
             disabled={page >= totalPages || disabled}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 disabled:opacity-40"
+            aria-label="Página siguiente"
           >
-            Siguiente
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}

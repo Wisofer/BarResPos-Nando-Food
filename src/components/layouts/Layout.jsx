@@ -6,6 +6,7 @@ import { Navbar } from "./Navbar";
 import { BottomNav } from "./BottomNav";
 import { PageLoader } from "../ui/Loader";
 import { SessionLoader } from "../SessionLoader";
+import { TicketPreviewModal } from "../ui";
 import { useSidebar } from "../../hooks/useSidebar";
 import { useSettings } from "../../hooks/useSettings";
 import { useAuth } from "../../contexts/AuthContext";
@@ -116,6 +117,7 @@ export function Layout() {
           </Suspense>
         </main>
         <BottomNav onMenuClick={() => setSidebarOpen(true)} />
+        <TicketPreviewModal />
       </div>
     </div>
   );

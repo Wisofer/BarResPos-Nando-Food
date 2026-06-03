@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { productsApi } from "../api/products.js";
 import { DEFAULT_PAGE_SIZE } from "../config/brand.js";
 
@@ -29,6 +29,7 @@ export function useProducts(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -36,22 +37,26 @@ export function useProducts(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
     try {
       const params = { search: searchParam || undefined, page, pageSize };
       const data = await productsApi.list(params);
+      if (!mountedRef.current) return;
       const normalized = normalizeListResponse(data);
       setProducts(normalized.list);
       setTotalCount(normalized.totalCount);
       setTotalPages(normalized.totalPages);
     } catch (e) {
+      if (!mountedRef.current) return;
       setError(e.message);
       setProducts([]);
       setTotalCount(0);
       setTotalPages(0);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [searchParam, page, pageSize]);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchProducts();
+    return () => { mountedRef.current = false; };
   }, [fetchProducts]);
 
   useEffect(() => {

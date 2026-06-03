@@ -50,6 +50,7 @@ export function UsersView() {
     return () => {
       mounted = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCreate = () => {
@@ -146,7 +147,6 @@ export function UsersView() {
             <option value="Mesero">Mesero</option>
             <option value="Cajero">Cajero</option>
             <option value="Cocinero">Cocinero</option>
-            <option value="Bartender">Bartender</option>
           </select>
           <select value={activo} onChange={(e) => setActivo(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
             <option value="">Todos</option>
@@ -207,7 +207,6 @@ export function UsersView() {
                 <option value="Mesero">Mesero</option>
                 <option value="Cajero">Cajero</option>
                 <option value="Cocinero">Cocinero</option>
-                <option value="Bartender">Bartender</option>
               </select>
               <input
                 type="password"

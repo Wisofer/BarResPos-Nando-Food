@@ -82,11 +82,11 @@ export function useOrdersManagement(currencySymbol) {
         const mapped = items.map((p, i) => mapListadoPedidoToRow(p, i, currencySymbol));
         const visibleRows = showEmptyDrafts ? mapped : mapped.filter((row) => !isEmptyDraftOrder(row));
         const hiddenCount = mapped.length - visibleRows.length;
-        const apiTotalItems = Number(listado?.totalItems || mapped.length);
+        const apiTotalItems = Number(listado?.totalItems ?? mapped.length);
         setCards(mapResumenToCards(resumen));
         setOrders(visibleRows);
         setPageInfo({
-          totalPages: Number(listado?.totalPages || 1),
+          totalPages: Number(listado?.totalPages ?? 1),
           totalItems: Math.max(0, apiTotalItems - Math.max(0, hiddenCount)),
         });
       } catch (err) {
@@ -292,8 +292,6 @@ export function useOrdersManagement(currencySymbol) {
           setShowDetail(false);
         }
       }
-    } catch (err) {
-      throw err;
     } finally {
       setBusyAction(false);
     }

@@ -5,11 +5,12 @@ import { AlertTriangle } from "lucide-react";
 export function ConfirmModal({
   open,
   onClose,
-  onConfirm,
-  title = "Confirmar",
-  message = "¿Está seguro?",
-  confirmLabel = "Eliminar",
+  title = "Confirmar acción",
+  message = "",
+  confirmLabel = "Confirmar",
+  cancelLabel = "Cancelar",
   variant = "danger",
+  onConfirm = async () => {},
   loading = false,
 }) {
   const handleConfirm = async () => {
@@ -31,7 +32,7 @@ export function ConfirmModal({
         <p className="text-slate-700 dark:text-slate-200">{message}</p>
         <div className="flex w-full flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="secondary" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
-            Cancelar
+            {cancelLabel}
           </Button>
           <button
             type="button"

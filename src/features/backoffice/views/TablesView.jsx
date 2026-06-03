@@ -7,12 +7,12 @@ import {
   Minimize2,
   Minus,
   MoreVertical,
-  Pencil,
   Plus,
   Printer,
   Save,
   Trash2,
   XCircle,
+  X,
 } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import {
@@ -26,6 +26,7 @@ import {
   PosActionLoadingOverlay,
   CancelPedidoPinModal,
 } from "../components/index.js";
+import { TableFormDialog, LocationsManagerDialog, DetailDialog } from "./TablesViewDialogs.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
 import { PAGINATION } from "../constants/pagination.js";
@@ -53,10 +54,12 @@ import {
   PRECUENTA_PRINT_READY_INFO,
   pagoResponseHasReciboPrintChannel,
   printKitchenTicketAfterEnviarCocina,
-  tryPrintHtmlBody,
-  tryPrintPrecuentaFromPayload,
   tryPrintReciboFromPagoResponse,
+  openBackendPrintHtml,
+  resolveBackendAssetUrl,
+  withImpressionAccessTokenQuery,
 } from "../utils/backofficePrint.js";
+import { getToken } from "../../../api/token.js";
 import { buildPagoPayload } from "../utils/paymentPayload.js";
 import { fetchPosProductosYCategorias } from "../utils/posCatalogLoad.js";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
@@ -81,7 +84,7 @@ import {
   withOpcionesNormalizadas,
 } from "../utils/productoOpciones.js";
 
-export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
+export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView }) {
   const snackbar = useSnackbar();
   const { user } = useAuth();
   const [tables, setTables] = useState([]);
@@ -122,6 +125,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
   const tableIllustration = "assets/images/minimalist-restaurant-table-icon--front-view--two-.png";
   const [confirmDeleteTable, setConfirmDeleteTable] = useState({ open: false, id: null });
   const [saleModalOpen, setSaleModalOpen] = useState(false);
+
   const [saleModalLines, setSaleModalLines] = useState([]);
   const [saleBackendTotal, setSaleBackendTotal] = useState(null);
   const [saleOrdenId, setSaleOrdenId] = useState(null);
@@ -141,6 +145,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
   const [posCancelPinOpen, setPosCancelPinOpen] = useState(false);
   /** "zonas" | "plano" */
   const [mesasLayoutMode, setMesasLayoutMode] = useState("zonas");
+  const [enableVistaZonas, setEnableVistaZonas] = useState(true);
+  const [enableVistaPlano, setEnableVistaPlano] = useState(true);
   const [planoFullScreen, setPlanoFullScreen] = useState(false);
   const isAdmin = isAdminUser(user);
 
@@ -151,7 +157,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
       setCajaAbierta(abierta);
       return abierta;
     } catch {
-      return cajaAbierta;
+      setCajaAbierta(false);
+      return false;
     }
   };
 
@@ -186,8 +193,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
       backofficeApi.catalogoUbicaciones(),
       backofficeApi.cajaEstado().catch(() => null),
       backofficeApi.configuracionTipoCambio().catch(() => null),
+      backofficeApi.configuraciones().catch(() => []),
     ])
-      .then(([, ubic, caja, tc]) => {
+      .then(([, ubic, caja, tc, config]) => {
         if (!mounted) return;
         const raw = Array.isArray(ubic) ? ubic : ubic?.items || [];
         setLocations(raw.map(normalizeLocation));
@@ -196,12 +204,27 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
         const tcValue = Number(tc?.tipoCambioDolar ?? tc?.TipoCambioDolar ?? tc?.valor ?? 0);
         if (Number.isFinite(tcValue) && tcValue > 0) setTipoCambio(tcValue);
         else setTipoCambio(DEFAULT_TIPO_CAMBIO_USD);
+
+        const list = Array.isArray(config) ? config : config?.items || [];
+        const hasZonas = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Mesas:HabilitarVistaZonas");
+        const hasPlano = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Mesas:HabilitarVistaPlano");
+        const ez = hasZonas ? hasZonas.valor !== "false" && hasZonas.Valor !== "false" : true;
+        const ep = hasPlano ? hasPlano.valor !== "false" && hasPlano.Valor !== "false" : true;
+        setEnableVistaZonas(ez);
+        setEnableVistaPlano(ep);
+
+        if (ez && !ep) {
+          setMesasLayoutMode("zonas");
+        } else if (!ez && ep) {
+          setMesasLayoutMode("plano");
+        }
       })
       .catch((e) => mounted && setError(e.message || "No se pudo cargar mesas."))
       .finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCreate = () => {
@@ -215,18 +238,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
     setLocations(raw.map(normalizeLocation));
   };
 
-  const openLocationsManager = async () => {
-    setSaving(true);
-    setError("");
-    try {
-      await reloadLocations();
+  const openLocationsManager = () => {
+    if (typeof openView === "function") {
+      openView("locations");
+    } else {
       setLocationsModalOpen(true);
       setLocationForm({ id: null, nombre: "", descripcion: "", activo: true });
-    } catch (e) {
-      const msg = e?.message || "No se pudieron cargar ubicaciones.";
-      snackbar.error(msg);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -643,26 +660,25 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
     const pid = Number(product?.id ?? product?.Id);
     const emptyKey = "";
     const mergeTarget = posLineMergeKey([], "");
-    const syncPayloadRef = { current: { ops: [], notas: "", rollbackLineId: null } };
 
-    setPosCart((prev) => {
-      const idx = prev.findIndex(
-        (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
-      );
-      if (idx >= 0) {
-        const line = prev[idx];
-        syncPayloadRef.current = {
-          ops: normalizeOpcionesSeleccionadas(line.opcionesSeleccionadas),
-          notas: String(line.notas ?? "").trim(),
-          rollbackLineId: line.lineId,
-        };
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
-        return copy;
-      }
+    const prev = posCartRef.current;
+    const idx = prev.findIndex(
+      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
+    );
+    let ops, notas, rollbackLineId, next;
+    if (idx >= 0) {
+      const line = prev[idx];
+      ops = normalizeOpcionesSeleccionadas(line.opcionesSeleccionadas);
+      notas = String(line.notas ?? "").trim();
+      rollbackLineId = line.lineId;
+      next = [...prev];
+      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+    } else {
       const nextLineId = genPosLineId();
-      syncPayloadRef.current = { ops: [], notas: "", rollbackLineId: nextLineId };
-      return [
+      ops = [];
+      notas = "";
+      rollbackLineId = nextLineId;
+      next = [
         ...prev,
         {
           lineId: nextLineId,
@@ -676,9 +692,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           notas: "",
         },
       ];
-    });
-
-    const { ops, notas, rollbackLineId } = syncPayloadRef.current;
+    }
+    posCartRef.current = next;
+    setPosCart(next);
     void syncPosDeltaAdd(product, 1, ops, notas, rollbackLineId);
   };
 
@@ -699,26 +715,25 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
     const base = Number(product.precio ?? product.Precio ?? 0);
     const resumen = buildOpcionesResumenLocal(grupos, opsNorm);
     const mergeTarget = posLineMergeKey(opsNorm, "");
-    const syncPayloadRef = { current: { ops: opsNorm, notas: "", rollbackLineId: null } };
 
-    setPosCart((prev) => {
-      const idx = prev.findIndex(
-        (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
-      );
-      if (idx >= 0) {
-        const line = prev[idx];
-        syncPayloadRef.current = {
-          ops: normalizeOpcionesSeleccionadas(line.opcionesSeleccionadas),
-          notas: String(line.notas ?? "").trim(),
-          rollbackLineId: line.lineId,
-        };
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
-        return copy;
-      }
+    const prev = posCartRef.current;
+    const idx = prev.findIndex(
+      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
+    );
+    let ops, notas, rollbackLineId, next;
+    if (idx >= 0) {
+      const line = prev[idx];
+      ops = normalizeOpcionesSeleccionadas(line.opcionesSeleccionadas);
+      notas = String(line.notas ?? "").trim();
+      rollbackLineId = line.lineId;
+      next = [...prev];
+      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+    } else {
       const nextLineId = genPosLineId();
-      syncPayloadRef.current = { ops: opsNorm, notas: "", rollbackLineId: nextLineId };
-      return [
+      ops = opsNorm;
+      notas = "";
+      rollbackLineId = nextLineId;
+      next = [
         ...prev,
         {
           lineId: nextLineId,
@@ -732,9 +747,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           notas: "",
         },
       ];
-    });
-
-    const { ops, notas, rollbackLineId } = syncPayloadRef.current;
+    }
+    posCartRef.current = next;
+    setPosCart(next);
     void syncPosDeltaAdd(product, 1, ops, notas, rollbackLineId);
   };
 
@@ -921,9 +936,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
   };
 
   const updateCartNotas = (lineId, notas) => {
-    setPosCart((prev) =>
-      prev.map((item) => (item.lineId === lineId ? { ...item, notas: String(notas ?? "") } : item))
+    const next = posCartRef.current.map((item) =>
+      item.lineId === lineId ? { ...item, notas: String(notas ?? "") } : item
     );
+    posCartRef.current = next;
+    setPosCart(next);
     setPosCommitted(false);
   };
 
@@ -1079,55 +1096,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
     }
   };
 
-  const openPreCuentaPrint = ({ mesaLabel, zoneLabel, lines, total, currency }) => {
-    const w = window.open("", "_blank", "noopener,noreferrer");
-    if (!w) {
-      snackbar.error("Permita ventanas emergentes para imprimir la cuenta.");
-      return;
-    }
-    const sym = currency || currencySymbol;
-    const esc = (s) =>
-      String(s ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    const rows = lines
-      .map(
-        (x) => `<tr>
-        <td>${esc(x.name)}</td>
-        <td style="text-align:center">${esc(x.qty)}</td>
-        <td style="text-align:right">${esc(formatCurrency(x.price, sym))}</td>
-        <td style="text-align:right">${esc(formatCurrency(x.lineTotal ?? Number(x.price || 0) * Number(x.qty || 0), sym))}</td>
-      </tr>`
-      )
-      .join("");
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Pre-cuenta</title>
-      <style>
-        body{font-family:system-ui,sans-serif;padding:16px;max-width:640px;margin:0 auto;color:#111}
-        h1{font-size:18px;margin:0 0 4px} .sub{color:#666;font-size:12px;margin-bottom:16px}
-        table{width:100%;border-collapse:collapse;font-size:12px}
-        th,td{border-bottom:1px solid #ddd;padding:6px 4px}
-        th{text-align:left;background:#f5f5f5}
-        .totals{margin-top:12px;text-align:right;font-size:14px}
-      </style></head><body>
-      <h1>Pre-cuenta</h1>
-      <div class="sub">${esc(zoneLabel)} · ${esc(mesaLabel)}</div>
-      <table><thead><tr><th>Producto</th><th>Cant.</th><th>P.U</th><th>P.T</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="totals"><strong>Total ${esc(formatCurrency(total, sym))}</strong></div>
-      <p style="font-size:11px;color:#666;margin-top:16px">Vista informativa. El comprobante oficial se emite al registrar el pago.</p>
-      </body></html>`;
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.onload = () => {
-      try {
-        w.print();
-      } finally {
-        w.close();
-      }
-    };
-  };
 
   const ensurePosOrderSynced = async ({ manageBusy = true } = {}) => {
     if (!posTable) return posOrderId;
@@ -1179,6 +1147,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
       if (vacio) {
         setPosOrderId(null);
         setPosCart([]);
+        posCartRef.current = [];
         setPosCommitted(true);
         await loadTables();
         await refreshPosTableFromBackend(posTable.id);
@@ -1188,12 +1157,13 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
       const freshRaw = await backofficeApi.getMesaOrdenActiva(posTable.id).catch(() => null);
       const fresh = unwrapEnvelope(freshRaw);
       const backendItems = getOrdenItems(fresh);
-      if (backendItems) setPosCart(mapBackendItemsToCart(backendItems));
-      else setPosCart([]);
+      const syncedCart = backendItems ? mapBackendItemsToCart(backendItems) : [];
+      posCartRef.current = syncedCart;
+      setPosCart(syncedCart);
 
       setPosCommitted(true);
       await loadTables();
-      if (posCart.length > 0) {
+      if (syncedCart.length > 0) {
         try {
           await backofficeApi.patchMesaEstado(Number(posTable.id), "Ocupada");
         } catch {
@@ -1261,7 +1231,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           if (!posOrderId) throw new Error("No hay orden activa para enviar a cocina.");
 
           // Si la orden ya existía (posCart vacío), cargamos items para mantener UI sincronizada.
-          if (!posCommitted && posCart.length === 0) {
+          if (!posCommitted && posCartRef.current.length === 0) {
             const freshRaw = await backofficeApi.getMesaOrdenActiva(posTable.id).catch(() => null);
             const fresh = unwrapEnvelope(freshRaw);
             const items = getOrdenItems(fresh);
@@ -1296,7 +1266,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           if (posCart.length > 0) await ensurePosOrderSynced({ manageBusy: false });
 
           let ordenId = posOrderId ?? posOrderIdRef.current;
-          let lines = posCartToModalLines(posCart);
+          let lines = posCartToModalLines(posCartRef.current);
 
           if (lines.length === 0) {
             const raw = await backofficeApi.getMesaOrdenActiva(posTable.id);
@@ -1350,8 +1320,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
         resp = await backofficeApi.ventasProcesarPago(payload);
       }
 
-      if (pagoResponseHasReciboPrintChannel(resp) && !(await tryPrintReciboFromPagoResponse(resp))) {
-        snackbar.error("No se pudo imprimir el recibo.");
+      if (pagoResponseHasReciboPrintChannel(resp)) {
+        void tryPrintReciboFromPagoResponse(resp).catch(() => {});
       }
 
       snackbar.success("Venta procesada.");
@@ -1376,7 +1346,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
     if (posActionBusy || saleProcessing) return;
     try {
       await runWithBusyUi(
-        { setBusy: setPosActionBusy, setMessage: setPosBusyMessage, caption: "Imprimiendo cuenta…" },
+        { setBusy: setPosActionBusy, setMessage: setPosBusyMessage, caption: "Cargando pre-cuenta…" },
         async () => {
           setError("");
           if (posCart.length > 0) await ensurePosOrderSynced({ manageBusy: false });
@@ -1390,24 +1360,58 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           }
           if (!ordenId) throw new Error("No se encontró el ID de la orden.");
 
-          // Flujo oficial backend: pre-cuenta sin pagar.
-          const pre = await backofficeApi.pedidoPrecuenta(ordenId);
-          if (await tryPrintPrecuentaFromPayload(pre)) {
-            snackbar.info(PRECUENTA_PRINT_READY_INFO);
+          // 1. Intentamos obtener el HTML del backend para la previsualización
+          let html = "";
+          try {
+            const pre = await backofficeApi.pedidoPrecuenta(ordenId);
+            const rawHtmlField = pre?.htmlPrecuenta ?? pre?.HtmlPrecuenta ?? "";
+            if (rawHtmlField) {
+              html = rawHtmlField;
+            } else {
+              const url = pre?.urlImpresionPrecuenta ?? pre?.UrlImpresionPrecuenta ?? pre?.urlImpresion ?? pre?.UrlImpresion;
+              if (url) {
+                const resolved = resolveBackendAssetUrl(url);
+                const fetchUrl = withImpressionAccessTokenQuery(resolved);
+                const res = await fetch(fetchUrl, {
+                  headers: { Authorization: `Bearer ${getToken()}` },
+                });
+                if (res.ok) {
+                  html = await res.text();
+                }
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+
+          if (!html) {
+            try {
+              const rawHtml = await backofficeApi.pedidoPrecuentaHtml(ordenId);
+              html = rawHtml?.html ?? rawHtml?.Html ?? (typeof rawHtml === "string" ? rawHtml : "");
+            } catch {
+              /* ignore */
+            }
+          }
+
+          // Si obtuvimos el HTML del backend, abrimos la previsualización nativa
+          if (html) {
+            window.dispatchEvent(
+              new CustomEvent("show-ticket-preview", {
+                detail: {
+                  html,
+                  onConfirmPrint: async () => {
+                    await openBackendPrintHtml(html, { bypassPreview: true });
+                    snackbar.success("Enviado a la impresora física.");
+                  },
+                  onCancelPrint: () => {},
+                },
+              })
+            );
             return;
           }
 
-          try {
-            const rawHtml = await backofficeApi.pedidoPrecuentaHtml(ordenId);
-            if (await tryPrintHtmlBody(rawHtml)) {
-              snackbar.info(PRECUENTA_PRINT_READY_INFO);
-              return;
-            }
-          } catch {
-            /* continue to local fallback */
-          }
-
-          let lines = posCartToModalLines(posCart);
+          // Fallback: Si no hay HTML del backend, generamos y previsualizamos un ticket local hermoso
+          let lines = posCartToModalLines(posCartRef.current);
 
           if (lines.length === 0) {
             const raw = await backofficeApi.getMesaOrdenActiva(posTable.id);
@@ -1430,18 +1434,56 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
             }
           }
 
-          openPreCuentaPrint({
-            mesaLabel: posTable.displayId,
-            zoneLabel: posTable.zone,
-            lines,
-            total,
-            currency: currencySymbol,
-          });
-          snackbar.info("Pre-cuenta lista para imprimir (modo local).");
-        },
+          // Creamos una pre-cuenta local en HTML para que la previsualización se vea igual de hermosa
+          const sym = currencySymbol;
+          const esc = (s) =>
+            String(s ?? "")
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;");
+          const rows = lines
+            .map(
+              (x) => `<tr>
+              <td>${esc(x.name)}</td>
+              <td style="text-align:center">${esc(x.qty)}</td>
+              <td style="text-align:right">${esc(formatCurrency(x.price, sym))}</td>
+              <td style="text-align:right">${esc(formatCurrency(x.lineTotal ?? Number(x.price || 0) * Number(x.qty || 0), sym))}</td>
+            </tr>`
+            )
+            .join("");
+          const localHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Pre-cuenta</title>
+            <style>
+              body{font-family:monospace;padding:8px;font-size:12px;color:#000;margin:0}
+              h1{font-size:15px;margin:0 0 4px;text-align:center} .sub{color:#000;font-size:11px;margin-bottom:12px;text-align:center}
+              table{width:100%;border-collapse:collapse;font-size:11px}
+              th,td{border-bottom:1px dashed #000;padding:4px 2px}
+              th{text-align:left;font-weight:bold}
+              .totals{margin-top:12px;text-align:right;font-size:13px;font-weight:bold}
+            </style></head><body>
+            <h1>Pre-cuenta</h1>
+            <div class="sub">${esc(posTable.zone)} · ${esc(posTable.displayId)}</div>
+            <table><thead><tr><th>Detalle</th><th style="text-align:center">Cant</th><th style="text-align:right">P.U</th><th style="text-align:right">P.T</th></tr></thead><tbody>${rows}</tbody></table>
+            <div class="totals"><strong>Total ${esc(formatCurrency(total, sym))}</strong></div>
+            <p style="font-size:10px;text-align:center;margin-top:16px">Vista informativa. El comprobante oficial se emite al registrar el pago.</p>
+            </body></html>`;
+
+          window.dispatchEvent(
+            new CustomEvent("show-ticket-preview", {
+              detail: {
+                html: localHtml,
+                onConfirmPrint: async () => {
+                  await openBackendPrintHtml(localHtml, { bypassPreview: true });
+                  snackbar.success("Enviado a la impresora física.");
+                },
+                onCancelPrint: () => {},
+              },
+            })
+          );
+        }
       );
     } catch (e) {
-      const msg = e?.message || "No se pudo imprimir la cuenta.";
+      const msg = e?.message || "No se pudo cargar la cuenta.";
       snackbar.error(msg);
     }
   };
@@ -1944,6 +1986,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
           onGuardar={handleGuardarVenta}
         />
 
+
         {posCancelPinOpen && (
           <CancelPedidoPinModal
             open
@@ -2096,6 +2139,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
             layoutMode={mesasLayoutMode}
             onLayoutModeChange={setMesasLayoutMode}
             onToggleMaximize={() => setPlanoFullScreen(true)}
+            enableVistaZonas={enableVistaZonas}
+            enableVistaPlano={enableVistaPlano}
+            isAdmin={isAdmin}
           />
         </div>
 
@@ -2128,170 +2174,35 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$" }) {
         )}
       </section>
 
-      {formOpen && (
-        <BackofficeDialog maxWidthClass="max-w-md" onBackdropClick={saving ? undefined : () => setFormOpen(false)}>
-          <form onSubmit={saveTable} className="w-full min-w-0">
-            <h3 className="text-lg font-semibold text-slate-800">{form.id ? "Editar mesa" : "Nueva mesa"}</h3>
-            <div className="mt-4 space-y-3">
-              <input value={form.numero} onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))} placeholder="Numero" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              <input type="number" min="1" value={form.capacidad} onChange={(e) => setForm((f) => ({ ...f, capacidad: e.target.value }))} placeholder="Capacidad" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required />
-              <select value={form.ubicacionId} onChange={(e) => setForm((f) => ({ ...f, ubicacionId: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" required>
-                <option value="">Ubicacion</option>
-                {locations.filter((l) => l.activo !== false).map((l) => (
-                  <option key={l.id} value={l.id}>{l.nombre || l.descripcion || `Ubicacion ${l.id}`}</option>
-                ))}
-              </select>
-              <select value={form.estado} onChange={(e) => setForm((f) => ({ ...f, estado: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option>Libre</option><option>Ocupada</option><option>Reservada</option>
-              </select>
-            </div>
-            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setFormOpen(false)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 sm:w-auto">Cancelar</button>
-              <button disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 sm:w-auto">{saving ? "Guardando..." : "Guardar"}</button>
-            </div>
-          </form>
-        </BackofficeDialog>
-      )}
-
-      {locationsModalOpen && (
-        <BackofficeDialog maxWidthClass="max-w-3xl" onBackdropClick={saving ? undefined : () => setLocationsModalOpen(false)}>
-          <div className="w-full min-w-0">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-800">Ubicaciones de mesas</h3>
-                <p className="text-xs text-slate-500">Listado actual de ubicaciones registradas.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setLocationsModalOpen(false)}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
-              <form onSubmit={saveLocation} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <h4 className="text-sm font-semibold text-slate-800">{locationForm.id ? "Editar ubicación" : "Nueva ubicación"}</h4>
-                <input
-                  value={locationForm.nombre}
-                  onChange={(e) => setLocationForm((s) => ({ ...s, nombre: e.target.value }))}
-                  placeholder="Nombre (ej: Terraza)"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  required
-                />
-                <textarea
-                  value={locationForm.descripcion}
-                  onChange={(e) => setLocationForm((s) => ({ ...s, descripcion: e.target.value }))}
-                  placeholder="Descripción (opcional)"
-                  rows={3}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={locationForm.activo}
-                    onChange={(e) => setLocationForm((s) => ({ ...s, activo: e.target.checked }))}
-                  />
-                  Activa
-                </label>
-                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setLocationForm({ id: null, nombre: "", descripcion: "", activo: true })}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 sm:w-auto"
-                  >
-                    Limpiar
-                  </button>
-                  <button disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 sm:w-auto">
-                    {saving ? "Guardando..." : "Guardar"}
-                  </button>
-                </div>
-              </form>
-
-              <div className="space-y-2 rounded-xl border border-slate-200 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-slate-600">
-                    {showInactiveLocations ? "Mostrando activas e inactivas" : "Mostrando solo activas"}
-                  </p>
-                  <label className="inline-flex items-center gap-2 text-xs text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={showInactiveLocations}
-                      onChange={(e) => setShowInactiveLocations(e.target.checked)}
-                    />
-                    Ver inactivas
-                  </label>
-                </div>
-                {locations.length === 0 && <p className="text-sm text-slate-500">No hay ubicaciones.</p>}
-                {locations
-                  .filter((l) => showInactiveLocations || l.activo !== false)
-                  .map((l) => (
-                    <article
-                      key={l.id}
-                      className={`flex items-start justify-between gap-3 rounded-lg border p-3 ${l.activo === false ? "border-slate-200 bg-slate-50 opacity-80" : "border-slate-200 bg-white"
-                        }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-800">{l.nombre || l.descripcion || `Ubicación ${l.id}`}</p>
-                        <p className="truncate text-xs text-slate-500">{l.descripcion || "-"}</p>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                        {l.activo === false ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleLocationActive(l, true)}
-                            className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700"
-                          >
-                            Reactivar
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => editLocation(l.id)}
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Editar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteLocation({ open: true, id: l.id, name: l.nombre || `Ubicación ${l.id}` })}
-                          className="inline-flex items-center gap-1 rounded-md bg-red-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-600"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Eliminar
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </BackofficeDialog>
-      )}
-
-      {detailOpen && selectedTable && (
-        <BackofficeDialog maxWidthClass="max-w-lg" onBackdropClick={() => setDetailOpen(false)}>
-          <div className="w-full min-w-0">
-            <h3 className="text-lg font-semibold text-slate-800">Mesa {selectedTable.displayId}</h3>
-            <p className="mt-1 text-sm text-slate-600">Estado: {selectedTable.status} | Capacidad: {selectedTable.capacity}</p>
-            <div className="mt-4 rounded-lg border border-slate-200 p-3 text-sm">
-              {activeOrder ? (
-                <>
-                  <p className="font-semibold text-slate-800">Orden activa: {activeOrder.numero || activeOrder.id}</p>
-                  <p className="text-slate-600">Estado: {activeOrder.estado || "Pendiente"}</p>
-                </>
-              ) : (
-                <p className="text-slate-500">Sin orden activa.</p>
-              )}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button type="button" onClick={() => setDetailOpen(false)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 sm:w-auto">Cerrar</button>
-            </div>
-          </div>
-        </BackofficeDialog>
-      )}
+      <TableFormDialog
+        open={formOpen}
+        form={form}
+        setForm={setForm}
+        saving={saving}
+        locations={locations}
+        onClose={() => setFormOpen(false)}
+        onSave={saveTable}
+      />
+      <LocationsManagerDialog
+        open={locationsModalOpen}
+        saving={saving}
+        locations={locations}
+        locationForm={locationForm}
+        setLocationForm={setLocationForm}
+        showInactiveLocations={showInactiveLocations}
+        setShowInactiveLocations={setShowInactiveLocations}
+        onClose={() => setLocationsModalOpen(false)}
+        onSaveLocation={saveLocation}
+        onEditLocation={editLocation}
+        onToggleActive={toggleLocationActive}
+        onDeleteClick={(id, name) => setConfirmDeleteLocation({ open: true, id, name })}
+      />
+      <DetailDialog
+        open={detailOpen}
+        table={selectedTable}
+        activeOrder={activeOrder}
+        onClose={() => setDetailOpen(false)}
+      />
       <ConfirmModal
         open={confirmDeleteTable.open}
         onClose={() => setConfirmDeleteTable({ open: false, id: null })}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useSnackbar } from "../contexts/SnackbarContext.jsx";
+import { TicketPreviewModal } from "../components/ui/TicketPreviewModal.jsx";
 import { BackofficeShellHeaderActions, MobileNav, SidebarNav } from "../features/backoffice/components";
 import { NAV_ITEMS } from "../features/backoffice/constants.js";
 import { backofficeApi } from "../features/backoffice/services/backofficeApi.js";
@@ -12,6 +13,7 @@ import { canAccessView, getAllowedViewIds } from "../features/backoffice/utils/a
 import { displayUserName } from "../utils/authUser.js";
 import {
   CashierView,
+  ClientsView,
   DashboardView,
   DeliveryView,
   KitchenView,
@@ -22,6 +24,7 @@ import {
   SettingsView,
   TablesView,
   UsersView,
+  LocationsView,
 } from "../features/backoffice/views";
 
 const SIDEBAR_COLLAPSED_KEY = "barrest-sidebar-collapsed";
@@ -30,6 +33,7 @@ const TITLES = {
   orders: "Gestion de pedidos",
   tables: "Gestion de mesas",
   delivery: "Delivery",
+  clients: "Clientes",
   products: "Gestion de productos",
   providers: "Proveedores",
   kitchen: "Cocina",
@@ -37,6 +41,7 @@ const TITLES = {
   users: "Usuarios",
   settings: "Configuraciones",
   reports: "Reportes",
+  locations: "Ubicaciones de mesas",
 };
 
 /** Lista que envía el resumen del dashboard (varias formas posibles del API). */
@@ -85,7 +90,9 @@ export function AuthHome() {
   const { user, logout, sessionLoading } = useAuth();
   const snackbar = useSnackbar();
   const lowStockSigRef = useRef(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true"
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isNarrowViewport, setIsNarrowViewport] = useState(
     () => (typeof window !== "undefined" ? window.matchMedia(MOBILE_MQ).matches : true)
@@ -95,13 +102,15 @@ export function AuthHome() {
   const [tipoCambio, setTipoCambio] = useState(DEFAULT_TIPO_CAMBIO_USD);
   const [portalTagline, setPortalTagline] = useState("");
   const [lowStockItems, setLowStockItems] = useState([]);
-  const allowedViewIds = useMemo(() => getAllowedViewIds(user), [user]);
+  const [enablePantallaCocina, setEnablePantallaCocina] = useState(true);
+  const allowedViewIds = useMemo(() => {
+    const rawIds = getAllowedViewIds(user);
+    if (!enablePantallaCocina) {
+      return rawIds.filter(id => id !== "kitchen");
+    }
+    return rawIds;
+  }, [user, enablePantallaCocina]);
   const navItems = useMemo(() => NAV_ITEMS.filter((item) => allowedViewIds.includes(item.id)), [allowedViewIds]);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (saved) setSidebarCollapsed(saved === "true");
-  }, []);
 
   /** No montar MobileNav en escritorio: evita cualquier fuga de `fixed` / caché con la barra móvil. */
   useLayoutEffect(() => {
@@ -122,10 +131,24 @@ export function AuthHome() {
       .then(([data, tc]) => {
         if (!mounted) return;
         const list = Array.isArray(data) ? data : data?.items || [];
+        
+        // Sincronizar logo de tickets en cache local
+        const hasLogo = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:logourl");
+        const url = hasLogo ? hasLogo.valor || hasLogo.Valor || "" : "";
+        if (url) {
+          localStorage.setItem("pos_logo_url", url);
+        } else {
+          localStorage.removeItem("pos_logo_url");
+        }
+        window.dispatchEvent(new Event("pos_logo_updated"));
+
         setCurrencySymbol(resolveCurrencySymbol(list));
         setPortalTagline(pickPortalTagline(list));
         const parsed = parseTipoCambioApiResponse(tc);
         setTipoCambio(parsed != null ? parsed : DEFAULT_TIPO_CAMBIO_USD);
+        
+        const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
+        setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
       })
       .catch(() => {});
     return () => {
@@ -138,6 +161,17 @@ export function AuthHome() {
       void Promise.all([backofficeApi.configuraciones(), backofficeApi.configuracionTipoCambio().catch(() => null)]).then(
         ([data, tc]) => {
           const list = Array.isArray(data) ? data : data?.items || [];
+          
+          // Sincronizar logo de tickets en cache local
+          const hasLogo = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:logourl");
+          const url = hasLogo ? hasLogo.valor || hasLogo.Valor || "" : "";
+          if (url) {
+            localStorage.setItem("pos_logo_url", url);
+          } else {
+            localStorage.removeItem("pos_logo_url");
+          }
+          window.dispatchEvent(new Event("pos_logo_updated"));
+
           setCurrencySymbol(resolveCurrencySymbol(list));
           setPortalTagline(pickPortalTagline(list));
           const parsed = parseTipoCambioApiResponse(tc);
@@ -147,6 +181,18 @@ export function AuthHome() {
     };
     window.addEventListener(POS_EXCHANGE_RATE_UPDATED_EVENT, onTcUpdated);
     return () => window.removeEventListener(POS_EXCHANGE_RATE_UPDATED_EVENT, onTcUpdated);
+  }, []);
+
+  useEffect(() => {
+    const onConfigUpdated = () => {
+      void backofficeApi.configuraciones().then((data) => {
+        const list = Array.isArray(data) ? data : data?.items || [];
+        const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
+        setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
+      }).catch(() => {});
+    };
+    window.addEventListener("pos_config_updated", onConfigUpdated);
+    return () => window.removeEventListener("pos_config_updated", onConfigUpdated);
   }, []);
 
   const toggleSidebar = () => {
@@ -163,7 +209,9 @@ export function AuthHome() {
 
   useEffect(() => {
     if (!allowedViewIds.includes(activeView)) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setActiveView(allowedViewIds[0] || "dashboard");
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [activeView, allowedViewIds]);
 
@@ -224,7 +272,9 @@ export function AuthHome() {
   }, [snackbar]);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     void refreshLowStock();
+    /* eslint-enable react-hooks/set-state-in-effect */
     const onRefresh = () => void refreshLowStock();
     window.addEventListener("focus", onRefresh);
     window.addEventListener("barrest-inventory-updated", onRefresh);
@@ -245,7 +295,9 @@ export function AuthHome() {
     if (activeView === "settings") return SettingsView;
     if (activeView === "orders") return OrdersView;
     if (activeView === "tables") return TablesView;
+    if (activeView === "locations") return LocationsView;
     if (activeView === "delivery") return DeliveryView;
+    if (activeView === "clients") return ClientsView;
     if (activeView === "reports") return ReportsView;
     return DashboardView;
   }, [activeView]);
@@ -297,14 +349,14 @@ export function AuthHome() {
 
         <section className="flex h-full min-h-0 min-w-0 flex-col gap-4 overflow-x-hidden overflow-y-auto hide-scrollbar pb-4 sm:gap-6 lg:max-h-full lg:pb-0 lg:pr-2">
           {showViewHeader && (
-            <header className="shrink-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <header className="shrink-0 rounded-3xl border border-slate-100 bg-white px-5 py-4 shadow-sm sm:px-6 sm:py-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-bold leading-tight text-slate-800 sm:text-2xl">
+                  <h1 className="text-xl font-bold leading-tight tracking-tight text-slate-800 sm:text-[22px]">
                     {TITLES[activeView] || `Hola ${displayUserName(user) || "equipo"} 👋`}
                   </h1>
                   {portalTagline ? (
-                    <p className="mt-1 text-xs text-slate-500 sm:text-sm">{portalTagline}</p>
+                    <p className="mt-1 text-xs text-slate-400 sm:text-sm">{portalTagline}</p>
                   ) : null}
                 </div>
                 <div className="hidden shrink-0 lg:block">
@@ -323,10 +375,16 @@ export function AuthHome() {
             </header>
           )}
           <div className="flex min-h-0 flex-1 flex-col">
-            <ActiveView currencySymbol={currencySymbol} exchangeRate={tipoCambio} />
+            <ActiveView 
+              currencySymbol={currencySymbol} 
+              exchangeRate={tipoCambio} 
+              activeView={activeView}
+              openView={openView}
+            />
           </div>
         </section>
       </div>
+      <TicketPreviewModal />
     </main>
   );
 }

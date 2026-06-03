@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { expensesApi } from "../api/expenses.js";
 import { DEFAULT_PAGE_SIZE } from "../config/brand.js";
 
@@ -22,6 +22,7 @@ export function useExpenses(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
 
   const params = { page, pageSize };
   if (dateFrom) params.dateFrom = dateFrom;
@@ -33,22 +34,27 @@ export function useExpenses(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
     setError(null);
     try {
       const data = await expensesApi.list(params);
+      if (!mountedRef.current) return;
       const { list, totalCount: tc, totalPages: tp } = normalizeResponse(data);
       setExpenses(list);
       setTotalCount(tc);
       setTotalPages(tp);
     } catch (e) {
+      if (!mountedRef.current) return;
       setError(e?.message || "Error al cargar egresos");
       setExpenses([]);
       setTotalCount(0);
       setTotalPages(0);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFrom, dateTo, category, page, pageSize]);
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchList();
+    return () => { mountedRef.current = false; };
   }, [fetchList]);
 
   const create = useCallback(async (body) => {

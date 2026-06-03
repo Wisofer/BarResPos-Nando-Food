@@ -1,6 +1,9 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -9,6 +12,64 @@ const DIST_PATH = path.join(__dirname, '../dist')
 const PUBLIC_PATH = app.isPackaged ? DIST_PATH : path.join(__dirname, '../public')
 
 let win = null
+let backendProcess = null
+
+// Configuración de un archivo de log robusto en la carpeta de usuario para depuración
+const logPath = path.join(os.homedir(), 'barrespos-launch.log')
+
+function writeLog(message) {
+  try {
+    const timestamp = new Date().toISOString()
+    fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`)
+  } catch (e) {
+    console.error('No se pudo escribir en el log:', e)
+  }
+}
+
+function startBackend() {
+  const backendBinName = 'BarRestPOS.exe'
+  let backendPath = ''
+
+  if (app.isPackaged) {
+    // En producción (dentro de los recursos empaquetados de Electron)
+    backendPath = path.join(process.resourcesPath, 'backend', backendBinName)
+  } else {
+    // En desarrollo, apunta a la carpeta del proyecto backend hermano en Music
+    backendPath = path.join(__dirname, '../../BarResPos-Nando-Food-Backend/bin/Debug/net9.0', backendBinName)
+  }
+
+  writeLog('=== INICIANDO BACKEND LOCAL ===')
+  writeLog(`Ruta del ejecutable: ${backendPath}`)
+  writeLog(`¿El archivo ejecutable existe?: ${fs.existsSync(backendPath)}`)
+
+  try {
+    const backendDir = path.dirname(backendPath)
+    writeLog(`Directorio de trabajo (CWD): ${backendDir}`)
+
+    backendProcess = spawn(backendPath, ['--urls', 'http://localhost:5000'], {
+      cwd: backendDir,
+      windowsHide: true
+    })
+
+    backendProcess.stdout.on('data', (data) => {
+      writeLog(`[BACKEND STDOUT]: ${data.toString().trim()}`)
+    })
+
+    backendProcess.stderr.on('data', (data) => {
+      writeLog(`[BACKEND STDERR]: ${data.toString().trim()}`)
+    })
+
+    backendProcess.on('error', (err) => {
+      writeLog(`[BACKEND ERROR]: ${err.message}`)
+    })
+
+    backendProcess.on('exit', (code, signal) => {
+      writeLog(`[BACKEND EXIT]: El proceso del backend terminó con código ${code} y señal ${signal}`)
+    })
+  } catch (err) {
+    writeLog(`[EXCEPCIÓN AL LANZAR]: ${err.message}`)
+  }
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -23,15 +84,18 @@ function createWindow() {
     },
   })
 
+  // Configura un User-Agent moderno para evitar problemas con WhatsApp Web
+  win.webContents.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36')
+
   // Oculta la barra de menú predeterminada (File, Edit, View, Window) para una vista nativa limpia
   win.setMenuBarVisibility(false)
 
   // Maximiza la ventana automáticamente para ocupar toda la pantalla
   win.maximize()
 
-  // Configura el factor de zoom predeterminado al 110% (1.1)
+  // Configura el factor de zoom predeterminado al 100% (1.0)
   win.webContents.on('did-finish-load', () => {
-    win.webContents.setZoomFactor(1.1)
+    win.webContents.setZoomFactor(1.0)
   })
 
   // Captura y gestiona los atajos de teclado para Zoom de manera manual
@@ -62,12 +126,28 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow)
+// Handler para abrir enlaces externos (como WhatsApp)
+ipcMain.on('open-external', (event, url) => {
+  shell.openExternal(url)
+})
+
+app.whenReady().then(() => {
+  startBackend()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
     win = null
+  }
+})
+
+app.on('will-quit', () => {
+  if (backendProcess) {
+    console.log('Deteniendo backend local...')
+    backendProcess.kill()
+    backendProcess = null
   }
 })
 

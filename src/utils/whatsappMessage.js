@@ -4,7 +4,13 @@
  */
 export function buildInvoiceWhatsAppMessage(templateMessage, { invoice, clientName, clientId, pdfUrl }) {
   if (!templateMessage || typeof templateMessage !== "string") return "";
-  const d = invoice?.date ? new Date(invoice.date) : null;
+  let d = null;
+  try {
+    if (invoice?.date) {
+      const parsed = new Date(invoice.date);
+      if (!isNaN(parsed.getTime())) d = parsed;
+    }
+  } catch { /* ignore invalid dates */ }
   const mes = d ? d.toLocaleDateString("es-NI", { month: "long" }) : "";
   const fechaCreacion = d ? d.toLocaleDateString("es-NI", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
   const monto = invoice?.amount != null ? Number(invoice.amount).toLocaleString("es-NI", { minimumFractionDigits: 2 }) : "";
@@ -18,5 +24,6 @@ export function buildInvoiceWhatsAppMessage(templateMessage, { invoice, clientNa
     .replace(/\{Categoria\}/g, invoice?.concept ?? "")
     .replace(/\{Estado\}/g, invoice?.status ?? "")
     .replace(/\{FechaCreacion\}/g, fechaCreacion)
-    .replace(/\{EnlacePDF\}/g, pdfUrl ?? "");
+    .replace(/\{EnlacePDF\}/g, pdfUrl ?? "")
+    .replace(/\{DetallePedido\}/g, pdfUrl ?? "");
 }

@@ -9,7 +9,10 @@ export function computeArqueoPreview(montoContadoInput, montoEsperado) {
   if (raw === "") {
     return { kind: "empty", diff: 0, label: "", detail: "" };
   }
-  const contado = Number(raw.replace(",", "."));
+  const normalized = raw
+    .replace(/\./g, "")       // quita puntos de miles (ej. "1.500" → "1500")
+    .replace(",", ".");       // convierte coma decimal a punto (ej. "1500,50" → "1500.50")
+  const contado = Number(normalized);
   const esperado = Number(montoEsperado ?? 0);
   if (!Number.isFinite(contado) || !Number.isFinite(esperado)) {
     return null;

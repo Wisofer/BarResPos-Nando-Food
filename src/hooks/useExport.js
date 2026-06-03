@@ -23,7 +23,7 @@ export function useExport(basePath, getParams, excelFilename, pdfFilename) {
     } finally {
       setExportLoading((s) => ({ ...s, excel: false }));
     }
-  }, [basePath, excelFilename, snackbar]);
+  }, [basePath, excelFilename, getParams, snackbar]);
 
   const handleExportPdf = useCallback(async () => {
     setExportLoading((s) => ({ ...s, pdf: true }));
@@ -35,7 +35,7 @@ export function useExport(basePath, getParams, excelFilename, pdfFilename) {
     } finally {
       setExportLoading((s) => ({ ...s, pdf: false }));
     }
-  }, [basePath, pdfFilename, snackbar]);
+  }, [basePath, pdfFilename, getParams, snackbar]);
 
   return { exportLoading, handleExportExcel, handleExportPdf };
 }

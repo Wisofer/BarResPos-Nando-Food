@@ -7,7 +7,7 @@ import { cn } from "../../../utils/cn.js";
 export function BackofficeDialog({ children, maxWidthClass = "max-w-lg", className, panelClassName, onBackdropClick }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex min-h-0 items-end justify-center overflow-y-auto overscroll-y-contain bg-slate-900/45 px-0 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:items-center sm:bg-slate-900/35 sm:p-4 sm:pb-4 sm:pt-4"
+      className="fixed inset-0 z-[350] flex min-h-0 items-end justify-center overflow-y-auto overscroll-y-contain bg-slate-900/60 backdrop-blur-sm px-0 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-[max(0.5rem,env(safe-area-inset-top,0px))] sm:items-center sm:bg-slate-900/60 sm:p-4 sm:pb-4 sm:pt-4 animate-in fade-in duration-200"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onBackdropClick?.();

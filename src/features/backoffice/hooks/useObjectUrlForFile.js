@@ -9,12 +9,14 @@ export function useObjectUrlForFile(file) {
   const [url, setUrl] = useState(null);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!file) {
       setUrl(null);
       return;
     }
     const u = URL.createObjectURL(file);
     setUrl(u);
+    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
       URL.revokeObjectURL(u);
     };

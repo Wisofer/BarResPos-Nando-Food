@@ -22,7 +22,7 @@ export function getBundledTicketLogoAbsoluteUrl() {
   try {
     const baseUrl = window.location.origin + (import.meta.env.BASE_URL || "/");
     const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-    return new URL("assets/images/nandofood.png", base).href;
+    return new URL("assets/images/barrespos.png", base).href;
   } catch {
     return "";
   }
@@ -35,7 +35,7 @@ export function getBundledTicketLogoAbsoluteUrl() {
 export function injectCocinaTicketLogoIfMissing(html) {
   if (typeof html !== "string" || !html.trim()) return html;
   if (html.includes(FE_COCINA_TICKET_LOGO_MARKER)) return html;
-  if (/\bnandofood\.png\b/i.test(html)) return html;
+  if (/\b(?:nandofood|barrespos)\.png\b/i.test(html)) return html;
   const logo = getBundledTicketLogoAbsoluteUrl();
   if (!logo) return html;
   const safeSrc = escapeHtmlAttr(logo);
@@ -139,8 +139,47 @@ export function withImpressionAccessTokenQuery(absoluteUrl) {
  * @returns {Promise<boolean>}
  */
 export function printBlobInHiddenFrame(blob, options = {}) {
-  const { shouldPrint = true } = options;
-  return new Promise((resolve) => {
+  const { shouldPrint = true, bypassPreview = false } = options;
+  return new Promise((resolve, reject) => {
+    // Interceptar para mostrar previsualización de alta fidelidad si no se ha saltado explícitamente
+    if (!bypassPreview && blob.type.includes("text/html")) {
+      blob.text()
+        .then((html) => {
+          const cachedName = localStorage.getItem("pos_app_name") || "BarRestPOS";
+          let adjustedHtml = html;
+          if (cachedName && cachedName !== "BarRestPOS") {
+            adjustedHtml = html.replace(/BAR REST POS/gi, cachedName);
+          }
+          window.dispatchEvent(
+            new CustomEvent("show-ticket-preview", {
+              detail: {
+                html: adjustedHtml,
+                onConfirmPrint: () => {
+                  const newBlob = new Blob([adjustedHtml], { type: "text/html;charset=utf-8" });
+                  printBlobInHiddenFrame(newBlob, { ...options, bypassPreview: true })
+                    .then(resolve)
+                    .catch(reject);
+                },
+                onCancelPrint: () => {
+                  reject(new Error("CANCEL_BY_USER"));
+                },
+              },
+            })
+          );
+        })
+        .catch((err) => {
+          if (err?.message === "CANCEL_BY_USER") {
+            reject(err);
+          } else {
+            // Si falla al leer, imprimimos directamente
+            printBlobInHiddenFrame(blob, { ...options, bypassPreview: true })
+              .then(resolve)
+              .catch(reject);
+          }
+        });
+      return;
+    }
+
     try {
       const blobUrl = URL.createObjectURL(blob);
       const iframe = document.createElement("iframe");
@@ -153,9 +192,21 @@ export function printBlobInHiddenFrame(blob, options = {}) {
       iframe.src = blobUrl;
       let didPrint = false;
       let didResolve = false;
+
+      const safetyTimeout = setTimeout(() => {
+        if (didResolve) return;
+        didResolve = true;
+        try {
+          URL.revokeObjectURL(blobUrl);
+          iframe.remove();
+        } catch { /* ignore cleanup errors */ }
+        resolve(false);
+      }, 4000);
+
       const safeResolve = (val) => {
         if (didResolve) return;
         didResolve = true;
+        clearTimeout(safetyTimeout);
         resolve(val);
       };
 
@@ -208,10 +259,10 @@ export function printBlobInHiddenFrame(blob, options = {}) {
 /**
  * GET con Bearer, descarga e intenta imprimir.
  * @param {string} url
- * @param {{ cocinaLogo?: boolean }} [options] — si `cocinaLogo`, inyecta logo del SPA en HTML de cocina cuando falta.
+ * @param {{ cocinaLogo?: boolean, bypassPreview?: boolean }} [options]
  */
 export async function openBackendPrintUrl(url, options = {}) {
-  const { cocinaLogo = false } = options;
+  const { cocinaLogo = false, bypassPreview = false } = options;
   if (!url) return false;
   const token = getToken();
   const resolved = resolveBackendAssetUrl(url);
@@ -226,8 +277,11 @@ export async function openBackendPrintUrl(url, options = {}) {
     });
     if (!res.ok) return false;
     const { blob, shouldPrint } = await buildImpressionBlobForPrint(res, cocinaLogo);
-    return await printBlobInHiddenFrame(blob, { shouldPrint });
-  } catch {
+    return await printBlobInHiddenFrame(blob, { shouldPrint, bypassPreview });
+  } catch (err) {
+    if (err?.message === "CANCEL_BY_USER") {
+      throw err;
+    }
     return false;
   }
 }
@@ -247,7 +301,7 @@ export function extractUrlImpresionCocina(data) {
 export async function printKitchenTicketAfterEnviarCocina(data, snackbar) {
   const url = extractUrlImpresionCocina(data);
   if (!url) return false;
-  const printed = await openBackendPrintUrl(url, { cocinaLogo: true });
+  const printed = await openBackendPrintUrl(url, { cocinaLogo: true, bypassPreview: true });
   if (!printed && typeof snackbar?.info === "function") {
     snackbar.info(KITCHEN_PRINT_AUTO_FAIL_INFO);
   }
@@ -273,11 +327,11 @@ export function extractPrecuentaHtmlFromPayload(pre) {
 }
 
 /** Intenta imprimir desde objeto precuenta: URL primero, luego HTML embebido. */
-export async function tryPrintPrecuentaFromPayload(pre) {
+export async function tryPrintPrecuentaFromPayload(pre, options = {}) {
   const url = extractPrecuentaUrlFromPayload(pre);
-  if (url && (await openBackendPrintUrl(url))) return true;
+  if (url && (await openBackendPrintUrl(url, options))) return true;
   const html = extractPrecuentaHtmlFromPayload(pre);
-  if (html && (await openBackendPrintHtml(html))) return true;
+  if (html && (await openBackendPrintHtml(html, options))) return true;
   return false;
 }
 
@@ -289,9 +343,9 @@ export function unwrapHtmlBodyField(raw) {
   return typeof h === "string" ? h : "";
 }
 
-export async function tryPrintHtmlBody(raw) {
+export async function tryPrintHtmlBody(raw, options = {}) {
   const html = unwrapHtmlBodyField(raw);
-  if (html && (await openBackendPrintHtml(html))) return true;
+  if (html && (await openBackendPrintHtml(html, options))) return true;
   return false;
 }
 
@@ -314,9 +368,9 @@ export function extractReciboUrlFromPagoResponse(resp) {
 /** Tras cobro: prioriza HTML de recibo en cuerpo, luego URL (misma regla que POS / delivery). */
 export async function tryPrintReciboFromPagoResponse(resp) {
   const html = extractReciboHtmlFromPagoResponse(resp);
-  if (html && (await openBackendPrintHtml(html))) return true;
+  if (html && (await openBackendPrintHtml(html, { bypassPreview: true }))) return true;
   const url = extractReciboUrlFromPagoResponse(resp);
-  if (url && (await openBackendPrintUrl(url))) return true;
+  if (url && (await openBackendPrintUrl(url, { bypassPreview: true }))) return true;
   return false;
 }
 
@@ -325,14 +379,17 @@ export function pagoResponseHasReciboPrintChannel(resp) {
 }
 
 /** Imprime HTML como documento temporal. */
-export async function openBackendPrintHtml(html) {
+export async function openBackendPrintHtml(html, options = {}) {
   if (!html || typeof html !== "string") return false;
   try {
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     // Para HTML evitamos el `print()` desde el frontend para prevenir el doble diálogo
     // (el backend suele disparar window.print() al cargar el documento).
-    return await printBlobInHiddenFrame(blob, { shouldPrint: false });
-  } catch {
+    return await printBlobInHiddenFrame(blob, { shouldPrint: false, ...options });
+  } catch (err) {
+    if (err?.message === "CANCEL_BY_USER") {
+      throw err;
+    }
     return false;
   }
 }

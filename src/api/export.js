@@ -38,7 +38,7 @@ export async function downloadExport(basePath, format, params, defaultFilename) 
     try {
       const j = JSON.parse(text);
       msg = j.error || j.message || text;
-    } catch (_) {}
+    } catch { /* ignore parse errors */ }
     throw new Error(msg || `Error ${res.status}`);
   }
 
@@ -58,5 +58,5 @@ export async function downloadExport(basePath, format, params, defaultFilename) 
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(blobUrl);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 }

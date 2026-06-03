@@ -19,9 +19,9 @@ const ESTADOS_LINEA = ["Pendiente", "En cocina", "Listo", "Entregado", "Cancelad
 
 function infoCard(label, children) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      {children}
+    <article className="rounded-xl border border-slate-100 bg-slate-50/60 px-3.5 py-3 transition hover:bg-slate-50">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</p>
+      <div className="mt-1">{children}</div>
     </article>
   );
 }
@@ -63,35 +63,35 @@ export function OrderDetailPanel({
         </div>
       )}
 
-      <header className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Detalle de pedido</p>
-          <h1 className="mt-0.5 text-2xl font-bold text-slate-900">{detailOrder.numero || `#${detailOrder.id}`}</h1>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Detalle de pedido</p>
+          <h1 className="mt-1 text-[22px] font-bold leading-tight tracking-tight text-slate-900">{detailOrder.numero || `#${detailOrder.id}`}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:shadow-md active:scale-95"
           >
-            <ArrowLeft className="h-4 w-4 shrink-0" />
+            <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
             Volver
           </button>
           <button
             type="button"
             onClick={onPrint}
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:shadow-md active:scale-95"
           >
-            <Printer className="h-4 w-4 shrink-0" />
+            <Printer className="h-3.5 w-3.5 shrink-0" />
             Imprimir
           </button>
           {puedeEditarPedido && !showEdit && (
             <button
               type="button"
               onClick={onStartEdit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 active:scale-95"
             >
-              <Pencil className="h-4 w-4 shrink-0" />
+              <Pencil className="h-3.5 w-3.5 shrink-0" />
               Editar
             </button>
           )}
@@ -100,9 +100,9 @@ export function OrderDetailPanel({
               type="button"
               onClick={onCancelPedido}
               disabled={busyAction}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-rose-200 bg-white px-4 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition hover:bg-rose-50 disabled:opacity-50 active:scale-95"
             >
-              <XCircle className="h-4 w-4 shrink-0" />
+              <XCircle className="h-3.5 w-3.5 shrink-0" />
               Cancelar pedido
             </button>
           )}
@@ -110,11 +110,11 @@ export function OrderDetailPanel({
       </header>
 
       {!showEdit ? (
-        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.65fr_1fr]">
-          <section className="space-y-4">
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-slate-900">Información del pedido</h2>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1.6fr_1fr]">
+          <section className="min-w-0 space-y-4">
+            <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
+              <h2 className="text-sm font-semibold text-slate-800">Información del pedido</h2>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {infoCard(
                   "Número",
                   <p className="font-semibold text-slate-800">{detailOrder.numero || `#${detailOrder.id}`}</p>,
@@ -134,15 +134,15 @@ export function OrderDetailPanel({
                     {detailOrder.estado || "Pendiente"}
                   </span>,
                 )}
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2 xl:col-span-2">
-                  <p className="text-xs text-slate-500">Observaciones</p>
-                  <p className="mt-0.5 font-medium text-slate-700">{detailOrder.observaciones || "—"}</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3.5 py-3 sm:col-span-2 lg:col-span-2 xl:col-span-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Observaciones</p>
+                  <div className="mt-1"><p className="font-medium text-slate-700">{detailOrder.observaciones || "—"}</p></div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-slate-900">Productos</h2>
+            <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
+              <h2 className="text-sm font-semibold text-slate-800">Productos</h2>
               <div className="mt-3 min-w-0 overflow-x-auto">
                 <table className="min-w-[720px] w-full text-sm">
                   <thead className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -179,81 +179,79 @@ export function OrderDetailPanel({
             </div>
           </section>
 
-          <aside className="space-y-4">
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-slate-900">Cobro</h2>
-              <dl className="mt-3 space-y-2.5 text-sm">
-                <div className="flex justify-between gap-2">
-                  <dt className="text-slate-500">Subtotal consumo</dt>
-                  <dd className="font-semibold tabular-nums text-slate-900">{formatCurrency(subConsumoDetalle, currencySymbol)}</dd>
+          <aside className="min-w-0 space-y-3">
+
+            {/* ── Cobro ── */}
+            <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Cobro</h2>
+              <dl className="mt-3 space-y-0">
+                <div className="flex min-w-0 items-center justify-between gap-2 py-2">
+                  <dt className="min-w-0 truncate text-sm text-slate-500">Subtotal consumo</dt>
+                  <dd className="shrink-0 font-semibold tabular-nums text-slate-900">{formatCurrency(subConsumoDetalle, currencySymbol)}</dd>
                 </div>
                 {descCobroDetalle > 0.0001 && (
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-500">Descuento</dt>
-                    <dd className="font-semibold text-amber-800">−{formatCurrency(descCobroDetalle, currencySymbol)}</dd>
+                  <div className="flex min-w-0 items-center justify-between gap-2 py-2">
+                    <dt className="min-w-0 truncate text-sm text-slate-500">Descuento</dt>
+                    <dd className="shrink-0 font-semibold text-amber-700">−{formatCurrency(descCobroDetalle, currencySymbol)}</dd>
                   </div>
                 )}
-                <div className="border-t border-slate-100 pt-2.5">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-slate-600">Total pagado (neto)</dt>
-                    <dd className="font-bold tabular-nums text-emerald-800">
-                      {estadoDetalle === "Pagado" && netoCobradoDetalle != null ? formatCurrency(netoCobradoDetalle, currencySymbol) : "—"}
-                    </dd>
-                  </div>
+                <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl bg-emerald-50/70 px-3 py-2.5 mt-1">
+                  <dt className="min-w-0 truncate text-sm font-semibold text-emerald-800">Total pagado</dt>
+                  <dd className="shrink-0 font-bold tabular-nums text-emerald-700">
+                    {estadoDetalle === "Pagado" && netoCobradoDetalle != null ? formatCurrency(netoCobradoDetalle, currencySymbol) : "—"}
+                  </dd>
                 </div>
               </dl>
             </div>
 
+            {/* ── Pagos ── */}
             {pagosDetalle.length > 0 && (
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5">
-                <h2 className="text-sm font-semibold text-slate-900">Pagos</h2>
-                <div className="mt-3 min-w-0 overflow-x-auto">
-                  <table className="w-full min-w-full text-xs">
-                    <thead className="text-left text-slate-500">
-                      <tr>
-                        <th className="font-medium">Fecha</th>
-                        <th className="font-medium">Tipo</th>
-                        <th className="text-right font-medium">Neto</th>
-                        <th className="text-right font-medium">Desc.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {pagosDetalle.map((pg, idx) => {
-                        const pid = pg.id ?? pg.Id ?? `pago-${idx}`;
-                        const netoP = pagoMontoNetoCobradoCordobas(pg);
-                        const descA = pagoDescuentoAtribuidoCordobas(pg);
-                        const motivo = pagoDescuentoMotivo(pg);
-                        return (
-                          <tr key={pid}>
-                            <td className="whitespace-nowrap py-1.5 pr-2">{formatDateTimeLabel(pagoFecha(pg))}</td>
-                            <td className="py-1.5 pr-2">{pagoTipo(pg)}</td>
-                            <td className="py-1.5 pr-2 text-right font-medium">{netoP != null ? formatCurrency(netoP, currencySymbol) : "—"}</td>
-                            <td className="py-1.5 text-right" title={motivo || undefined}>
-                              {descA > 0.0001 ? `−${formatCurrency(descA, currencySymbol)}` : "—"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Pagos</h2>
+                <div className="mt-3 space-y-2">
+                  {pagosDetalle.map((pg, idx) => {
+                    const pid = pg.id ?? pg.Id ?? `pago-${idx}`;
+                    const netoP = pagoMontoNetoCobradoCordobas(pg);
+                    const descA = pagoDescuentoAtribuidoCordobas(pg);
+                    const motivo = pagoDescuentoMotivo(pg);
+                    return (
+                      <div key={pid} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+                        <div className="flex min-w-0 items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-semibold text-slate-700">{pagoTipo(pg)}</p>
+                            <p className="mt-0.5 text-[11px] text-slate-400">{formatDateTimeLabel(pagoFecha(pg))}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-sm font-bold tabular-nums text-slate-800">{netoP != null ? formatCurrency(netoP, currencySymbol) : "—"}</p>
+                            {descA > 0.0001 && (
+                              <p className="text-[11px] text-amber-700" title={motivo || undefined}>−{formatCurrency(descA, currencySymbol)}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5">
-              <h2 className="text-sm font-semibold text-slate-900">Fechas</h2>
-              <ul className="mt-3 space-y-1.5 text-sm text-slate-700">
-                <li>
-                  Creado: <span className="font-medium">{createdAtLabel}</span>
-                </li>
-                <li>
-                  Listo: <span className="font-medium">{listoAtLabel}</span>
-                </li>
-                <li>
-                  Pagado: <span className="font-medium">{paidAtLabel}</span>
-                </li>
+            {/* ── Fechas ── */}
+            <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Fechas</h2>
+              <ul className="mt-3 space-y-2">
+                {[
+                  { label: "Creado", value: createdAtLabel },
+                  { label: "Listo",  value: listoAtLabel  },
+                  { label: "Pagado", value: paidAtLabel   },
+                ].map(({ label, value }) => (
+                  <li key={label} className="flex min-w-0 items-start justify-between gap-2">
+                    <span className="shrink-0 text-sm text-slate-400">{label}</span>
+                    <span className="min-w-0 break-all text-right text-sm font-medium text-slate-700">{value}</span>
+                  </li>
+                ))}
               </ul>
             </div>
+
           </aside>
         </div>
       ) : (

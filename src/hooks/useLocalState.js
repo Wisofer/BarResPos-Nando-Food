@@ -1,11 +1,11 @@
 import { useState, useCallback } from "react";
 
-export function useLocalState(initialItems, key = null) {
+export function useLocalState(initialItems) {
   const [items, setItems] = useState(initialItems);
 
   const addItem = useCallback(
     (item) => {
-      setItems((prev) => [...prev, { ...item, id: String(Date.now()) }]);
+      setItems((prev) => [...prev, { ...item, id: crypto.randomUUID?.() ?? String(Date.now()) + "-" + String(Math.random()).slice(2, 8) }]);
     },
     []
   );

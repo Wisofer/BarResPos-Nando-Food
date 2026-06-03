@@ -18,7 +18,9 @@ export function BackofficeShellHeaderActions({
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => Boolean(document.fullscreenElement)
+  );
   const rootRef = useRef(null);
   const lowStockCount = lowStockItems.length;
 
@@ -37,7 +39,6 @@ export function BackofficeShellHeaderActions({
   }, []);
 
   useEffect(() => {
-    setIsFullscreen(Boolean(document.fullscreenElement));
     const onFullscreenChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => {

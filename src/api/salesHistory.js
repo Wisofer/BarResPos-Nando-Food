@@ -31,5 +31,10 @@ export const salesHistoryApi = {
       ...(options?.bank ? { bank: options.bank } : {}),
     }),
   createOrReuseInvoice: (id) => api.post(`${base}/${toNumericId(id)}/invoice`, {}),
-  ticketPdfUrl: (id) => api.get(`${base}/${toNumericId(id)}/ticket-pdf-url`),
+  ticketPdfUrl: async (id) => {
+    const raw = await api.get(`${base}/${toNumericId(id)}/ticket-pdf-url`);
+    if (typeof raw === "string") return raw;
+    if (raw && typeof raw === "object") return raw.url ?? raw.data ?? raw.url ?? "";
+    return String(raw ?? "");
+  },
 };

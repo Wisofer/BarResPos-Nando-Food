@@ -1,20 +1,40 @@
 import { backofficeApi } from "../services/backofficeApi.js";
 import {
   PRECUENTA_PRINT_READY_INFO,
+  openBackendPrintUrl,
   tryPrintHtmlBody,
   tryPrintPrecuentaFromPayload,
 } from "./backofficePrint.js";
 import { formatCurrency } from "./currency.js";
-import { pedidoSubtotalConsumoCordobas, pedidoDescuentoCobroCordobas, pedidoTotalNetoCobradoCordobas } from "./pedidoCobro.js";
+import {
+  pedidoSubtotalConsumoCordobas,
+  pedidoDescuentoCobroCordobas,
+  pedidoTotalNetoCobradoCordobas,
+  pedidoPagosLista,
+} from "./pedidoCobro.js";
 import { escapeHtml, formatDateTimeLabel } from "./ordersViewFormatters.js";
 
 /**
- * Imprime pre-cuenta: intenta URL/HTML del backend; si no, ventana con HTML generado.
+ * Imprime pre-cuenta o recibo: intenta URL/HTML del backend; si no, ventana con HTML generado.
  */
 export async function printOrderTicket({ order, currencySymbol, snackbar }) {
   const orderId = order?.id ?? order?.Id ?? null;
   if (orderId) {
     try {
+      // Si el pedido ya está pagado o tiene pagos asociados, priorizamos imprimir el recibo final
+      const pagos = pedidoPagosLista(order);
+      const esPagado = String(order.estado || "").toLowerCase() === "pagado" || pagos.length > 0;
+      if (esPagado && pagos.length > 0) {
+        const pagoId = pagos[0]?.id ?? pagos[0]?.Id;
+        if (pagoId) {
+          const receiptUrl = `/api/v1/impresion/recibo/${pagoId}`;
+          if (await openBackendPrintUrl(receiptUrl)) {
+            snackbar?.info("Recibo de pago listo para imprimir.");
+            return;
+          }
+        }
+      }
+
       const pre = await backofficeApi.pedidoPrecuenta(orderId);
       if (await tryPrintPrecuentaFromPayload(pre)) {
         snackbar?.info(PRECUENTA_PRINT_READY_INFO);
@@ -25,7 +45,10 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
         snackbar?.info(PRECUENTA_PRINT_READY_INFO);
         return;
       }
-    } catch {
+    } catch (err) {
+      if (err?.message === "CANCEL_BY_USER") {
+        return;
+      }
       // reserva local abajo
     }
   }

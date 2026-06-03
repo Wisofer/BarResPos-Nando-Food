@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Lock } from "lucide-react";
 import { FloorMesaNode } from "./FloorMesaNode.jsx";
 import {
   buildPlanoPositionsWithDefaults,
@@ -85,9 +86,18 @@ export function TablesMesasFloorPlan({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className={`relative w-full flex-1 min-h-[min(42vh,16rem)] overflow-auto overscroll-contain bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[length:24px_24px] bg-slate-50 [-webkit-overflow-scrolling:touch] lg:min-h-0 ${
-        isFullscreen ? "border-0 rounded-none" : "rounded-xl border-2 border-dashed border-slate-300"
+      <div className={`relative w-full flex-1 min-h-[min(42vh,16rem)] overflow-auto overscroll-contain bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[length:24px_24px] bg-slate-50/50 [-webkit-overflow-scrolling:touch] lg:min-h-0 transition-all duration-300 ${
+        isFullscreen ? "border-0 rounded-none shadow-none" : "rounded-2xl border border-slate-200/80 shadow-inner"
       }`}>
+        {!cajaAbierta && (
+          <>
+            <div className="pointer-events-none absolute inset-0 z-40 bg-slate-950/[0.02] backdrop-blur-[1px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-xl border border-slate-200/50 shadow-lg flex items-center gap-2 pointer-events-none">
+              <Lock className="h-4 w-4 text-slate-500 animate-pulse" />
+              <span className="text-xs font-bold text-slate-700">Plano Asegurado (Caja Cerrada)</span>
+            </div>
+          </>
+        )}
         <div
           className="relative"
           style={{ width: planContentSize.width, height: planContentSize.height }}

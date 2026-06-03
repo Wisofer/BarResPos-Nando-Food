@@ -25,13 +25,31 @@ export function isMeseroUser(user) {
   return role.includes("mesero") || role.includes("waiter");
 }
 
+export function isCajeroUser(user) {
+  const role = getUserRoleText(user);
+  return role.includes("cajero") || role.includes("cashier") || role.includes("caja");
+}
+
+export function isCocineroUser(user) {
+  const role = getUserRoleText(user);
+  return (
+    role.includes("cocinero") ||
+    role.includes("cocina") ||
+    role.includes("bartender") ||
+    role.includes("cook") ||
+    role.includes("chef")
+  );
+}
+
 export function getAllowedViewIds(user) {
+  let ids = [];
   if (isAdminUser(user)) {
-    return [
+    ids = [
       "dashboard",
       "orders",
       "tables",
       "delivery",
+      "clients",
       "products",
       "providers",
       "kitchen",
@@ -40,13 +58,25 @@ export function getAllowedViewIds(user) {
       "settings",
       "reports",
     ];
+  } else if (isCajeroUser(user)) {
+    ids = ["dashboard", "orders", "tables", "delivery", "clients", "cashier"];
+  } else if (isCocineroUser(user)) {
+    ids = ["kitchen"];
+  } else if (isMeseroUser(user)) {
+    ids = ["tables", "delivery"];
+  } else {
+    ids = ["dashboard", "tables", "delivery"];
   }
-  if (isMeseroUser(user)) {
-    return ["dashboard", "tables", "delivery", "orders"];
+
+  if (ids.includes("tables")) {
+    ids.push("locations");
   }
-  return ["dashboard", "tables", "delivery"];
+  return ids;
 }
 
 export function canAccessView(user, viewId) {
+  if (viewId === "locations") {
+    return getAllowedViewIds(user).includes("tables");
+  }
   return getAllowedViewIds(user).includes(viewId);
 }

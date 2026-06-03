@@ -23,12 +23,13 @@ export async function clickByText(page, text, force = false) {
 
 export async function login(page, username, password) {
   for (let i = 0; i < 20; i += 1) {
-    const body = normalizeText(await page.textContent("body").catch(() => ""));
-    if (body.includes("panel administrativo") || body.includes("dashboard")) {
-      return;
-    }
     const hasPassword = (await page.locator('input[type="password"]').count()) > 0;
     if (hasPassword) break;
+    
+    const body = normalizeText(await page.textContent("body").catch(() => ""));
+    if ((body.includes("panel administrativo") || body.includes("dashboard")) && !body.includes("iniciar sesion")) {
+      return;
+    }
     await page.waitForTimeout(250);
   }
 

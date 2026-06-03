@@ -68,6 +68,7 @@ export function convertAmountBetweenCurrencies(amount, fromCurrency, toCurrency,
 }
 
 export function getPaymentTypeLabel(payment) {
+  if (payment == null) return "—";
   const raw = String(
     payment?.type ?? payment?.paymentType ?? payment?.payment_method ?? payment?.paymentMethod ?? payment?.method ?? ""
   )

@@ -16,7 +16,7 @@ const DEFAULT_COLORS = [
  * Muestra proporción de cada elemento con leyenda.
  */
 export function PieChart({
-  data,
+  data = [],
   size = 200,
   strokeWidth = 2,
   colors = DEFAULT_COLORS,

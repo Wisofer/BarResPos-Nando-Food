@@ -13,7 +13,7 @@ export function setToken(token) {
   try {
     if (token) window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
     else window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  } catch (_) {}
+  } catch { /* storage may be unavailable */ }
 }
 
 export function getRefreshToken() {
@@ -28,7 +28,7 @@ export function setRefreshToken(token) {
   try {
     if (token) window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
     else window.localStorage.removeItem(REFRESH_TOKEN_KEY);
-  } catch (_) {}
+  } catch { /* storage may be unavailable */ }
 }
 
 export function clearToken() {

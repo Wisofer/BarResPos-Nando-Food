@@ -10,3 +10,5 @@ export { UsersView } from "./UsersView.jsx";
 export { SettingsView } from "./SettingsView.jsx";
 export { CashierView } from "./CashierView.jsx";
 export { KitchenView } from "./KitchenView.jsx";
+export { ClientsView } from "./ClientsView.jsx";
+export { LocationsView } from "./LocationsView.jsx";

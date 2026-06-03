@@ -38,7 +38,11 @@ export function PosProductOpcionesModal({ open, product, currencySymbol = "C$", 
   const [seleccionPorGrupo, setSeleccionPorGrupo] = useState(() => new Map());
 
   useEffect(() => {
-    if (open) setSeleccionPorGrupo(new Map());
+    if (open) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setSeleccionPorGrupo(new Map());
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
   }, [open, product?.id]);
 
   const toggleOpcion = (grupoId, opcionId, maxSel) => {

@@ -21,7 +21,6 @@ export function usePendingTestimonialsCount() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
     fetchCount();
   }, [fetchCount]);
 

@@ -13,7 +13,7 @@ export function useLocalStorage(key, initialValue) {
   useEffect(() => {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+    } catch { /* storage may be unavailable */ }
   }, [key, value]);
 
   return [value, setValue];

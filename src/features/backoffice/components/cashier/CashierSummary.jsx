@@ -19,34 +19,65 @@ export function CashierSummary({
   const tarjetaMasTransf = tarjeta + transf;
   const fondo = Number(montoInicialActual || 0);
 
-  const cells = [
-    { label: "Ventas (neto)", value: ventas, currency: true },
-    { label: "Tickets", value: ordenes, currency: false },
-    { label: "Efectivo", value: efectivo, currency: true },
-    { label: "Tarjeta + transf.", value: tarjetaMasTransf, currency: true },
-  ];
-
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-800">Resumen del día</h3>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {cells.map((cell) => (
-          <div key={cell.label} className="rounded-xl border border-slate-100 bg-slate-50/80 p-3">
-            <p className="text-xs font-medium text-slate-500">{cell.label}</p>
-            <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-900">
-              {cell.currency ? formatCurrency(cell.value, currencySymbol) : cell.value}
-            </p>
-          </div>
-        ))}
+    <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-lg">📊</span>
+        <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Resumen del Día</h3>
       </div>
 
-      <div className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 shadow-sm">
-        <p className="text-xs font-medium text-amber-900">Monto esperado en caja (efectivo)</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-amber-950">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {/* Ventas */}
+        <div className="rounded-2xl border border-slate-200/85 bg-slate-50/50 p-4 shadow-sm hover:shadow transition-all">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Ventas (neto)</p>
+          <p className="mt-1.5 text-xl font-extrabold tabular-nums text-slate-850">
+            {formatCurrency(ventas, currencySymbol)}
+          </p>
+        </div>
+
+        {/* Tickets */}
+        <div className="rounded-2xl border border-slate-200/85 bg-slate-50/50 p-4 shadow-sm hover:shadow transition-all">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tickets</p>
+          <p className="mt-1.5 text-xl font-extrabold tabular-nums text-slate-850">
+            {ordenes}
+          </p>
+        </div>
+
+        {/* Efectivo */}
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-sm hover:shadow transition-all">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            Efectivo
+          </p>
+          <p className="mt-1.5 text-xl font-extrabold tabular-nums text-emerald-950">
+            {formatCurrency(efectivo, currencySymbol)}
+          </p>
+        </div>
+
+        {/* Tarjeta + Transf */}
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm hover:shadow transition-all">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+            Tarjeta + Transf
+          </p>
+          <p className="mt-1.5 text-xl font-extrabold tabular-nums text-indigo-950">
+            {formatCurrency(tarjetaMasTransf, currencySymbol)}
+          </p>
+        </div>
+      </div>
+
+      {/* Monto Esperado */}
+      <div className="mt-5 rounded-2xl border border-indigo-150 bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-5 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 text-3xl opacity-20 select-none">💰</div>
+        <p className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Monto Esperado en Caja (Efectivo)</p>
+        <p className="mt-2 text-3xl font-black tabular-nums tracking-tight text-indigo-900">
           {formatCurrency(montoEsperadoCalculado, currencySymbol)}
         </p>
         {fondo > 0 ? (
-          <p className="mt-1 text-xs text-amber-800/90">Incluye fondo inicial {formatCurrency(fondo, currencySymbol)}</p>
+          <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-indigo-750/90">
+            <span>🛡️</span>
+            <span>Incluye fondo de apertura inicial de {formatCurrency(fondo, currencySymbol)}</span>
+          </div>
         ) : null}
       </div>
     </article>

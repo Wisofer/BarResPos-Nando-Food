@@ -34,5 +34,5 @@ export function setCachedList(prefix, filters, list) {
         at: Date.now(),
       })
     );
-  } catch {}
+  } catch { /* storage may be unavailable */ }
 }

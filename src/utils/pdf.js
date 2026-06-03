@@ -19,7 +19,10 @@ function normalizePdfUrl(pdfUrl) {
  */
 export function openPdfBlob(blob, options = {}) {
   const { print = true, filename = "documento.pdf" } = options;
-  const safeName = String(filename).replace(/[^\w.\-]/g, "_") || "documento.pdf";
+  const safeName = String(filename).replace(/[^\w.-]/g, "_") || "documento.pdf";
+  if (!blob || !(blob instanceof Blob)) {
+    return { ok: false, reason: "invalid_blob" };
+  }
   const blobUrl = URL.createObjectURL(blob);
 
   if (!print) {
@@ -44,7 +47,7 @@ export function openPdfBlob(blob, options = {}) {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
       return { ok: true, fallback: "download" };
-    } catch (_) {
+    } catch {
       URL.revokeObjectURL(blobUrl);
       return { ok: false, reason: "popup_blocked" };
     }
@@ -56,9 +59,9 @@ export function openPdfBlob(blob, options = {}) {
       w.onafterprint = () => {
         try {
           w.close();
-        } catch (_) {}
+        } catch { /* popup may already be closed */ }
       };
-    } catch (_) {}
+    } catch { /* popup may be blocked */ }
   };
   w.onload = tryPrint;
   setTimeout(tryPrint, 800);

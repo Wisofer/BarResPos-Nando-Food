@@ -27,6 +27,9 @@ export function useReservations(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
   const [loading, setLoading] = useState(() => !getCachedList(CACHE_PREFIX, params));
   const [error, setError] = useState(null);
   const filtersRef = useRef(filters);
+  const listRef = useRef(list);
+
+  useEffect(() => { listRef.current = list; }, [list]);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -66,6 +69,7 @@ export function useReservations(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
     return () => {
       cancelled = true;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey]);
 
   const prevFilterKeyRef = useRef(filterKey);
@@ -78,32 +82,26 @@ export function useReservations(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
 
   const create = useCallback(async (body) => {
     const created = await reservationsApi.create(body);
-    setList((prev) => {
-      const next = [...prev, created];
-      setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
-      return next;
-    });
+    const next = [...listRef.current, created];
+    setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
+    setList(next);
     setTotalCount((c) => c + 1);
     return created;
   }, [page, pageSize]);
 
   const update = useCallback(async (id, body) => {
     const updated = await reservationsApi.update(id, body);
-    setList((prev) => {
-      const next = prev.map((r) => (r.id === id || r.id === Number(id) ? updated : r));
-      setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
-      return next;
-    });
+    const next = listRef.current.map((r) => (r.id === id || r.id === Number(id) ? updated : r));
+    setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
+    setList(next);
     return updated;
   }, [page, pageSize]);
 
   const remove = useCallback(async (id) => {
     await reservationsApi.delete(id);
-    setList((prev) => {
-      const next = prev.filter((r) => r.id !== id && r.id !== Number(id));
-      setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
-      return next;
-    });
+    const next = listRef.current.filter((r) => r.id !== id && r.id !== Number(id));
+    setCachedList(CACHE_PREFIX, { ...filtersRef.current, page, pageSize }, next);
+    setList(next);
     setTotalCount((c) => Math.max(0, c - 1));
   }, [page, pageSize]);
 

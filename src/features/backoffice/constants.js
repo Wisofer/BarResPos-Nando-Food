@@ -9,6 +9,7 @@ import {
   SquareTerminal,
   Table,
   Truck,
+  Users,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -17,6 +18,7 @@ export const NAV_ITEMS = [
   { id: "orders", label: "Pedidos", icon: ClipboardList },
   { id: "tables", label: "Mesas", icon: Table },
   { id: "delivery", label: "Delivery", icon: Bike },
+  { id: "clients", label: "Clientes", icon: Users },
   { id: "products", label: "Productos", icon: Package },
   { id: "providers", label: "Proveedores", icon: Truck },
   { id: "kitchen", label: "Cocina", icon: UtensilsCrossed },

@@ -27,7 +27,7 @@ async function getPdfBlob(id) {
     try {
       const j = JSON.parse(text);
       msg = j.error || j.message || text;
-    } catch (_) {}
+    } catch { /* ignore parse errors */ }
     throw new Error(msg || `Error ${res.status}`);
   }
   return res.blob();
@@ -36,7 +36,12 @@ async function getPdfBlob(id) {
 export const invoicesApi = {
   list: (params) => api.get(`${base}${qs(params)}`),
   get: (id) => api.get(`${base}/${id}`),
-  getPdfUrl: (id) => api.get(`${base}/${id}/pdf-url`),
+  getPdfUrl: async (id) => {
+    const raw = await api.get(`${base}/${id}/pdf-url`);
+    if (typeof raw === "string") return raw;
+    if (raw && typeof raw === "object") return raw.url ?? raw.data ?? "";
+    return String(raw ?? "");
+  },
   getPdf: (id) => getPdfBlob(id),
   nextCode: () => api.get(`${base}/next-code`),
   create: (body) => api.post(base, body),

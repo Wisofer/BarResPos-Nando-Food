@@ -33,5 +33,5 @@ export function playSound(type) {
     audio.volume = 0.5;
     audio.currentTime = 0;
     audio.play().catch(() => {});
-  } catch {}
+  } catch { /* ignore audio errors */ }
 }

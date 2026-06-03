@@ -3,26 +3,18 @@ import { Modal, Badge, Pagination } from "./ui";
 import { useClientHistory } from "../hooks/useClientHistory";
 import { formatCurrency, formatDate, formatDateTime, formatAmountByPaymentMethod } from "../utils/format";
 import { formatPaymentMethod } from "../utils/paymentMethod";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  CalendarDays,
-  FileText,
-  Clock,
-  ShoppingBag,
-} from "lucide-react";
+import { ShoppingBag, CalendarDays, FileText, Clock, MapPin, Mail, Phone, User } from "lucide-react";
 import { cn } from "../utils/cn";
 
 import { STATUS_VARIANT } from "../constants/statusVariants";
 
-function Section({ icon: Icon, title, children, className }) {
+function Section({ icon, title, children, className }) {
+  const IconComp = icon;
   return (
     <section className={cn("space-y-3", className)}>
       <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
-          <Icon className="h-3.5 w-3.5" />
+          {IconComp && <IconComp className="h-3.5 w-3.5" />}
         </span>
         {title}
       </h3>
@@ -198,7 +190,7 @@ export function ClientHistoryModal({ clientId, open, onClose }) {
               {activity.length > 0 && (
                 <Section icon={Clock} title="Actividad reciente">
                   <ul className="relative space-y-0 border-l-2 border-slate-200 dark:border-slate-800 pl-4">
-                    {activity.map((a, index) => (
+                    {activity.map((a) => (
                       <li key={a.id} className="relative pb-4 last:pb-0">
                         <span
                           className="absolute -left-[1.375rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary-400 ring-2 ring-white dark:ring-slate-900"

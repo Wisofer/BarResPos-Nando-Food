@@ -13,3 +13,4 @@ export { EmptyState } from "./EmptyState";
 export { ConfirmModal } from "./ConfirmModal";
 export { Pagination } from "./Pagination";
 export { SnackbarItem, SnackbarStack } from "./Snackbar";
+export { TicketPreviewModal } from "./TicketPreviewModal";

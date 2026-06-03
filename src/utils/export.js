@@ -56,7 +56,9 @@ export function exportToPDF(title, headers, rows) {
   printWindow.document.close();
   printWindow.focus();
   setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
+    try {
+      printWindow.print();
+      printWindow.close();
+    } catch { /* popup may already be closed */ }
   }, 250);
 }

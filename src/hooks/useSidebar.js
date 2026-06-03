@@ -13,7 +13,7 @@ export function useSidebar() {
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsed));
-    } catch {}
+    } catch { /* storage may be unavailable */ }
   }, [collapsed]);
 
   const toggle = useCallback(() => setCollapsedState((c) => !c), []);

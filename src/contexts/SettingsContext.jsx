@@ -57,7 +57,7 @@ export function SettingsProvider({ children }) {
       setSettings(next);
       try {
         if (typeof window !== "undefined") window.localStorage.removeItem(SETTINGS_STORAGE_KEY);
-      } catch (_) {}
+      } catch { /* storage may be unavailable */ }
     } catch (e) {
       setError(e.message);
       setSettings(defaults);
@@ -84,6 +84,7 @@ export function SettingsProvider({ children }) {
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings() {
   const ctx = useContext(SettingsContext);
   if (ctx == null) {

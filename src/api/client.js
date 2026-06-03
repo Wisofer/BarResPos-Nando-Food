@@ -60,9 +60,12 @@ async function runRefreshTokenFlow() {
 async function request(path, options = {}, retryOnUnauthorized = true, withEnvelope = false) {
   const url = `${getApiUrl()}${path.startsWith("/") ? path : `/${path}`}`;
   const headers = {
-    "Content-Type": "application/json",
     ...options.headers,
   };
+  const isFormData = options.body instanceof FormData;
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
   const token = getToken();
   if (!isAuthPublicRequest(path) && token) {
     headers.Authorization = `Bearer ${token}`;
@@ -71,7 +74,7 @@ async function request(path, options = {}, retryOnUnauthorized = true, withEnvel
     ...options,
     headers,
   };
-  if (options.body !== undefined && options.body !== null && !(options.body instanceof FormData)) {
+  if (options.body !== undefined && options.body !== null && !isFormData) {
     config.body = JSON.stringify(options.body);
   }
   const res = await fetch(url, config);
@@ -98,7 +101,7 @@ async function request(path, options = {}, retryOnUnauthorized = true, withEnvel
         data.Title ||
         (typeof data.errors === "string" ? data.errors : null) ||
         text;
-    } catch (_) {}
+    } catch { /* ignore parse errors */ }
     const err = new Error(typeof errMsg === "string" && errMsg.trim() ? errMsg.trim() : `Error HTTP ${res.status}`);
     err.status = res.status;
     throw err;

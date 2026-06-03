@@ -30,6 +30,41 @@ function formatDate(value) {
   return d.toLocaleString("es-NI", { dateStyle: "short", timeStyle: "short" });
 }
 
+function OrderTimer({ date }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!date) return;
+    const calculate = () => {
+      const diffMs = Date.now() - new Date(date).getTime();
+      setElapsed(Math.max(0, Math.floor(diffMs / 60000))); // en minutos
+    };
+    calculate();
+    const interval = setInterval(calculate, 15000);
+    return () => clearInterval(interval);
+  }, [date]);
+
+  const isDelayed = elapsed >= 15;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${
+        isDelayed
+          ? "bg-rose-50 border-rose-200 text-rose-600 animate-pulse"
+          : "bg-slate-100 border-slate-200 text-slate-600"
+      }`}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        {isDelayed && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+        )}
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isDelayed ? "bg-rose-500" : "bg-slate-400"}`}></span>
+      </span>
+      <span>{elapsed} min</span>
+    </span>
+  );
+}
+
 export function KitchenView() {
   const snackbar = useSnackbar();
   const [orders, setOrders] = useState([]);
@@ -38,6 +73,14 @@ export function KitchenView() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState("live");
+  const [checkedItems, setCheckedItems] = useState({});
+
+  const toggleItemCheck = (orderId, itemId) => {
+    setCheckedItems((prev) => ({
+      ...prev,
+      [`${orderId}-${itemId}`]: !prev[`${orderId}-${itemId}`],
+    }));
+  };
 
   const loadKitchen = useCallback(async () => {
     try {
@@ -189,15 +232,22 @@ export function KitchenView() {
       </section>
 
       {mode === "live" ? (
-      <section className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {KDS_SECTIONS.map((section) => (
-          <article key={section.key} className="min-h-[220px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${stateStyle(section.states[0])}`}>{section.label}</span>
-              <span className="text-xs font-semibold text-slate-500">{grouped[section.key]?.length || 0}</span>
+          <article key={section.key} className="min-h-[400px] rounded-[24px] border border-slate-200/80 bg-slate-50/40 p-4 shadow-inner">
+            <div className="mb-4 flex items-center justify-between px-1">
+              <span className={`rounded-xl border px-3 py-1 text-xs font-bold ${stateStyle(section.states[0])}`}>{section.label}</span>
+              <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-bold text-slate-600 tabular-nums">
+                {grouped[section.key]?.length || 0}
+              </span>
             </div>
-            <div className="space-y-2">
-              {(grouped[section.key] || []).length === 0 && <p className="rounded-lg border border-dashed border-slate-200 px-2 py-4 text-center text-xs text-slate-400">Sin órdenes</p>}
+            <div className="space-y-3">
+              {(grouped[section.key] || []).length === 0 && (
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/50 py-10 px-4 text-center">
+                  <ChefHat className="h-8 w-8 text-slate-300 animate-pulse" />
+                  <p className="mt-2 text-xs font-medium text-slate-400">Sin órdenes en esta sección</p>
+                </div>
+              )}
               {(grouped[section.key] || []).map((o, i) => {
                 const id = o?.id ?? o?.Id ?? i;
                 const numero = o?.numero || o?.Numero || `#${id}`;
@@ -207,43 +257,95 @@ export function KitchenView() {
                 const rawItems = o?.Items ?? o?.items ?? [];
                 const items = Array.isArray(rawItems) ? rawItems : [];
                 const next = nextState(current);
+
+                const borderTopClass = current === "Pendiente" 
+                  ? "border-t-[5px] border-t-amber-400" 
+                  : current === "En Preparación" 
+                    ? "border-t-[5px] border-t-blue-500" 
+                    : "border-t-[5px] border-t-emerald-500";
+
+                const buttonStyleClass = current === "Pendiente"
+                  ? "bg-amber-500 hover:bg-amber-600 shadow-sm shadow-amber-200/40 text-white"
+                  : current === "En Preparación"
+                    ? "bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200/40 text-white"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-200/40 text-white";
+
                 return (
-                  <div key={id} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-bold text-slate-800">{numero}</p>
-                      <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${stateStyle(current)}`}>{current}</span>
+                  <div key={id} className={`relative rounded-2xl bg-white border border-slate-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${borderTopClass}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-extrabold text-slate-800 tracking-tight">{numero}</p>
+                      <div className="flex items-center gap-1.5">
+                        <OrderTimer date={createdAt} />
+                        <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${stateStyle(current)}`}>
+                          {current}
+                        </span>
+                      </div>
                     </div>
-                    <p className="mt-1 text-xs text-slate-600">{mesa}</p>
-                    <p className="text-xs text-slate-500">{formatDate(createdAt)}</p>
-                    <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2">
-                      <p className="text-[11px] font-semibold text-slate-700">Productos</p>
+
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                        <span>📍</span>
+                        <span>{mesa}</span>
+                      </p>
+                      <p className="text-[10px] font-medium text-slate-400">{formatDate(createdAt)}</p>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos</p>
                       {items.length === 0 ? (
-                        <p className="mt-1 text-[11px] text-slate-400">Sin items en la orden.</p>
+                        <p className="text-xs text-slate-400 italic">Sin items en la orden.</p>
                       ) : (
-                        <ul className="mt-1 space-y-1">
+                        <ul className="space-y-1.5">
                           {items.map((it, idx) => {
                             const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
                             const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                             const producto = it?.Producto ?? it?.producto ?? "Producto";
                             const notas = it?.Notas ?? it?.notas ?? "";
+                            const isChecked = !!checkedItems[`${id}-${itemId}`];
+
                             return (
-                              <li key={itemId} className="rounded border border-slate-100 bg-slate-50 px-1.5 py-1">
-                                <p className="text-[11px] font-medium text-slate-800">
-                                  {qty > 0 ? `${qty}x ` : ""}{producto}
-                                </p>
-                                {notas ? <p className="text-[10px] text-slate-500">Nota: {notas}</p> : null}
+                              <li
+                                key={itemId}
+                                onClick={() => toggleItemCheck(id, itemId)}
+                                className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none ${
+                                  isChecked
+                                    ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
+                                    : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
+                                }`}
+                              >
+                                <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
+                                  isChecked
+                                    ? "border-emerald-500 bg-emerald-500 text-white"
+                                    : "border-slate-300 bg-white"
+                                }`}>
+                                  {isChecked && (
+                                    <svg className="h-2 w-2 stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className={`text-xs font-semibold leading-tight ${isChecked ? "line-through opacity-60 text-slate-400" : "text-slate-800"}`}>
+                                    {qty > 0 && <span className="text-indigo-600 font-extrabold mr-1.5">{qty}x</span>}
+                                    {producto}
+                                  </p>
+                                  {notas ? (
+                                    <p className="mt-0.5 text-[10px] text-amber-600 font-medium">Nota: {notas}</p>
+                                  ) : null}
+                                </div>
                               </li>
                             );
                           })}
                         </ul>
                       )}
                     </div>
+
                     {next ? (
                       <button
                         type="button"
                         onClick={() => patchState(o)}
                         disabled={busyId === id}
-                        className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-md bg-slate-900 px-2 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                        className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
                       >
                         {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
                         {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
@@ -251,7 +353,9 @@ export function KitchenView() {
                         {busyId === id ? "Procesando..." : `Marcar ${next}`}
                       </button>
                     ) : (
-                      <div className="mt-2 rounded-md bg-violet-50 px-2 py-1.5 text-center text-[11px] font-semibold text-violet-700">Orden entregada</div>
+                      <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">
+                        ✓ Orden entregada
+                      </div>
                     )}
                   </div>
                 );

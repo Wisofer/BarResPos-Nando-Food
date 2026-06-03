@@ -15,6 +15,7 @@ import { cn } from "../../utils/cn";
 import { APP_NAME } from "../../config/brand.js";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSettings } from "../../hooks/useSettings";
+import { useAppLogo } from "../../hooks/useAppLogo";
 
 const menuItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -32,6 +33,7 @@ export function Sidebar({ open = true, collapsed = false, onNavigate }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { settings } = useSettings();
+  const logoUrl = useAppLogo();
   const companyName = settings?.companyName?.trim() || APP_NAME;
 
   const isAdmin = user?.rol === "Administrador";
@@ -68,14 +70,14 @@ export function Sidebar({ open = true, collapsed = false, onNavigate }) {
           {!collapsed ? (
             <div className="flex items-center min-w-0 flex-1">
               <img
-                src="assets/images/nandofood.png"
+                src={logoUrl}
                 alt={companyName}
                 className="h-10 w-auto max-w-full object-contain object-left"
               />
             </div>
           ) : (
             <img
-              src="assets/images/nandofood.png"
+              src={logoUrl}
               alt={companyName}
               title={companyName}
               className="h-10 w-10 object-contain object-center"
@@ -83,7 +85,9 @@ export function Sidebar({ open = true, collapsed = false, onNavigate }) {
           )}
         </div>
         <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overflow-x-hidden p-3">
-          {visibleMenuItems.map(({ to, icon: Icon, label }) => (
+          {visibleMenuItems.map(({ to, icon, label }) => {
+            const IconComp = icon;
+            return (
             <NavLink
               key={to}
               to={to}
@@ -100,10 +104,11 @@ export function Sidebar({ open = true, collapsed = false, onNavigate }) {
                 )
               }
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <IconComp className="h-5 w-5 shrink-0" />
               {!collapsed && <span className="truncate flex-1">{label}</span>}
             </NavLink>
-          ))}
+            );
+          })}
         </nav>
         <div
           className={cn(
