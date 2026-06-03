@@ -1580,12 +1580,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             </div>
           </div>
 
-          <div className="mb-3 overflow-x-auto rounded-md border border-slate-200 bg-white p-2">
-            <div className="flex w-max min-w-full gap-1.5">
+          <div className="mb-3 overflow-x-auto rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-2 shadow-sm">
+            <div className="flex w-max min-w-full gap-2">
               <button
                 type="button"
                 onClick={() => setPosCategory("")}
-                className={`whitespace-nowrap rounded-sm px-4 py-1.5 text-[11px] font-semibold ${!posCategory ? "bg-amber-400 text-slate-900" : "bg-slate-200 text-slate-700"}`}
+                className={`whitespace-nowrap rounded-lg px-4 py-2 text-[11px] font-bold transition-all duration-200 ${!posCategory ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
               >
                 TODOS
               </button>
@@ -1594,7 +1594,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   key={c.id}
                   type="button"
                   onClick={() => setPosCategory(String(c.id))}
-                  className={`whitespace-nowrap rounded-sm px-4 py-1.5 text-[11px] font-semibold ${String(posCategory) === String(c.id) ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"}`}
+                  className={`whitespace-nowrap rounded-lg px-4 py-2 text-[11px] font-bold transition-all duration-200 ${String(posCategory) === String(c.id) ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                 >
                   {(c.nombre || c.descripcion || "Categoria").toUpperCase()}
                 </button>
@@ -1795,22 +1795,22 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           )}
 
           <div className="hidden min-h-0 flex-1 grid-cols-1 gap-3 lg:grid lg:grid-cols-[1.45fr_1fr]">
-            <article className="flex min-h-0 h-full flex-col rounded-md border border-slate-300 bg-white p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-800">Orden</h3>
+            <article className="flex min-h-0 h-full flex-col rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm p-4 shadow-lg shadow-slate-200/50">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">Orden</h3>
               </div>
-              <div className="min-h-0 flex-1 overflow-auto rounded-md border border-slate-200">
+              <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-100">
                 {posLoading ? (
                   <ListSkeleton rows={7} />
                 ) : (
                   <table className="w-full text-xs">
-                    <thead className="bg-slate-100 text-left text-slate-600">
+                    <thead className="bg-slate-50 text-left text-slate-500">
                       <tr>
-                        <th className="px-2 py-2">Producto</th>
-                        <th className="w-[min(28vw,9rem)] px-1 py-2">Nota</th>
-                        <th className="px-2 py-2">CNT</th>
-                        <th className="px-2 py-2">P/U</th>
-                        <th className="px-2 py-2">PT</th>
+                        <th className="px-3 py-2 font-semibold">Producto</th>
+                        <th className="w-[min(28vw,9rem)] px-2 py-2 font-semibold">Nota</th>
+                        <th className="px-3 py-2 font-semibold">CNT</th>
+                        <th className="px-3 py-2 font-semibold">P/U</th>
+                        <th className="px-3 py-2 font-semibold">PT</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1890,20 +1890,20 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               )}
 
               {(posCart.length > 0 || posOrderId) && (
-                <div className="mt-3 flex flex-wrap items-center justify-end gap-1.5 border-t border-slate-200 pt-2">
-                  <button type="button" onClick={openCancelPosPin} disabled={posActionBusy} className="inline-flex items-center gap-1 rounded-sm bg-red-500 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60">
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                  <button type="button" onClick={openCancelPosPin} disabled={posActionBusy} className="inline-flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-red-500/20 transition-all duration-200 hover:bg-red-600 disabled:opacity-60">
                     <XCircle className="h-3.5 w-3.5" />
                     Cancelar
                   </button>
-                  <button type="button" onClick={handleImprimirCuenta} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1 rounded-sm bg-sky-500 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60">
+                  <button type="button" onClick={handleImprimirCuenta} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-sky-500/20 transition-all duration-200 hover:bg-sky-600 disabled:opacity-60">
                     <Printer className="h-3.5 w-3.5" />
                     Imprimir cuenta
                   </button>
-                  <button type="button" onClick={handleEnviarCocina} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1 rounded-sm bg-amber-500 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60">
+                  <button type="button" onClick={handleEnviarCocina} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-amber-500/20 transition-all duration-200 hover:bg-amber-600 disabled:opacity-60">
                     <ChefHat className="h-3.5 w-3.5" />
                     Enviar cocina
                   </button>
-                  <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1 rounded-sm bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-60">
+                  <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60">
                     <Save className="h-3.5 w-3.5" />
                     Procesar orden
                   </button>
@@ -1911,7 +1911,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               )}
             </article>
 
-            <article className="min-h-[340px] rounded-md border border-slate-300 bg-white p-3 lg:min-h-0 lg:h-full">
+            <article className="min-h-[340px] rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm p-4 shadow-lg shadow-slate-200/50 lg:min-h-0 lg:h-full">
               {posInlineOpcionesPick && posInlineOpcionesProduct ? (
                 <PosInlineOpcionesPanel
                   product={posInlineOpcionesProduct}
@@ -1930,7 +1930,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     value={posSearch}
                     onChange={(e) => setPosSearch(e.target.value)}
                     placeholder="Búsqueda de productos"
-                    className="mb-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                    className="mb-3 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
                   />
                   {posLoading ? (
                     <ListSkeleton rows={4} />

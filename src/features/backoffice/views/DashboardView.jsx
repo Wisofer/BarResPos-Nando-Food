@@ -442,7 +442,7 @@ export function DashboardView({ currencySymbol = "C$" }) {
               (() => {
                 // Mapear productos para orden del podio: 2º lugar (izquierda), 1º lugar (centro), 3º lugar (derecha)
                 const podiumItems = [];
-                if (safeProducts[1]) podiumItems.push({ ...safeProducts[1], rank: 2, height: "h-24", color: "from-slate-200 to-slate-100 border-slate-300/40 text-slate-600", medal: "🥈" });
+                if (safeProducts[1]) podiumItems.push({ ...safeProducts[1], rank: 2, height: "h-24", color: "from-purple-500 to-purple-400 border-purple-500 text-purple-900", medal: "🥈" });
                 if (safeProducts[0]) podiumItems.push({ ...safeProducts[0], rank: 1, height: "h-32", color: "from-amber-400/90 to-yellow-300/80 border-amber-300/40 text-amber-700", medal: "🏆" });
                 if (safeProducts[2]) podiumItems.push({ ...safeProducts[2], rank: 3, height: "h-20", color: "from-orange-400/80 to-orange-300/70 border-orange-300/40 text-orange-700", medal: "🥉" });
 

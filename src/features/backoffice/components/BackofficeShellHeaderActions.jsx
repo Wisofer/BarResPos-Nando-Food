@@ -48,11 +48,12 @@ export function BackofficeShellHeaderActions({
 
   const isTopbar = variant === "topbar";
   const btnBase =
-    "relative inline-flex shrink-0 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 active:scale-[0.98] dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white";
-  const btnSize = "h-11 w-11 min-h-[44px] min-w-[44px]";
+    "relative inline-flex shrink-0 items-center justify-center rounded-full text-slate-600 transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white";
+  const btnSize = "h-12 w-12 min-h-[48px] min-w-[48px]";
+  const btnActive = "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-white";
 
   const panelClass =
-    "z-[100] max-h-[min(24rem,75dvh)] w-[min(22rem,calc(100vw-1.25rem))] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/60 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/40";
+    "z-[100] max-h-[min(24rem,75dvh)] w-[min(22rem,calc(100vw-1.25rem))] overflow-hidden rounded-2xl border border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-2xl shadow-slate-200/40 dark:border-slate-700/50 dark:bg-slate-900/90 dark:shadow-black/30";
 
   const toggleFullscreen = async () => {
     try {
@@ -68,7 +69,7 @@ export function BackofficeShellHeaderActions({
   };
 
   return (
-    <div ref={rootRef} className={cn("flex shrink-0 items-center gap-0.5 sm:gap-1", isTopbar && "touch-manipulation")}>
+    <div ref={rootRef} className={cn("flex shrink-0 items-center gap-1 sm:gap-2", isTopbar && "touch-manipulation")}>
       <button
         type="button"
         onClick={() => void toggleFullscreen()}
@@ -76,8 +77,9 @@ export function BackofficeShellHeaderActions({
         aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
         title={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
       >
-        {isFullscreen ? <Minimize2 className="h-5 w-5" strokeWidth={1.75} /> : <Maximize2 className="h-5 w-5" strokeWidth={1.75} />}
+        {isFullscreen ? <Minimize2 className="h-6 w-6" strokeWidth={1.5} /> : <Maximize2 className="h-6 w-6" strokeWidth={1.5} />}
       </button>
+      <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
       <div className="relative">
         <button
           type="button"
@@ -86,13 +88,13 @@ export function BackofficeShellHeaderActions({
             setProfileOpen(false);
             void refreshLowStock();
           }}
-          className={cn(btnBase, btnSize, "touch-manipulation")}
+          className={cn(btnBase, btnSize, notifOpen && btnActive, "touch-manipulation")}
           aria-label="Notificaciones"
           aria-expanded={notifOpen}
         >
-          <Bell className="h-5 w-5" strokeWidth={1.75} />
+          <Bell className="h-6 w-6" strokeWidth={1.5} />
           {lowStockCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
+            <span className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 border-2 border-white text-[11px] font-bold text-white shadow-md shadow-red-500/30">
               {lowStockCount > 9 ? "9+" : lowStockCount}
             </span>
           )}
@@ -100,15 +102,15 @@ export function BackofficeShellHeaderActions({
         {notifOpen && (
           <div
             className={cn(
-              "absolute max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[4.25rem] sm:right-0 sm:top-[calc(100%+0.35rem)]",
+              "absolute max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[4.25rem] sm:right-0 sm:top-[calc(100%+0.5rem)]",
               panelClass
             )}
             role="dialog"
             aria-label="Notificaciones"
           >
-            <div className="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">Notificaciones</h2>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            <div className="border-b border-slate-200/60 bg-slate-50/50 px-5 py-4 dark:border-slate-700/50 dark:bg-slate-800/50">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notificaciones</h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 {lowStockCount === 0
                   ? "Sin alertas de inventario"
                   : `${lowStockCount} ${lowStockCount === 1 ? "alerta" : "alertas"} de stock bajo`}
@@ -116,16 +118,16 @@ export function BackofficeShellHeaderActions({
             </div>
             <div className="max-h-60 overflow-y-auto py-2 sm:max-h-72">
               {lowStockCount === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-slate-500">Todo en orden por ahora.</p>
+                <p className="px-5 py-8 text-center text-sm text-slate-500">Todo en orden por ahora.</p>
               ) : (
-                <ul className="divide-y divide-slate-50 dark:divide-slate-800">
+                <ul className="divide-y divide-slate-100/60 dark:divide-slate-700/50">
                   {lowStockItems.map((p, idx) => (
                     <li
                       key={p.id != null ? String(p.id) : `stock-${idx}-${p.nombre}`}
-                      className="flex gap-3 px-3 py-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-800"
+                      className="flex gap-3 px-4 py-3 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/50"
                     >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400">
-                        <Package className="h-5 w-5" strokeWidth={1.75} />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 shadow-sm dark:from-blue-950/30 dark:to-blue-900/30 dark:text-blue-400">
+                        <Package className="h-5 w-5" strokeWidth={1.5} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{p.nombre}</p>
@@ -139,14 +141,14 @@ export function BackofficeShellHeaderActions({
               )}
             </div>
             {lowStockCount > 0 && allowedViewIds.includes("products") && (
-              <div className="border-t border-slate-100 px-3 py-2 dark:border-slate-800">
+              <div className="border-t border-slate-200/60 px-4 py-3 dark:border-slate-700/50">
                 <button
                   type="button"
                   onClick={() => {
                     openView("products");
                     setNotifOpen(false);
                   }}
-                  className="w-full rounded-lg py-2.5 text-center text-sm font-semibold text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-950/40"
+                  className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 hover:shadow-lg dark:bg-blue-500 dark:shadow-blue-500/30 dark:hover:bg-blue-600"
                 >
                   Ver productos
                 </button>
@@ -162,31 +164,31 @@ export function BackofficeShellHeaderActions({
             setProfileOpen((o) => !o);
             setNotifOpen(false);
           }}
-          className={cn(btnBase, btnSize, "touch-manipulation")}
+          className={cn(btnBase, btnSize, profileOpen && btnActive, "touch-manipulation")}
           aria-label="Perfil"
           title="Perfil"
           aria-expanded={profileOpen}
         >
-          <UserCircle className="h-6 w-6" strokeWidth={1.75} />
+          <UserCircle className="h-6 w-6" strokeWidth={1.5} />
         </button>
         {profileOpen && (
           <div
             className={cn(
-              "absolute max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[4.25rem] sm:right-0 sm:top-[calc(100%+0.35rem)]",
-              "z-[100] w-[min(19rem,calc(100vw-1.25rem))] overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xl shadow-slate-200/60 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/40"
+              "absolute max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[4.25rem] sm:right-0 sm:top-[calc(100%+0.5rem)]",
+              "z-[100] w-[min(19rem,calc(100vw-1.25rem))] overflow-hidden rounded-2xl border border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-2xl shadow-slate-200/40 dark:border-slate-700/50 dark:bg-slate-900/90 dark:shadow-black/30"
             )}
             role="dialog"
             aria-label="Perfil de usuario"
           >
-            <div className="flex gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+            <div className="flex gap-4 border-b border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-5 dark:border-slate-700/50 dark:from-slate-800/50 dark:to-slate-900/50">
               <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 dark:from-blue-600 dark:to-blue-700 dark:shadow-blue-500/40"
                 aria-hidden
               >
-                <UserCircle className="h-9 w-9" strokeWidth={1.5} />
+                <UserCircle className="h-10 w-10" strokeWidth={1.5} />
               </div>
-              <div className="min-w-0 flex-1 pt-0.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sesión</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sesión</p>
                 <p className="mt-1 truncate text-base font-bold text-slate-900 dark:text-slate-100">{displayUserName(user)}</p>
                 {user?.nombreCompleto &&
                   user?.nombreUsuario &&
@@ -195,16 +197,15 @@ export function BackofficeShellHeaderActions({
                   )}
                 {user?.rol != null && user.rol !== "" && (
                   <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-                    Rol: <span className="font-medium text-slate-800 dark:text-slate-100">{user.rol}</span>
+                    Rol: <span className="font-semibold text-slate-800 dark:text-slate-100">{user.rol}</span>
                   </p>
                 )}
                 {user?.email != null && user.email !== "" && (
                   <p className="mt-1 break-all text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                 )}
-                {user?.id != null && <p className="mt-1 text-xs text-slate-400">ID: {user.id}</p>}
               </div>
             </div>
-            <div className="p-3">
+            <div className="p-4">
               <button
                 type="button"
                 onClick={() => {
@@ -212,7 +213,7 @@ export function BackofficeShellHeaderActions({
                   void logout();
                 }}
                 disabled={sessionLoading}
-                className="min-h-11 w-full rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               >
                 {sessionLoading ? "Cerrando…" : "Cerrar sesión"}
               </button>

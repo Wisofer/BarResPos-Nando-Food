@@ -76,7 +76,7 @@ export function Login() {
       <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-8 p-4 md:p-8 lg:grid-cols-[1.15fr_0.85fr]">
 
         {/* Panel Izquierdo: Escenario de Tarjetas Apiladas Interactivas (Estilo Apple Card Stack) */}
-        <section className="hidden h-[600px] rounded-[32px] border border-slate-200/50 bg-white/60 backdrop-blur-md p-10 shadow-[0_20px_50px_rgba(59,130,246,0.03)] lg:flex lg:flex-col lg:justify-between relative overflow-hidden group transition-all duration-500 hover:shadow-[0_24px_60px_rgba(59,130,246,0.05)]">
+        <section className="hidden h-[600px] rounded-[32px] border border-slate-300 bg-white/70 backdrop-blur-md p-10 shadow-2xl shadow-slate-300/50 lg:flex lg:flex-col lg:justify-between relative overflow-hidden group transition-all duration-500 hover:shadow-2xl hover:shadow-slate-400/50">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100 p-1.5">
@@ -93,7 +93,7 @@ export function Login() {
           <div className="relative w-full h-[320px] my-auto flex items-center justify-center">
 
             {/* Capa 1: Gráfico de Ventas (Fondo Izquierda) */}
-            <div className="absolute left-2 top-6 w-[230px] rounded-2xl border border-slate-100 bg-white/80 p-4 shadow-lg backdrop-blur-md transition-all duration-500 animate-float-card-1 group-hover:!animate-none group-hover:-rotate-3 group-hover:translate-x-[-15px] group-hover:translate-y-[-15px] z-10">
+            <div className="absolute left-2 top-6 w-[230px] rounded-2xl border border-slate-300 bg-white/90 p-4 shadow-2xl shadow-slate-300/50 backdrop-blur-md transition-all duration-500 animate-float-card-1 group-hover:!animate-none group-hover:-rotate-3 group-hover:translate-x-[-15px] group-hover:translate-y-[-15px] z-10">
               <div className="flex items-center justify-between">
                 <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Ventas Semanales</p>
                 <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[8px] font-extrabold text-emerald-600 shadow-sm border border-emerald-100/30">
@@ -111,7 +111,7 @@ export function Login() {
             </div>
 
             {/* Capa 2: Estado de Mesas (Fondo Derecha) */}
-            <div className="absolute right-2 bottom-6 w-[220px] rounded-2xl border border-slate-100 bg-white/85 p-4 shadow-lg backdrop-blur-md transition-all duration-500 transform rotate-6 animate-float-card-2 group-hover:!animate-none group-hover:rotate-3 group-hover:translate-x-[15px] group-hover:translate-y-[15px] z-10">
+            <div className="absolute right-2 bottom-6 w-[220px] rounded-2xl border border-slate-300 bg-white/90 p-4 shadow-2xl shadow-slate-300/50 backdrop-blur-md transition-all duration-500 transform rotate-6 animate-float-card-2 group-hover:!animate-none group-hover:rotate-3 group-hover:translate-x-[15px] group-hover:translate-y-[15px] z-10">
               <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Distribución de Salón</p>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div className="flex flex-col p-1.5 rounded-xl border border-emerald-100 bg-emerald-50/40 text-center">
@@ -145,7 +145,7 @@ export function Login() {
             </div>
 
             {/* Capa 3: Ticket Flotante (Centro / Destacado) */}
-            <div className="absolute w-[210px] rounded-2xl border border-slate-100 bg-white p-4 shadow-2xl transition-all duration-500 animate-float-card-3 group-hover:!animate-none group-hover:scale-105 group-hover:translate-y-[-24px] z-20">
+            <div className="absolute w-[210px] rounded-2xl border border-slate-300 bg-white p-4 shadow-2xl shadow-slate-300/50 transition-all duration-500 animate-float-card-3 group-hover:!animate-none group-hover:scale-105 group-hover:translate-y-[-24px] z-20">
               <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                 <div>
                   <p className="text-xs font-black text-slate-800">Pedido #1042</p>
@@ -194,7 +194,7 @@ export function Login() {
         </section>
 
         {/* Panel Derecho: Tarjeta de Iniciar Sesión (Glassmorphism Claro) */}
-        <section className="mx-auto w-full max-w-md rounded-[32px] border border-slate-200/50 bg-white/80 backdrop-blur-md p-8 shadow-[0_20px_50px_rgba(59,130,246,0.06)] md:p-10 transition-all duration-300">
+        <section className="mx-auto w-full max-w-md rounded-[32px] border border-slate-300 bg-white/90 backdrop-blur-md p-8 shadow-2xl shadow-slate-300/50 md:p-10 transition-all duration-300">
           <div className="mb-6 flex justify-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-[24px] bg-white shadow-sm border border-slate-100 p-2.5">
               <img
