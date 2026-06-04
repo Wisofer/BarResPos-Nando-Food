@@ -48,13 +48,13 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
   let pulseClass = "";
 
   if (isOcupada) {
-    localShell = "border-rose-200/80 bg-gradient-to-br from-rose-50/60 via-white/80 to-white/95 text-slate-800 shadow-[0_8px_25px_rgba(244,63,94,0.12)] hover:border-rose-300 transition-all duration-300";
-    dotClass = "bg-rose-500 shadow shadow-rose-500/40";
-    pulseClass = "bg-rose-400";
+    localShell = "border-rose-300 bg-rose-50/85 text-rose-950 shadow-[0_8px_25px_rgba(244,63,94,0.18)] hover:border-rose-400 hover:bg-rose-100/70 transition-all duration-300";
+    dotClass = "bg-rose-600 shadow shadow-rose-600/50";
+    pulseClass = "bg-rose-500";
   } else if (isReservada) {
-    localShell = "border-violet-200/80 bg-gradient-to-br from-violet-50/60 via-white/80 to-white/95 text-slate-800 shadow-[0_8px_25px_rgba(139,92,246,0.10)] hover:border-violet-300 transition-all duration-300";
-    dotClass = "bg-violet-500 shadow shadow-violet-500/40";
-    pulseClass = "";
+    localShell = "border-violet-300 bg-violet-50/85 text-violet-950 shadow-[0_8px_25px_rgba(139,92,246,0.15)] hover:border-violet-400 hover:bg-violet-100/70 transition-all duration-300";
+    dotClass = "bg-violet-600 shadow shadow-violet-600/50";
+    pulseClass = "bg-violet-500";
   } else {
     localShell = "border-slate-100 bg-white/95 text-slate-800 shadow-[0_8px_25px_rgba(16,185,129,0.06)] hover:border-emerald-200 hover:shadow-[0_8px_25px_rgba(16,185,129,0.10)] transition-all duration-300";
     dotClass = "bg-emerald-500 shadow shadow-emerald-500/40 animate-pulse";
@@ -96,7 +96,13 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
             {!cajaAbierta && <div className="pointer-events-none absolute inset-0 z-20 rounded-lg bg-slate-950/[0.03] backdrop-blur-[0.5px]" />}
 
             <div
-              className="mesa-plano-handle flex cursor-grab items-center gap-1 border-b border-slate-100 bg-slate-50/40 px-1.5 py-0.5 active:cursor-grabbing transition"
+              className={`mesa-plano-handle flex cursor-grab items-center gap-1 border-b px-1.5 py-0.5 active:cursor-grabbing transition ${
+                isOcupada 
+                  ? "border-rose-200 bg-rose-100/60" 
+                  : isReservada 
+                    ? "border-violet-200 bg-violet-100/60" 
+                    : "border-slate-100 bg-slate-50/40"
+              }`}
             >
               <GripVertical className="h-2.5 w-2.5 shrink-0 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
               
@@ -107,12 +113,14 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
                 <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${dotClass}`}></span>
               </span>
 
-              <span className="min-w-0 flex-1 truncate text-center text-[9px] font-bold uppercase text-slate-700">
+              <span className={`min-w-0 flex-1 truncate text-center text-[9px] font-bold uppercase ${
+                isOcupada ? "text-rose-950" : isReservada ? "text-violet-950" : "text-slate-700"
+              }`}>
                 {table.displayId}
               </span>
               
               {table.hasActiveOrder && table.activeOrdersCount > 0 ? (
-                <span className="shrink-0 rounded-full bg-rose-500 px-1 text-[8px] font-bold leading-none text-white">{table.activeOrdersCount}</span>
+                <span className="shrink-0 rounded-full bg-rose-600 shadow shadow-rose-500/30 px-1 text-[8px] font-bold leading-none text-white">{table.activeOrdersCount}</span>
               ) : (
                 <span className="w-3 shrink-0" />
               )}
@@ -209,10 +217,30 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
                   src={tableIllustration} 
                   alt={`Mesa ${table.displayId}`} 
                   className="h-11 w-full object-contain transition-transform duration-500 ease-out group-hover/img:scale-110" 
+                  style={{
+                    filter: isOcupada 
+                      ? "sepia(1) saturate(4) hue-rotate(-50deg) brightness(0.95)" 
+                      : isReservada 
+                        ? "sepia(1) saturate(3.5) hue-rotate(220deg) brightness(0.95)" 
+                        : undefined
+                  }}
                 />
               </div>
-              <span className="text-[8px] font-semibold tracking-wide text-slate-500">
-                {cajaAbierta ? "Doble clic" : "Caja cerrada"}
+              <span className={`text-[8.5px] font-extrabold tracking-wide ${
+                isOcupada 
+                  ? "text-rose-600 animate-pulse" 
+                  : isReservada 
+                    ? "text-violet-600 animate-pulse" 
+                    : "text-slate-500"
+              }`}>
+                {isOcupada 
+                  ? "OCUPADA" 
+                  : isReservada 
+                    ? "RESERVADA" 
+                    : cajaAbierta 
+                      ? "Doble clic" 
+                      : "Caja cerrada"
+                }
               </span>
             </button>
 
@@ -221,7 +249,13 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
                 <Lock className="h-2 w-2" />
               </div>
             ) : (
-              <div className="absolute bottom-0.5 right-1 pointer-events-none z-10 text-[7.5px] font-bold text-slate-400 bg-slate-50/90 px-1 py-px rounded border border-slate-100/50 shadow-sm">
+              <div className={`absolute bottom-0.5 right-1 pointer-events-none z-10 text-[7.5px] font-bold px-1 py-px rounded border shadow-sm ${
+                isOcupada 
+                  ? "text-rose-800 bg-rose-100/90 border-rose-200" 
+                  : isReservada 
+                    ? "text-violet-800 bg-violet-100/90 border-violet-200" 
+                    : "text-slate-400 bg-slate-50/90 border-slate-100/50"
+              }`}>
                 👥 {table.capacity ?? 4}
               </div>
             )}
