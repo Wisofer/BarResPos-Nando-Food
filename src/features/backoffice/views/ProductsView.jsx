@@ -288,6 +288,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
       ]);
       const parsed = parseOpcionesEspecialesFromGruposApi(gruposRaw ?? []);
       const lineas = parsed.lineas.length ? parsed.lineas : [""];
+      const precios = parsed.precios?.length ? parsed.precios : lineas.map(() => "");
       const tieneOpciones = lineas.some((s) => String(s || "").trim());
       setForm({
         id: p.id,
@@ -306,6 +307,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
         activo: p.activo !== false,
         opcionesEspecialesOn: tieneOpciones,
         opcionesEspecialesLines: lineas,
+        opcionesEspecialesPrices: precios,
         opcionesEspecialesGrupoId: parsed.grupoId,
       });
       setImageUploadFile(null);
@@ -334,12 +336,17 @@ export function ProductsView({ currencySymbol = "C$" }) {
     setError("");
     try {
       const codigo = resolveProductCodigoForSave(form.codigo, form.nombre, peerCodigos(form.id));
+      // Si el producto usa opciones especiales con precio propio, el precio base es 0
+      const usaPreciosPorOpcion =
+        form.opcionesEspecialesOn &&
+        (form.opcionesEspecialesPrices ?? []).some((p) => Number(p) > 0);
+      const precioBaseEfectivo = usaPreciosPorOpcion ? 0 : Number(form.precioVenta || 0);
       const body = {
         codigo,
         nombre: form.nombre,
         descripcion: form.descripcion,
-        precio: Number(form.precioVenta || 0),
-        precioVenta: Number(form.precioVenta || 0),
+        precio: precioBaseEfectivo,
+        precioVenta: precioBaseEfectivo,
         precioCompra: Number(form.precioCompra || 0),
         categoriaProductoId: Number(form.categoriaProductoId),
         ...(form.proveedorId ? { proveedorId: Number(form.proveedorId) } : {}),
@@ -367,6 +374,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
       const syncRes = await syncOpcionesEspecialesBackend(backofficeApi, productId, {
         habilitado: form.opcionesEspecialesOn,
         nombres: form.opcionesEspecialesLines,
+        precios: form.opcionesEspecialesPrices ?? [],
         grupoIdConocido: form.opcionesEspecialesGrupoId,
       });
       if (!syncRes.ok) {

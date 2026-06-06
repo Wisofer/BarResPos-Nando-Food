@@ -13,18 +13,25 @@ export function parseOpcionesEspecialesFromGruposApi(gruposRaw) {
     grupos.find((x) => String(x?.nombre ?? x?.Nombre ?? "").trim().toLowerCase() === key) ||
     (grupos.length === 1 ? grupos[0] : null);
   if (!g) {
-    return { grupoId: null, lineas: [""] };
+    return { grupoId: null, lineas: [""], precios: [""] };
   }
   const gid = g.id ?? g.Id;
   const rawOpts = g.opciones ?? g.Opciones ?? [];
-  const lineas = [...rawOpts]
+  const filtered = [...rawOpts]
     .filter((o) => o?.activo !== false && o?.Activo !== false)
-    .sort((a, b) => Number(a?.orden ?? a?.Orden ?? 0) - Number(b?.orden ?? b?.Orden ?? 0))
+    .sort((a, b) => Number(a?.orden ?? a?.Orden ?? 0) - Number(b?.orden ?? b?.Orden ?? 0));
+  const lineas = filtered
     .map((o) => String(o?.nombre ?? o?.Nombre ?? "").trim())
     .filter(Boolean);
+  const precios = filtered
+    .map((o) => {
+      const p = Number(o?.precioAdicional ?? o?.PrecioAdicional ?? 0);
+      return p > 0 ? String(p) : "";
+    });
   return {
     grupoId: gid != null && gid !== "" ? gid : null,
     lineas: lineas.length > 0 ? lineas : [""],
+    precios: precios.length > 0 ? precios : [""],
   };
 }
 
@@ -33,8 +40,10 @@ function findGrupoById(gruposRaw, grupoId) {
   return grupos.find((x) => String(x?.id ?? x?.Id) === String(grupoId)) ?? null;
 }
 
-export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, grupoIdConocido }) {
+export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, precios, grupoIdConocido }) {
   const names = [...new Set(nombres.map((s) => String(s || "").trim()).filter(Boolean))];
+  // precios: array 1:1 con nombres (antes del dedup), los tomamos en orden
+  const rawPrices = Array.isArray(precios) ? precios : [];
 
   if (!habilitado) {
     if (grupoIdConocido == null || grupoIdConocido === "") return { ok: true, grupoId: null };
@@ -87,24 +96,77 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
     const listado = await api.listProductoOpcionesGrupos(productoId);
     const g = findGrupoById(listado, gid);
     const existing = g ? g.opciones ?? g.Opciones ?? [] : [];
-    for (const op of existing) {
-      const oid = op?.id ?? op?.Id;
-      if (oid == null) continue;
-      try {
-        await api.deleteProductoOpcionItem(productoId, gid, oid);
-      } catch {
-        /* continuar */
+
+    const existingNormalized = existing.map((o) => ({
+      id: o?.id ?? o?.Id,
+      nombre: String(o?.nombre ?? o?.Nombre ?? "").trim(),
+      nombreLower: String(o?.nombre ?? o?.Nombre ?? "").trim().toLowerCase(),
+      orden: Number(o?.orden ?? o?.Orden ?? 0),
+      precioAdicional: Number(o?.precioAdicional ?? o?.PrecioAdicional ?? 0),
+      activo: o?.activo !== false && o?.Activo !== false,
+    }));
+
+    // Construir mapa nombre→precio considerando duplicados que se eliminaron con dedup
+    // Usamos los nombres originales (con duplicados) para mapear precios correctamente
+    const nombrePrecioMap = new Map();
+    nombres.forEach((n, i) => {
+      const trimmed = String(n || "").trim();
+      if (trimmed && !nombrePrecioMap.has(trimmed)) {
+        nombrePrecioMap.set(trimmed, Number(rawPrices[i] || 0));
+      }
+    });
+
+    const reusedIds = new Set();
+    let currentOrden = 1;
+
+    for (const nombre of names) {
+      const precioFinal = nombrePrecioMap.get(nombre) ?? 0;
+      const precioAdicional = Number.isFinite(precioFinal) && precioFinal > 0 ? precioFinal : 0;
+
+      // Buscar una coincidencia por nombre en las existentes que no haya sido ya reusada
+      const matched = existingNormalized.find(
+        (x) => x.nombreLower === nombre.toLowerCase() && !reusedIds.has(x.id)
+      );
+
+      if (matched) {
+        reusedIds.add(matched.id);
+        // Actualizar el item existente
+        await api.updateProductoOpcionItem(productoId, gid, matched.id, {
+          nombre,
+          orden: currentOrden++,
+          precioAdicional,
+          activo: true,
+        });
+      } else {
+        // Crear uno nuevo
+        await api.createProductoOpcionItem(productoId, gid, {
+          nombre,
+          orden: currentOrden++,
+          precioAdicional,
+          activo: true,
+        });
       }
     }
 
-    let orden = 1;
-    for (const nombre of names) {
-      await api.createProductoOpcionItem(productoId, gid, {
-        nombre,
-        orden: orden++,
-        precioAdicional: 0,
-        activo: true,
-      });
+    // Limpiar o desactivar las opciones que ya no se usan
+    for (const item of existingNormalized) {
+      if (reusedIds.has(item.id)) continue;
+      try {
+        // Intentar borrarlo
+        await api.deleteProductoOpcionItem(productoId, gid, item.id);
+      } catch (e) {
+        // Si falla (por estar en uso), marcarlo como inactivo
+        try {
+          await api.updateProductoOpcionItem(productoId, gid, item.id, {
+            nombre: item.nombre,
+            orden: item.orden,
+            precioAdicional: item.precioAdicional,
+            activo: false,
+          });
+        } catch (e2) {
+          // Ignorar silenciosamente para no romper el flujo
+        }
+      }
     }
 
     return { ok: true, grupoId: gid };
@@ -115,3 +177,4 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
     return { ok: false, error: e?.message || "No se pudieron guardar las opciones especiales." };
   }
 }
+

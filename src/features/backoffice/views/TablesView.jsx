@@ -712,8 +712,14 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     const grupos = normalizeOpcionesGrupos(product);
     const opsNorm = normalizeOpcionesSeleccionadas(opcionesSeleccionadas);
     const key = opcionesSeleccionadasKey(opsNorm);
-    const extra = sumarPrecioAdicionalOpciones(grupos, opsNorm);
     const base = Number(product.precio ?? product.Precio ?? 0);
+    const extra = sumarPrecioAdicionalOpciones(grupos, opsNorm);
+    // Si el precioAdicional de la opción elegida representa el precio FINAL
+    // (es decir, extra > 0 y el producto base tiene precio 0 o también extra > base),
+    // usamos extra directamente como precio final.
+    // Si extra es 0 o el producto no usa el modelo de "precio final por opción",
+    // seguimos con base + extra (compatibilidad con productos sin precio por variante).
+    const finalPrice = extra > 0 ? extra : base;
     const resumen = buildOpcionesResumenLocal(grupos, opsNorm);
     const mergeTarget = posLineMergeKey(opsNorm, "");
 
@@ -740,7 +746,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           lineId: nextLineId,
           id: pid,
           name: product.nombre || product.Nombre || "Producto",
-          price: base + extra,
+          price: finalPrice,
           qty: 1,
           opcionesSeleccionadas: opsNorm,
           opcionesKey: key,

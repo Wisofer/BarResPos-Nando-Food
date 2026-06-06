@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Pencil, History, Trash2, Image as ImageIcon } from "lucide-react";
 import { formatCurrency } from "../../utils/currency.js";
 import { getProductImageUrl } from "../../utils/productImage.js";
+import { productoTieneOpcionesVisibles, normalizeOpcionesGrupos } from "../../utils/productoOpciones.js";
 
 /**
  * Tarjeta de producto (mismo criterio visual que sistema-de-tienda: imagen, nombre, categoría•código, precio, stock, acciones al hover).
@@ -15,6 +16,12 @@ export function ProductCard({ product, currencySymbol, openEdit, openProductHist
   const criticalStock = Boolean(p.controlarStock) && min > 0 && stock <= min * 0.5;
   const img = getProductImageUrl(p);
   const categoriaLabel = String(p.categoriaProducto?.nombre ?? p.categoriaProducto ?? p.categoriaNombre ?? p.categoria ?? p.Categoria ?? "Sin categoría");
+
+  const tieneOpcionesConPrecio = productoTieneOpcionesVisibles(p) && 
+    normalizeOpcionesGrupos(p).some((g) => {
+      const opts = g?.opciones ?? g?.Opciones ?? [];
+      return opts.some((o) => o?.activo !== false && o?.Activo !== false && Number(o?.precioAdicional ?? o?.PrecioAdicional ?? 0) > 0);
+    });
 
   const stockClass = lowStock 
     ? (criticalStock ? "bg-rose-50 border-rose-100 text-rose-600 font-extrabold" : "bg-amber-50 border-amber-100 text-amber-600 font-extrabold") 
@@ -75,9 +82,17 @@ export function ProductCard({ product, currencySymbol, openEdit, openProductHist
         </div>
 
         <div className="mt-1 border-t border-slate-100 pt-2 flex flex-col gap-1.5">
-          <p className="text-base font-black tabular-nums text-slate-850">
-            {formatCurrency(p.precioVenta ?? p.precio ?? 0, currencySymbol)}
-          </p>
+          <div className="h-7 flex items-center">
+            {tieneOpcionesConPrecio ? (
+              <span className="inline-flex items-center rounded-lg bg-indigo-50 border border-indigo-100/60 px-2 py-0.5 text-[10px] font-extrabold text-indigo-650 uppercase tracking-wider">
+                Varios precios
+              </span>
+            ) : (
+              <p className="text-base font-black tabular-nums text-slate-850">
+                {formatCurrency(p.precioVenta ?? p.precio ?? 0, currencySymbol)}
+              </p>
+            )}
+          </div>
           <div className="flex items-center justify-between gap-2 h-7">
             <span className={`inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[9px] uppercase tracking-wide border transition ${stockClass}`}>
               {p.controlarStock ? `Stock: ${stock}` : "Sin control"}

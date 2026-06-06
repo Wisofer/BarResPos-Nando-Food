@@ -177,35 +177,61 @@ export function ProductFormModal({
             </div>
 
             {/* Precios */}
-            <div className="mb-4 rounded border border-slate-300 bg-white p-3">
-              <h4 className="mb-3 text-xs font-semibold uppercase text-slate-500">Precios</h4>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label={`Precio de venta * (${currencySymbol})`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={form.precioVenta}
-                    onChange={(e) => setForm((f) => ({ ...f, precioVenta: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                    required
-                  />
-                </Field>
+            {(() => {
+              // Si hay opciones especiales con precio, el precio base no aplica
+              const usaPreciosPorOpcion =
+                form.opcionesEspecialesOn &&
+                (form.opcionesEspecialesPrices ?? []).some((p) => Number(p) > 0);
+              return (
+                <div className="mb-4 rounded border border-slate-300 bg-white p-3">
+                  <h4 className="mb-3 text-xs font-semibold uppercase text-slate-500">Precios</h4>
+                  {usaPreciosPorOpcion && (
+                    <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                      <span className="mt-0.5 shrink-0 text-amber-500">ⓘ</span>
+                      <p className="text-xs text-amber-700">
+                        El precio de venta lo define cada opción especial. El precio base se establece en <strong>C$ 0</strong> automáticamente.
+                      </p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label={`Precio de venta * (${currencySymbol})`}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={usaPreciosPorOpcion ? "0" : form.precioVenta}
+                        onChange={(e) => {
+                          if (!usaPreciosPorOpcion) setForm((f) => ({ ...f, precioVenta: e.target.value }));
+                        }}
+                        placeholder="0.00"
+                        disabled={usaPreciosPorOpcion}
+                        className={`w-full rounded border px-3 py-2 text-sm focus:outline-none ${
+                          usaPreciosPorOpcion
+                            ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed"
+                            : "border-slate-300 text-slate-700 focus:border-slate-500"
+                        }`}
+                        required={!usaPreciosPorOpcion}
+                      />
+                      {usaPreciosPorOpcion && (
+                        <p className="mt-1 text-[10px] text-slate-400">Definido por opciones especiales</p>
+                      )}
+                    </Field>
 
-                <Field label={`Precio de compra (${currencySymbol})`}>
-                  <input
-                    type="number"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={form.precioCompra}
-                    onChange={(e) => setForm((f) => ({ ...f, precioCompra: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                  />
-                </Field>
-              </div>
-            </div>
+                    <Field label={`Precio de compra (${currencySymbol})`}>
+                      <input
+                        type="number"
+                        step="0.01"
+                        inputMode="decimal"
+                        value={form.precioCompra}
+                        onChange={(e) => setForm((f) => ({ ...f, precioCompra: e.target.value }))}
+                        placeholder="0.00"
+                        className="w-full rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Inventario */}
             <div className="mb-4 rounded border border-slate-300 bg-white p-3">
@@ -267,7 +293,10 @@ export function ProductFormModal({
               {/* Opciones especiales */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold text-slate-600">Opciones especiales</span>
+                  <div>
+                    <span className="text-xs font-semibold text-slate-600">Opciones especiales</span>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Cada opción tiene su precio final de venta</p>
+                  </div>
                   <button
                     type="button"
                     role="switch"
@@ -280,6 +309,10 @@ export function ProductFormModal({
                           !f.opcionesEspecialesOn && (!f.opcionesEspecialesLines?.length)
                             ? [""]
                             : f.opcionesEspecialesLines,
+                        opcionesEspecialesPrices:
+                          !f.opcionesEspecialesOn && (!f.opcionesEspecialesPrices?.length)
+                            ? [""]
+                            : f.opcionesEspecialesPrices,
                       }))
                     }
                     className={`inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full px-0.5 transition-all focus:outline-none ${
@@ -292,9 +325,18 @@ export function ProductFormModal({
 
                 {form.opcionesEspecialesOn && (
                   <div className="mt-3 space-y-2">
+                    {/* Encabezados de columnas */}
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="w-12 shrink-0" />
+                      <span className="flex-1 text-[10px] font-semibold text-slate-400 uppercase">Nombre variante</span>
+                      <span className="w-24 shrink-0 text-[10px] font-semibold text-slate-400 uppercase text-right">Precio ({currencySymbol})</span>
+                      <span className="w-6 shrink-0" />
+                    </div>
+
                     {form.opcionesEspecialesLines.map((line, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <span className="w-12 shrink-0 text-xs text-slate-500">Op. {idx + 1}</span>
+                        {/* Nombre */}
                         <input
                           value={line}
                           onChange={(e) =>
@@ -304,20 +346,42 @@ export function ProductFormModal({
                               return { ...f, opcionesEspecialesLines: next };
                             })
                           }
-                          placeholder="Ej. Barbacoa"
+                          placeholder="Ej. Doble Carne"
                           className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
                           autoComplete="off"
                         />
+                        {/* Precio final */}
+                        <input
+                          type="number"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={(form.opcionesEspecialesPrices ?? [])[idx] ?? ""}
+                          onChange={(e) =>
+                            setForm((f) => {
+                              const next = [...(f.opcionesEspecialesPrices ?? f.opcionesEspecialesLines.map(() => ""))];
+                              next[idx] = e.target.value;
+                              return { ...f, opcionesEspecialesPrices: next };
+                            })
+                          }
+                          placeholder="0.00"
+                          className="w-24 shrink-0 rounded border border-slate-300 px-2 py-1.5 text-sm text-slate-700 focus:border-slate-500 focus:outline-none text-right"
+                        />
+                        {/* Eliminar */}
                         <button
                           type="button"
                           disabled={form.opcionesEspecialesLines.length <= 1}
                           onClick={() =>
                             setForm((f) => {
-                              const next = f.opcionesEspecialesLines.filter((_, j) => j !== idx);
-                              return { ...f, opcionesEspecialesLines: next.length ? next : [""] };
+                              const nextLines = f.opcionesEspecialesLines.filter((_, j) => j !== idx);
+                              const nextPrices = (f.opcionesEspecialesPrices ?? []).filter((_, j) => j !== idx);
+                              return {
+                                ...f,
+                                opcionesEspecialesLines: nextLines.length ? nextLines : [""],
+                                opcionesEspecialesPrices: nextPrices.length ? nextPrices : [""],
+                              };
                             })
                           }
-                          className="h-6 w-6 flex items-center justify-center rounded border border-slate-300 text-slate-400 hover:border-red-300 hover:text-red-500 disabled:opacity-30"
+                          className="w-6 h-6 flex items-center justify-center rounded border border-slate-300 text-slate-400 hover:border-red-300 hover:text-red-500 disabled:opacity-30"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -325,7 +389,11 @@ export function ProductFormModal({
                     ))}
                     <button
                       type="button"
-                      onClick={() => setForm((f) => ({ ...f, opcionesEspecialesLines: [...f.opcionesEspecialesLines, ""] }))}
+                      onClick={() => setForm((f) => ({
+                        ...f,
+                        opcionesEspecialesLines: [...f.opcionesEspecialesLines, ""],
+                        opcionesEspecialesPrices: [...(f.opcionesEspecialesPrices ?? []), ""],
+                      }))}
                       className="text-xs text-slate-600 hover:text-slate-800"
                     >
                       + Agregar opción

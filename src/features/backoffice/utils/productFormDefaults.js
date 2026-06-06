@@ -17,6 +17,8 @@ function emptyProductFormCore() {
     activo: true,
     opcionesEspecialesOn: false,
     opcionesEspecialesLines: [""],
+    /** Precio final de venta por cada opción (índice 1:1 con opcionesEspecialesLines). */
+    opcionesEspecialesPrices: [""],
     opcionesEspecialesGrupoId: null,
   };
 }

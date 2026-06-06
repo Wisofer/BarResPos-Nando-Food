@@ -44,7 +44,12 @@ export function OrderDetailModal({ open, onClose, loading, data }) {
                 {(d.items || []).length ? (
                   (d.items || []).map((it, idx) => (
                     <tr key={idx} className="border-t border-slate-100">
-                      <td className="px-3 py-2">{it.producto || "—"}</td>
+                      <td className="px-3 py-2">
+                        <span>{it.producto || "—"}</span>
+                        {it.variante && (
+                          <span className="ml-1.5 text-xs text-slate-400">— {it.variante}</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2">{it.cantidad ?? 0}</td>
                       <td className="px-3 py-2">{formatCurrency(it.precioUnitario ?? 0)}</td>
                       <td className="px-3 py-2 font-medium">{formatCurrency(it.monto ?? 0)}</td>
