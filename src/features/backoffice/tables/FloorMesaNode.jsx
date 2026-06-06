@@ -290,7 +290,10 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
     prevProps.position.s === nextProps.position.s &&
     prevProps.cajaAbierta === nextProps.cajaAbierta &&
     prevProps.activeTableMenu === nextProps.activeTableMenu &&
-    prevProps.table.estado === nextProps.table.estado &&
-    prevProps.table.activeOrdersCount === nextProps.table.activeOrdersCount
+    prevProps.table.status === nextProps.table.status &&
+    prevProps.table.hasActiveOrder === nextProps.table.hasActiveOrder &&
+    prevProps.table.activeOrdersCount === nextProps.table.activeOrdersCount &&
+    prevProps.table.displayId === nextProps.table.displayId &&
+    prevProps.table.capacity === nextProps.table.capacity
   );
 });

@@ -609,6 +609,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
           if (newOrderId && newOrderId !== posOrderIdRef.current) {
             setPosOrderId(newOrderId);
+            posOrderIdRef.current = newOrderId;
           }
 
           setPosCommitted(true);
@@ -810,6 +811,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           if (!newOrderId) throw new Error("No se pudo crear la orden activa en backend.");
           currentId = newOrderId;
           setPosOrderId(newOrderId);
+          posOrderIdRef.current = newOrderId;
         }
 
         if (!currentId) {
@@ -1121,6 +1123,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         const newOrderId = extractPosOrdenResponseId(data, null);
         if (!newOrderId) throw new Error("No se pudo crear la orden activa en backend.");
         setPosOrderId(newOrderId);
+        posOrderIdRef.current = newOrderId;
       }
 
       const currentId = posOrderId ?? posOrderIdRef.current;
@@ -1228,7 +1231,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         { setBusy: setPosActionBusy, setMessage: setPosBusyMessage, caption: "Enviando a cocina…" },
         async () => {
           if (posCart.length > 0) await ensurePosOrderSynced({ manageBusy: false });
-          if (!posOrderId) throw new Error("No hay orden activa para enviar a cocina.");
+          
+          const activeOrderId = posOrderId ?? posOrderIdRef.current;
+          if (!activeOrderId) throw new Error("No hay orden activa para enviar a cocina.");
 
           // Si la orden ya existía (posCart vacío), cargamos items para mantener UI sincronizada.
           if (!posCommitted && posCartRef.current.length === 0) {
@@ -1239,7 +1244,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             setPosCommitted(true);
           }
 
-          const { data, message } = await backofficeApi.pedidoEnviarCocina(posOrderId);
+          const { data, message } = await backofficeApi.pedidoEnviarCocina(activeOrderId);
           const infoMsg = typeof message === "string" ? message.trim() : "";
           if (infoMsg) snackbar.info(infoMsg);
           else snackbar.success("Orden enviada a cocina.");

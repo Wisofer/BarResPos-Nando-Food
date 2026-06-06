@@ -1,7 +1,7 @@
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { spawn } from 'node:child_process'
+import { spawn, exec } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 
@@ -127,8 +127,60 @@ function createWindow() {
 }
 
 // Handler para abrir enlaces externos (como WhatsApp)
-ipcMain.on('open-external', (event, url) => {
-  shell.openExternal(url)
+ipcMain.on('open-external', async (event, url) => {
+  try {
+    const isWhatsApp = url.includes('wa.me') || url.includes('api.whatsapp.com') || url.includes('web.whatsapp.com');
+    if (isWhatsApp) {
+      let phone = '';
+      let text = '';
+      try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname.includes('wa.me')) {
+          phone = urlObj.pathname.replace(/^\/+/, '');
+          text = urlObj.searchParams.get('text') || '';
+        } else {
+          phone = urlObj.searchParams.get('phone') || '';
+          text = urlObj.searchParams.get('text') || '';
+        }
+      } catch (err) {
+        writeLog(`[WHATSAPP PARSE ERROR]: ${err.message}`);
+      }
+
+      if (phone) {
+        // Limpiar el número de teléfono (debe contener solo dígitos, sin +, espacios ni guiones)
+        phone = phone.replace(/\D/g, '');
+
+        // Verificar si WhatsApp de escritorio está instalado en Windows
+        const hasWhatsappApp = await new Promise((resolve) => {
+          if (process.platform !== 'win32') {
+            resolve(false);
+            return;
+          }
+          exec('reg query HKCR\\whatsapp', (err) => {
+            resolve(!err);
+          });
+        });
+
+        if (hasWhatsappApp) {
+          const desktopUrl = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(text)}`;
+          writeLog(`[WHATSAPP TICKET]: Abriendo en aplicación de escritorio: ${desktopUrl}`);
+          await shell.openExternal(desktopUrl);
+          return;
+        } else {
+          // Si no está la app, abrimos directamente en WhatsApp Web
+          const webUrl = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+          writeLog(`[WHATSAPP TICKET]: Abriendo en WhatsApp Web: ${webUrl}`);
+          await shell.openExternal(webUrl);
+          return;
+        }
+      }
+    }
+  } catch (err) {
+    writeLog(`[WHATSAPP ERROR]: Error al procesar enlace de WhatsApp: ${err.message}`);
+  }
+
+  // Comportamiento por defecto para cualquier otro enlace
+  shell.openExternal(url);
 })
 
 app.whenReady().then(() => {

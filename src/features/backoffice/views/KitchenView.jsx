@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChefHat, RefreshCw, Send } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { BackofficeListSkeletonLoading } from "../components/index.js";
@@ -75,6 +75,14 @@ export function KitchenView() {
   const [mode, setMode] = useState("live");
   const [checkedItems, setCheckedItems] = useState({});
 
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const toggleItemCheck = (orderId, itemId) => {
     setCheckedItems((prev) => ({
       ...prev,
@@ -86,13 +94,19 @@ export function KitchenView() {
     try {
       const data = await backofficeApi.cocinaOrdenes();
       const items = Array.isArray(data) ? data : data?.items || [];
-      setOrders(items);
+      if (isMounted.current) {
+        setOrders(items);
+      }
     } catch (e) {
-      setError(e.message || "No se pudo cargar cocina.");
+      if (isMounted.current) {
+        setError(e.message || "No se pudo cargar cocina.");
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     let mounted = true;
@@ -140,9 +154,13 @@ export function KitchenView() {
       await loadKitchen();
     } catch (e) {
       const msg = e?.message || "No se pudo actualizar estado de cocina.";
-      snackbar.error(msg);
+      if (isMounted.current) {
+        snackbar.error(msg);
+      }
     } finally {
-      setBusyId(null);
+      if (isMounted.current) {
+        setBusyId(null);
+      }
     }
   };
 

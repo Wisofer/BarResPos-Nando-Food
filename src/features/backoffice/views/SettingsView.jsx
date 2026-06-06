@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { api } from "../../../api/client.js";
+import { authApi } from "../../../api/auth.js";
 import { BackofficeDialog, BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
@@ -408,13 +408,34 @@ export function SettingsView() {
 
   const handleResetData = async () => {
     if (resetStep === 1) {
-      // Step 1: Verify password - usar cualquier contraseña no vacía por ahora
       if (!resetPassword || resetPassword.length < 1) {
         snackbar.error("Ingresa tu contraseña para continuar.");
         return;
       }
-      setResetStep(2);
-      setResetPassword("");
+      setResetting(true);
+      try {
+        const username = user?.nombreUsuario || user?.usuario || "admin";
+        if (import.meta.env.VITE_STATIC_MODE !== "true") {
+          await authApi.login(username, resetPassword);
+        }
+        setResetStep(2);
+        setResetPassword("");
+      } catch (err) {
+        const msg = err?.message || "";
+        if (
+          err?.status === 401 ||
+          err?.status === 400 ||
+          msg.includes("invalid") ||
+          msg.includes("contraseña") ||
+          msg.includes("incorrect")
+        ) {
+          snackbar.error("Contraseña incorrecta.");
+        } else {
+          snackbar.error(msg || "Error al verificar contraseña.");
+        }
+      } finally {
+        setResetting(false);
+      }
     } else if (resetStep === 2) {
       // Step 2: Confirm text
       if (resetConfirmText !== "ELIMINAR") {
@@ -427,87 +448,7 @@ export function SettingsView() {
       setResetting(true);
       try {
         snackbar.info("Iniciando limpieza de datos...");
-        
-        // 1. Cancelar pedidos abiertos
-        try {
-          const pedidos = await backofficeApi.listPedidos({ pageSize: 100 });
-          const items = pedidos?.items || pedidos?.Items || pedidos || [];
-          for (const p of items) {
-            const estado = p.estado || p.Estado;
-            if (estado && !['Cancelado', 'Pagado'].includes(estado)) {
-              try {
-                await backofficeApi.pedidoCancelar(p.id || p.Id, '0000');
-              } catch { /* ignore */ }
-            }
-          }
-        } catch { /* no pedidos */ }
-
-        // 2. Cancelar delivery pedidos
-        try {
-          const dels = await backofficeApi.listDeliveryPedidos({ pageSize: 100 });
-          const dItems = dels?.items || dels?.Items || dels || [];
-          for (const d of dItems) {
-            try {
-              await backofficeApi.deliveryPedidoCancelar(d.id || d.Id, '0000');
-            } catch { /* ignore */ }
-          }
-        } catch { /* no delivery */ }
-
-        // 3. Cerrar caja
-        try {
-          const estado = await backofficeApi.cajaEstado();
-          if (estado?.abierta || estado?.Abierta || estado?.estado === 'Abierto') {
-            await backofficeApi.cajaCierre({ montoReal: 0, observaciones: 'Reset desde configuraciones' });
-          }
-        } catch { /* no caja abierta */ }
-
-        // 4. Eliminar productos
-        try {
-          const prods = await backofficeApi.listProductos({ pageSize: 200 });
-          const pItems = prods?.items || prods?.Items || prods || [];
-          for (const p of pItems) {
-            try {
-              await backofficeApi.deleteProducto(p.id || p.Id);
-            } catch { /* ignore FK constraints */ }
-          }
-        } catch { /* no productos */ }
-
-        // 5. Eliminar proveedores
-        try {
-          const provs = await backofficeApi.catalogoProveedores();
-          const prvItems = provs?.items || provs?.Items || provs || [];
-          for (const p of prvItems) {
-            try {
-              await backofficeApi.deleteProveedor(p.id || p.Id);
-            } catch { /* ignore */ }
-          }
-        } catch { /* no proveedores */ }
-
-        // 6. Eliminar usuarios extra (no el admin)
-        try {
-          const users = await backofficeApi.listUsuarios({ pageSize: 200 });
-          const uItems = users?.items || users?.Items || users || [];
-          for (const u of uItems) {
-            const name = (u.nombreUsuario || u.NombreUsuario || '').toLowerCase();
-            if (name !== 'admin') {
-              try {
-                await backofficeApi.deleteUsuario(u.id || u.Id);
-              } catch { /* ignore */ }
-            }
-          }
-        } catch { /* no usuarios extra */ }
-
-        // 7. Limpiar movimientos de inventario
-        try {
-          const movs = await backofficeApi.movimientosProductos({ pageSize: 200 });
-          const mItems = movs?.items || movs?.Items || movs || [];
-          for (const m of mItems) {
-            try {
-              await api.delete(`/api/v1/productos/movimientos/${m.id || m.Id}`);
-            } catch { /* ignore */ }
-          }
-        } catch { /* no movimientos */ }
-
+        await backofficeApi.resetDatosOperativos();
         snackbar.success("Datos operativos eliminados correctamente. El sistema se reiniciará.");
         setResetModalOpen(false);
         setResetStep(1);
