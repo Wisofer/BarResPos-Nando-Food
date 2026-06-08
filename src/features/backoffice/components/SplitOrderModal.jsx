@@ -12,8 +12,6 @@ export default function SplitOrderModal({
 }) {
   const [selectedItems, setSelectedItems] = useState({});
 
-  console.log("[DEBUG] SplitOrderModal render, open:", open, "posCart:", posCart);
-
   if (!open) return null;
 
   const canSplitItem = (item) => !!parsePosBackendLineId(item.lineId);

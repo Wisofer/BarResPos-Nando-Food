@@ -46,7 +46,7 @@ function startBackend() {
     const backendDir = path.dirname(backendPath)
     writeLog(`Directorio de trabajo (CWD): ${backendDir}`)
 
-    backendProcess = spawn(backendPath, ['--urls', 'http://localhost:5000'], {
+    backendProcess = spawn(backendPath, ['--urls', 'http://0.0.0.0:5000'], {
       cwd: backendDir,
       windowsHide: true
     })

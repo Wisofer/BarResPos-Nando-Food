@@ -125,8 +125,8 @@ export async function printKitchenTicketAfterEnviarCocina(data, snackbar) {
       printedBar = await openBackendPrintUrl(urlBar);
   }
 
-  if ((!printedCocina || !printedBar) && typeof snackbar?.info === "function") {
-    snackbar.info(KITCHEN_PRINT_AUTO_FAIL_INFO);
+  if ((!printedCocina || !printedBar) && typeof snackbar?.warning === "function") {
+    snackbar.warning(KITCHEN_PRINT_AUTO_FAIL_INFO);
   }
   return printedCocina || printedBar;
 }

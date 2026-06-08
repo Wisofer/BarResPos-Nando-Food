@@ -17,7 +17,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:linux": "cross-env NODE_NO_WARNINGS=1 vite build && cross-env NODE_NO_WARNINGS=1 electron-builder --linux",
-    "build:windows": "cross-env NODE_NO_WARNINGS=1 vite build && cross-env NODE_NO_WARNINGS=1 electron-builder --windows",
+    "build:windows": "cross-env NODE_NO_WARNINGS=1 vite build && (robocopy dist \"../BarResPos-Nando-Food-Backend/bin/Debug/net9.0/wwwroot\" /E /NFL /NDL /NJH /NJS /NP /NS >nul 2>&1 || ver>nul) && cross-env NODE_NO_WARNINGS=1 electron-builder --windows",
     "lint": "eslint .",
     "preview": "vite preview"
   },

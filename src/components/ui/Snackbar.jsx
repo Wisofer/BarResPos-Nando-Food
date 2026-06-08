@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { CheckCircle2, XCircle, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, X } from "lucide-react";
 import { cn } from "../../utils/cn";
 
 const VARIANTS = {
@@ -17,6 +17,11 @@ const VARIANTS = {
     className: "bg-white dark:bg-slate-900 border-2 border-primary-400/80 dark:border-primary-500/40 text-slate-800 dark:text-slate-100 shadow-xl shadow-primary-200/40 dark:shadow-none ring-2 ring-primary-100 dark:ring-primary-500/20",
     icon: CheckCircle2,
     iconClassName: "text-primary-500 dark:text-primary-300",
+  },
+  warning: {
+    className: "bg-white dark:bg-slate-900 border-2 border-amber-400/80 dark:border-amber-500/40 text-slate-800 dark:text-slate-100 shadow-xl shadow-amber-200/40 dark:shadow-none ring-2 ring-amber-100 dark:ring-amber-500/20",
+    icon: AlertTriangle,
+    iconClassName: "text-amber-500 dark:text-amber-300",
   },
 };
 
@@ -57,7 +62,7 @@ export function SnackbarItem({ id, message, variant = "success", duration = 4200
 
 export function SnackbarStack({ items, onDismiss }) {
   return (
-    <div className="fixed inset-x-3 top-4 z-[100] flex flex-col gap-3 pointer-events-none sm:inset-x-auto sm:right-5 sm:left-auto sm:top-5 [&>*]:pointer-events-auto">
+    <div className="fixed inset-x-3 top-4 z-[9999] flex flex-col gap-3 pointer-events-none sm:inset-x-auto sm:right-5 sm:left-auto sm:top-5 [&>*]:pointer-events-auto">
       {items.map((item) => (
         <SnackbarItem
           key={item.id}

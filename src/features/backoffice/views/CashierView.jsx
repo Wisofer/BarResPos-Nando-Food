@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
 import { useCashier } from "../hooks/useCashier.js";
+import { CashierPendingOrders } from "../components/cashier/CashierPendingOrders.jsx";
 import { CashierStatusCards } from "../components/cashier/CashierStatusCards.jsx";
 import { CashierForms } from "../components/cashier/CashierForms.jsx";
 import { CashierSummary } from "../components/cashier/CashierSummary.jsx";
@@ -14,6 +15,7 @@ export function CashierView({ currencySymbol = "C$" }) {
   const {
     estado,
     preview,
+    ordenesPendientes,
     historial,
     historialPage,
     historialTotalPages,
@@ -103,16 +105,19 @@ export function CashierView({ currencySymbol = "C$" }) {
       />
 
       {cajaAbierta && (
-        <CashierSummary
-          totalVentas={totalVentas}
-          totalOrdenes={totalOrdenes}
-          totalEfectivo={totalEfectivo}
-          totalTarjeta={totalTarjeta}
-          totalTransferencia={totalTransferencia}
-          montoEsperadoCalculado={montoEsperadoCalculado}
-          montoInicialActual={montoInicialActual}
-          currencySymbol={currencySymbol}
-        />
+        <>
+          <CashierPendingOrders items={ordenesPendientes} currencySymbol={currencySymbol} />
+          <CashierSummary
+            totalVentas={totalVentas}
+            totalOrdenes={totalOrdenes}
+            totalEfectivo={totalEfectivo}
+            totalTarjeta={totalTarjeta}
+            totalTransferencia={totalTransferencia}
+            montoEsperadoCalculado={montoEsperadoCalculado}
+            montoInicialActual={montoInicialActual}
+            currencySymbol={currencySymbol}
+          />
+        </>
       )}
 
       <CashierHistory

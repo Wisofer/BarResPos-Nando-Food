@@ -24,10 +24,11 @@ export function SnackbarProvider({ children }) {
   const success = useCallback((message) => add(message, "success"), [add]);
   const error = useCallback((message) => add(message, "error"), [add]);
   const info = useCallback((message) => add(message, "info"), [add]);
+  const warning = useCallback((message) => add(message, "warning"), [add]);
 
   const value = useMemo(
-    () => ({ success, error, info, add }),
-    [success, error, info, add]
+    () => ({ success, error, info, warning, add }),
+    [success, error, info, warning, add]
   );
 
   return (

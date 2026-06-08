@@ -35,7 +35,6 @@ export function isCocineroUser(user) {
   return (
     role.includes("cocinero") ||
     role.includes("cocina") ||
-    role.includes("bartender") ||
     role.includes("cook") ||
     role.includes("chef")
   );

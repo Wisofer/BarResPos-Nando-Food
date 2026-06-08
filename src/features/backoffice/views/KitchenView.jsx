@@ -10,6 +10,65 @@ const KDS_SECTIONS = [
   { key: "listo", label: "Listo para entregar", states: ["Listo"] },
 ];
 
+const getKdsCards = (orders) => {
+  const cards = [];
+  orders.forEach((o) => {
+    const orderId = o?.id ?? o?.Id;
+    const allItems = Array.isArray(o?.items ?? o?.Items) ? (o?.items ?? o?.Items) : [];
+    
+    // Group items by FechaEnvioCocina (fallback to fechaCreacion if null)
+    const batches = {};
+    allItems.forEach((item) => {
+      const rawTime = item?.fechaEnvioCocina ?? item?.FechaEnvioCocina ?? o?.fechaCreacion ?? o?.FechaCreacion ?? "unknown";
+      const batchKey = typeof rawTime === "string" ? rawTime : new Date(rawTime).toISOString();
+      if (!batches[batchKey]) {
+        batches[batchKey] = [];
+      }
+      batches[batchKey].push(item);
+    });
+
+    // Generate separate cards for each batch depending on item status
+    Object.entries(batches).forEach(([batchKey, batchItems]) => {
+      const activeItems = batchItems.filter((it) => {
+        const est = it?.estado ?? it?.Estado ?? "Pendiente";
+        return est === "Pendiente" || est === "En Preparación";
+      });
+
+      const readyItems = batchItems.filter((it) => {
+        const est = it?.estado ?? it?.Estado ?? "Pendiente";
+        return est === "Listo";
+      });
+
+      if (activeItems.length > 0) {
+        cards.push({
+          id: `${orderId}-preparar-${batchKey}`,
+          orderId,
+          numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
+          mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
+          estadoCocina: "En Preparación",
+          items: activeItems,
+          originalOrder: o
+        });
+      }
+
+      if (readyItems.length > 0) {
+        cards.push({
+          id: `${orderId}-listo-${batchKey}`,
+          orderId,
+          numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
+          mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
+          estadoCocina: "Listo",
+          items: readyItems,
+          originalOrder: o
+        });
+      }
+    });
+  });
+  return cards;
+};
+
 function stateStyle(state) {
   if (state === "Pendiente") return "border-amber-200 bg-amber-50 text-amber-800";
   if (state === "En Preparación") return "border-blue-200 bg-blue-50 text-blue-800";
@@ -36,9 +95,11 @@ function OrderTimer({ date }) {
 
   useEffect(() => {
     if (!date) return;
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return;
     const calculate = () => {
-      const diffMs = Date.now() - new Date(date).getTime();
-      setElapsed(Math.max(0, Math.floor(diffMs / 60000))); // en minutos
+      const diffMs = Date.now() - d.getTime();
+      setElapsed(Math.max(0, Math.floor(diffMs / 60000)));
     };
     calculate();
     const interval = setInterval(calculate, 15000);
@@ -84,7 +145,7 @@ export function KitchenView() {
   }, []);
 
   const toggleItemCheck = async (order, item) => {
-    const orderId = order?.id ?? order?.Id;
+    const orderId = order?.orderId ?? order?.id ?? order?.Id;
     const itemId = item?.id ?? item?.Id;
     if (!orderId || !itemId) return;
     const currentItemState = item?.Estado ?? item?.estado ?? "Pendiente";
@@ -148,19 +209,30 @@ export function KitchenView() {
     };
   }, [loadKitchen]);
 
-  const patchState = async (order) => {
-    const id = order?.id ?? order?.Id;
-    const current = order?.estadoCocina ?? order?.EstadoCocina ?? "Pendiente";
+  const patchState = async (card) => {
+    const orderId = card?.orderId;
+    const current = card?.estadoCocina;
     const next = nextState(current);
-    if (!id || !next) return;
-    setBusyId(id);
+    if (!orderId || !next) return;
+    setBusyId(card.id);
     setError("");
     try {
-      await backofficeApi.cocinaOrdenEstado(id, next);
-      snackbar.success(`Orden ${order?.numero || id} -> ${next}`);
+      if (current === "En Preparación") {
+        // Marcar todos los ítems de esta comanda como "Listo"
+        await Promise.all(
+          card.items.map(item => backofficeApi.cocinaItemEstado(item.id ?? item.Id, "Listo"))
+        );
+        snackbar.success(`Comanda de mesa ${card.mesa} marcada como lista`);
+      } else if (current === "Listo") {
+        // Marcar todos los ítems de esta comanda como "Entregado"
+        await Promise.all(
+          card.items.map(item => backofficeApi.cocinaItemEstado(item.id ?? item.Id, "Entregado"))
+        );
+        snackbar.success(`Comanda de mesa ${card.mesa} marcada como entregada`);
+      }
       await loadKitchen();
     } catch (e) {
-      const msg = e?.message || "No se pudo actualizar estado de cocina.";
+      const msg = e?.message || "No se pudo actualizar estado de la comanda.";
       if (isMounted.current) {
         snackbar.error(msg);
       }
@@ -194,16 +266,21 @@ export function KitchenView() {
     return list;
   }, [orders, search, mode]);
 
+  const liveCards = useMemo(() => {
+    if (mode !== "live") return [];
+    return getKdsCards(filtered);
+  }, [filtered, mode]);
+
   const grouped = useMemo(() => {
     const base = Object.fromEntries(KDS_SECTIONS.map((s) => [s.key, []]));
-    filtered.forEach((o) => {
-      const state = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
+    liveCards.forEach((c) => {
+      const state = c.estadoCocina;
       const section = KDS_SECTIONS.find((s) => s.states.includes(state));
       if (!section) return;
-      base[section.key].push(o);
+      base[section.key].push(c);
     });
     return base;
-  }, [filtered]);
+  }, [liveCards]);
 
   if (loading) return <BackofficeListSkeletonLoading rows={6} />;
   return (
@@ -221,7 +298,7 @@ export function KitchenView() {
           <button
             type="button"
             onClick={() => loadKitchen()}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Actualizar
@@ -239,7 +316,7 @@ export function KitchenView() {
             <button
               type="button"
               onClick={() => setMode("live")}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${mode === "live" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "live" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
             >
               Cocina en vivo
             </button>
@@ -248,7 +325,7 @@ export function KitchenView() {
               onClick={() => {
                 setMode("history");
               }}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${mode === "history" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "history" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
             >
               Historial
             </button>
@@ -334,19 +411,19 @@ export function KitchenView() {
                               <li
                                 key={itemId}
                                 onClick={() => toggleItemCheck(o, it)}
-                                className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none ${
+                                className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none min-h-[44px] ${
                                   isChecked
                                     ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
                                     : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
                                 }`}
                               >
-                                <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
+                                <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
                                   isChecked
                                     ? "border-emerald-500 bg-emerald-500 text-white"
                                     : "border-slate-300 bg-white"
                                 }`}>
                                   {isChecked && (
-                                    <svg className="h-2 w-2 stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg className="h-3 w-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                     </svg>
                                   )}
@@ -377,19 +454,14 @@ export function KitchenView() {
                         <button
                           type="button"
                           onClick={() => patchState(o)}
-                          disabled={busyId === id || (current === "En Preparación" && !(items.length === 0 || items.every(it => (it?.Estado ?? it?.estado ?? "") === "Listo")))}
-                          className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
+                          disabled={busyId === id}
+                          className={`mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
                         >
                           {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
                           {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
                           {current === "Listo" && <Send className="h-3.5 w-3.5" />}
                           {busyId === id ? "Procesando..." : `Marcar ${next}`}
                         </button>
-                        {current === "En Preparación" && !(items.length === 0 || items.every(it => (it?.Estado ?? it?.estado ?? "") === "Listo")) && (
-                          <p className="text-[10px] text-slate-400 text-center font-medium mt-1">
-                            Marca todos los productos como listos para finalizar la orden
-                          </p>
-                        )}
                       </div>
                     ) : (
                       <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">

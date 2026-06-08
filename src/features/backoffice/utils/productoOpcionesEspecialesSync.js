@@ -9,9 +9,7 @@ function normalizeGruposPayload(raw) {
 export function parseOpcionesEspecialesFromGruposApi(gruposRaw) {
   const grupos = normalizeGruposPayload(gruposRaw);
   const key = OPCIONES_ESPECIALES_GRUPO_NOMBRE.toLowerCase();
-  const g =
-    grupos.find((x) => String(x?.nombre ?? x?.Nombre ?? "").trim().toLowerCase() === key) ||
-    (grupos.length === 1 ? grupos[0] : null);
+  const g = grupos.find((x) => String(x?.nombre ?? x?.Nombre ?? "").trim().toLowerCase() === key) || null;
   if (!g) {
     return { grupoId: null, lineas: [""], precios: [""] };
   }

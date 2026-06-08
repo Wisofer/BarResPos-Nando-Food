@@ -29,7 +29,7 @@ export function posCartToPedidoItemsPayload(cart) {
         servicioId: Number(x.id),
         cantidad: Number(x.qty),
         precioUnitario: Number(x.price || 0),
-        estado: "Listo",
+        estado: x.estado || "Pendiente",
         notas: String(x.notas ?? "").trim(),
       },
       x.opcionesSeleccionadas
@@ -141,6 +141,7 @@ export function mapBackendItemsToCart(items) {
         opcionesKey,
         opcionesResumen,
         notas,
+        estado: it?.Estado ?? it?.estado ?? "Pendiente",
       };
     })
     .filter((x) => x.qty > 0);

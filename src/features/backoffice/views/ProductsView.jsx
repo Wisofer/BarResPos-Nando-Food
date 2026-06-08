@@ -59,15 +59,21 @@ export function ProductsView({ currencySymbol = "C$" }) {
   const stockSuggestBlurTimerRef = useRef(null);
 
   const loadProducts = async (categoriaId = selectedCategory) => {
-    const data = await backofficeApi.listProductos({
-      page: 1,
-      pageSize: PAGINATION.PRODUCTOS_ADMIN,
-      search: search || undefined,
-      categoriaId: categoriaId || undefined,
-      activos: true,
-      incluirOpciones: true,
-    });
-    setProducts(Array.isArray(data?.items) ? data.items : []);
+    try {
+      const data = await backofficeApi.listProductos({
+        page: 1,
+        pageSize: PAGINATION.PRODUCTOS_ADMIN,
+        search: search || undefined,
+        categoriaId: categoriaId || undefined,
+        activos: true,
+        incluirOpciones: true,
+      });
+      setProducts(Array.isArray(data?.items) ? data.items : []);
+      setError("");
+    } catch (e) {
+      setError(e?.message || "Error al cargar productos.");
+      snackbar.error(e?.message || "Error al cargar productos.");
+    }
   };
 
   useEffect(() => {
