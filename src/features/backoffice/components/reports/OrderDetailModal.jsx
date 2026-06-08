@@ -3,6 +3,7 @@ import { formatCurrency } from "../../utils/currency.js";
 import { formatDateTime } from "../../utils/reportDates.js";
 import { reporteMetodoPagoLabel, reporteMonedaLabel } from "../../utils/reportUtils.js";
 import { tableHorizontalScrollClass } from "../../utils/modalResponsiveClasses.js";
+import { opcionesResumenSoloTextoOpcion } from "../../utils/productoOpciones.js";
 
 export function OrderDetailModal({ open, onClose, loading, data }) {
   const d = data || {};
@@ -12,7 +13,7 @@ export function OrderDetailModal({ open, onClose, loading, data }) {
         <p className="text-sm text-slate-500">Cargando detalle...</p>
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-slate-500">Número</p>
               <p className="font-semibold text-slate-900">{d.numero || "—"}</p>
@@ -22,10 +23,17 @@ export function OrderDetailModal({ open, onClose, loading, data }) {
               <p className="font-semibold text-slate-900">{formatDateTime(d.fecha)}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <p className="text-slate-500">Origen / Ref.</p>
+              <p className="font-semibold text-slate-900">
+                <span className="capitalize">{d.origen || "—"}</span>
+                {d.referenciaOrigen && d.referenciaOrigen !== "-" ? <span className="text-slate-500 font-normal"> · {d.referenciaOrigen}</span> : null}
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-slate-500">Método</p>
               <p className="font-semibold text-slate-900">{reporteMetodoPagoLabel(d.metodoPago)}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm md:col-span-2">
               <p className="text-slate-500">Moneda</p>
               <p className="font-semibold text-slate-900">{reporteMonedaLabel(d.moneda)}</p>
             </div>
@@ -49,6 +57,11 @@ export function OrderDetailModal({ open, onClose, loading, data }) {
                         {it.variante && (
                           <span className="ml-1.5 text-xs text-slate-400">— {it.variante}</span>
                         )}
+                        {it.opcionesResumen ? (
+                          <div className="mt-0.5 text-[11px] font-medium text-indigo-600 leading-tight">
+                            {opcionesResumenSoloTextoOpcion(it.opcionesResumen)}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-3 py-2">{it.cantidad ?? 0}</td>
                       <td className="px-3 py-2">{formatCurrency(it.precioUnitario ?? 0)}</td>

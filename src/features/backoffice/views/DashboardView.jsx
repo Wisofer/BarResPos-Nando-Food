@@ -253,9 +253,9 @@ export function DashboardView({ currencySymbol = "C$" }) {
           return (
             <article 
               key={item.title} 
-              className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between gap-4 group"
+              className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full group"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                   {item.title}
                 </span>
@@ -265,7 +265,7 @@ export function DashboardView({ currencySymbol = "C$" }) {
               </div>
 
               <div>
-                <p className="text-2xl font-black text-slate-800 tracking-tight leading-none">
+                <p className="text-2xl lg:text-xl xl:text-3xl font-black text-slate-800 tracking-tight leading-none whitespace-nowrap overflow-hidden text-ellipsis">
                   {item.value}
                 </p>
                 <p className="mt-1.5 text-xs font-semibold text-slate-400 truncate">
@@ -273,8 +273,11 @@ export function DashboardView({ currencySymbol = "C$" }) {
                 </p>
               </div>
 
+              {/* Flex spacer to push the meter to the bottom and align all numbers horizontally */}
+              <div className="flex-1"></div>
+
               {showMeter && (
-                <div className="mt-1">
+                <div className="mt-4">
                   <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 mb-1">
                     <span>Rendimiento</span>
                     <span>{percent}%</span>

@@ -3,6 +3,7 @@ import { CheckCircle2, ChefHat, RefreshCw, Send } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { BackofficeListSkeletonLoading } from "../components/index.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
+import { opcionesResumenSoloTextoOpcion } from "../utils/productoOpciones.js";
 
 const KDS_SECTIONS = [
   { key: "por_preparar", label: "Por preparar", states: ["Pendiente", "En Preparación"] },
@@ -73,7 +74,6 @@ export function KitchenView() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState("live");
-  const [checkedItems, setCheckedItems] = useState({});
 
   const isMounted = useRef(true);
   useEffect(() => {
@@ -83,11 +83,18 @@ export function KitchenView() {
     };
   }, []);
 
-  const toggleItemCheck = (orderId, itemId) => {
-    setCheckedItems((prev) => ({
-      ...prev,
-      [`${orderId}-${itemId}`]: !prev[`${orderId}-${itemId}`],
-    }));
+  const toggleItemCheck = async (order, item) => {
+    const orderId = order?.id ?? order?.Id;
+    const itemId = item?.id ?? item?.Id;
+    if (!orderId || !itemId) return;
+    const currentItemState = item?.Estado ?? item?.estado ?? "Pendiente";
+    const nextStateVal = currentItemState === "Listo" ? "Pendiente" : "Listo";
+    try {
+      await backofficeApi.cocinaItemEstado(itemId, nextStateVal);
+      await loadKitchen();
+    } catch (e) {
+      snackbar.error(e.message || "Error al cambiar estado del producto.");
+    }
   };
 
   const loadKitchen = useCallback(async () => {
@@ -318,13 +325,15 @@ export function KitchenView() {
                             const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
                             const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                             const producto = it?.Producto ?? it?.producto ?? "Producto";
+                            const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
+                            const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
                             const notas = it?.Notas ?? it?.notas ?? "";
-                            const isChecked = !!checkedItems[`${id}-${itemId}`];
+                            const isChecked = (it?.Estado ?? it?.estado ?? "") === "Listo";
 
                             return (
                               <li
                                 key={itemId}
-                                onClick={() => toggleItemCheck(id, itemId)}
+                                onClick={() => toggleItemCheck(o, it)}
                                 className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none ${
                                   isChecked
                                     ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
@@ -347,6 +356,11 @@ export function KitchenView() {
                                     {qty > 0 && <span className="text-indigo-600 font-extrabold mr-1.5">{qty}x</span>}
                                     {producto}
                                   </p>
+                                  {opcionesTexto ? (
+                                    <p className={`mt-0.5 text-[11px] font-bold text-indigo-600 ${isChecked ? "line-through opacity-50 text-indigo-400" : ""}`}>
+                                      {opcionesTexto}
+                                    </p>
+                                  ) : null}
                                   {notas ? (
                                     <p className="mt-0.5 text-[10px] text-amber-600 font-medium">Nota: {notas}</p>
                                   ) : null}
@@ -359,17 +373,24 @@ export function KitchenView() {
                     </div>
 
                     {next ? (
-                      <button
-                        type="button"
-                        onClick={() => patchState(o)}
-                        disabled={busyId === id}
-                        className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
-                      >
-                        {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
-                        {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
-                        {current === "Listo" && <Send className="h-3.5 w-3.5" />}
-                        {busyId === id ? "Procesando..." : `Marcar ${next}`}
-                      </button>
+                      <div className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => patchState(o)}
+                          disabled={busyId === id || (current === "En Preparación" && !(items.length === 0 || items.every(it => (it?.Estado ?? it?.estado ?? "") === "Listo")))}
+                          className={`mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
+                        >
+                          {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
+                          {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
+                          {current === "Listo" && <Send className="h-3.5 w-3.5" />}
+                          {busyId === id ? "Procesando..." : `Marcar ${next}`}
+                        </button>
+                        {current === "En Preparación" && !(items.length === 0 || items.every(it => (it?.Estado ?? it?.estado ?? "") === "Listo")) && (
+                          <p className="text-[10px] text-slate-400 text-center font-medium mt-1">
+                            Marca todos los productos como listos para finalizar la orden
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">
                         ✓ Orden entregada
@@ -412,9 +433,12 @@ export function KitchenView() {
                           const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
                           const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                           const producto = it?.Producto ?? it?.producto ?? "Producto";
+                          const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
+                          const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
                           return (
                             <li key={itemId} className="text-[11px] text-slate-700">
                               {qty > 0 ? `${qty}x ` : ""}{producto}
+                              {opcionesTexto ? <span className="ml-1 text-[10px] font-bold text-indigo-600">({opcionesTexto})</span> : null}
                             </li>
                           );
                         })}
@@ -470,9 +494,12 @@ export function KitchenView() {
                               const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
                               const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                               const producto = it?.Producto ?? it?.producto ?? "Producto";
+                              const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
+                              const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
                               return (
                                 <li key={itemId} className="text-xs">
                                   {qty > 0 ? `${qty}x ` : ""}{producto}
+                                  {opcionesTexto ? <span className="ml-1 text-[11px] font-bold text-indigo-600">({opcionesTexto})</span> : null}
                                 </li>
                               );
                             })}
