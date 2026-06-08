@@ -2,7 +2,6 @@ import { backofficeApi } from "../services/backofficeApi.js";
 import {
   PRECUENTA_PRINT_READY_INFO,
   openBackendPrintUrl,
-  tryPrintHtmlBody,
   tryPrintPrecuentaFromPayload,
 } from "./backofficePrint.js";
 import { formatCurrency } from "./currency.js";
@@ -40,11 +39,7 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
         snackbar?.info(PRECUENTA_PRINT_READY_INFO);
         return;
       }
-      const htmlDirect = await backofficeApi.pedidoPrecuentaHtml(orderId).catch(() => null);
-      if (await tryPrintHtmlBody(htmlDirect)) {
-        snackbar?.info(PRECUENTA_PRINT_READY_INFO);
-        return;
-      }
+
     } catch (err) {
       if (err?.message === "CANCEL_BY_USER") {
         return;

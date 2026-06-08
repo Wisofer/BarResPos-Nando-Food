@@ -31,7 +31,6 @@ import {
   PRECUENTA_PRINT_READY_INFO,
   pagoResponseHasReciboPrintChannel,
   printKitchenTicketAfterEnviarCocina,
-  tryPrintHtmlBody,
   tryPrintPrecuentaFromPayload,
   tryPrintReciboFromPagoResponse,
 } from "../utils/backofficePrint.js";
@@ -667,11 +666,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         snackbar.info(PRECUENTA_PRINT_READY_INFO);
         return true;
       }
-      const rawHtml = await backofficeApi.deliveryPedidoPrecuentaHtml(pid);
-      if (await tryPrintHtmlBody(rawHtml)) {
-        snackbar.info(PRECUENTA_PRINT_READY_INFO);
-        return true;
-      }
+
     } catch (err) {
       if (err?.message === "CANCEL_BY_USER") {
         return false;

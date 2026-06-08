@@ -176,6 +176,7 @@ export function StockMovementModal({
                   <input
                     type="number"
                     min="1"
+                    onWheel={(e) => e.target.blur()}
                     value={stockForm.cantidad}
                     onChange={(e) => setStockForm((f) => ({ ...f, cantidad: e.target.value }))}
                     className={stockModalInputClass}
@@ -188,6 +189,7 @@ export function StockMovementModal({
                     type="number"
                     min="0"
                     step="0.01"
+                    onWheel={(e) => e.target.blur()}
                     value={stockForm.costoUnitario}
                     onChange={(e) => setStockForm((f) => ({ ...f, costoUnitario: e.target.value }))}
                     className={stockModalInputClass}
@@ -246,6 +248,7 @@ export function StockMovementModal({
                 <input
                   type="number"
                   min="1"
+                  onWheel={(e) => e.target.blur()}
                   value={stockForm.cantidad}
                   onChange={(e) => setStockForm((f) => ({ ...f, cantidad: e.target.value }))}
                   className={cn(stockModalInputClass, "text-red-600")}
@@ -261,6 +264,7 @@ export function StockMovementModal({
               <input
                 type="number"
                 min="0"
+                onWheel={(e) => e.target.blur()}
                 value={stockForm.cantidadNueva}
                 onChange={(e) => setStockForm((f) => ({ ...f, cantidadNueva: e.target.value }))}
                 className={cn(stockModalInputClass, "text-primary-600")}

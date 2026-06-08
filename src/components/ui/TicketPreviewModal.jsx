@@ -1,38 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Printer, X } from "lucide-react";
 
 export function TicketPreviewModal() {
   const [open, setOpen] = useState(false);
-  const [htmlContent, setHtmlContent] = useState("");
+  const [textContent, setTextContent] = useState("");
   const [onConfirm, setOnConfirm] = useState(null);
   const [onCancel, setOnCancel] = useState(null);
-  const [iframeHeight, setIframeHeight] = useState(400);
-  const iframeRef = useRef(null);
 
   useEffect(() => {
     const handleShowPreview = (e) => {
-      const { html, onConfirmPrint, onCancelPrint } = e.detail || {};
-      if (!html) return;
+      const { text, onConfirmPrint, onCancelPrint } = e.detail || {};
+      if (!text) return;
 
-      // Eliminar scripts automáticos de impresión del backend para evitar doble diálogo
-      const sanitized = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-      
-      // Inyectar estilos de reset dentro del HTML para que el ticket se vea perfecto en el iframe
-      const styledHtml = sanitized.replace(
-        /<body([^>]*)>/i,
-        `<body$1 style="margin:0;padding:8px 10px;background:transparent;box-sizing:border-box;">
-        <style>
-          * { box-sizing: border-box !important; word-wrap: break-word !important; }
-          body { margin: 0 !important; padding: 8px 10px !important; background: transparent !important; }
-          .ticket { width: 100% !important; max-width: 100% !important; margin: 0 auto !important; padding: 0 !important; background: transparent !important; box-shadow: none !important; }
-          img { max-width: 130px !important; max-height: 70px !important; object-fit: contain !important; display: block !important; margin: 0 auto 10px !important; }
-          table { width: 100% !important; max-width: 100% !important; }
-          td, th { overflow-wrap: break-word !important; word-break: break-word !important; }
-        </style>`
-      );
-
-      setHtmlContent(styledHtml);
-      setIframeHeight(400);
+      setTextContent(text);
       setOnConfirm(() => onConfirmPrint);
       setOnCancel(() => onCancelPrint);
       setOpen(true);
@@ -40,22 +20,6 @@ export function TicketPreviewModal() {
 
     window.addEventListener("show-ticket-preview", handleShowPreview);
     return () => window.removeEventListener("show-ticket-preview", handleShowPreview);
-  }, []);
-
-  // Auto-redimensiona el iframe a la altura de su contenido al cargar
-  const handleIframeLoad = useCallback(() => {
-    try {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!doc) return;
-      const height = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-      if (height && height > 50) {
-        setIframeHeight(height + 16); // pequeño padding extra
-      }
-    } catch {
-      // Cross-origin fallback — usar altura predeterminada
-    }
   }, []);
 
   if (!open) return null;
@@ -72,7 +36,7 @@ export function TicketPreviewModal() {
 
   return (
     <div className="fixed inset-0 z-[400] flex items-end justify-center sm:items-center bg-slate-900/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="flex w-full max-w-sm flex-col rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh]">
+      <div className="flex w-full max-w-[420px] flex-col rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-100 max-h-[92vh]">
 
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-white">
@@ -99,7 +63,7 @@ export function TicketPreviewModal() {
         <div className="flex-1 overflow-y-auto bg-slate-100 py-5 px-4">
           {/* Simulación del rollo de papel */}
           <div
-            className="w-full max-w-[340px] mx-auto rounded-sm overflow-hidden"
+            className="w-full max-w-[380px] mx-auto rounded-sm overflow-x-auto p-5"
             style={{
               background: "#fdfdfb",
               boxShadow: "0 2px 8px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)",
@@ -107,23 +71,9 @@ export function TicketPreviewModal() {
               borderBottom: "3px dashed #cbd5e1",
             }}
           >
-            {/* Iframe auto-redimensionable — renderiza el HTML completo del backend correctamente */}
-            <iframe
-              ref={iframeRef}
-              title="ticket-preview"
-              srcDoc={htmlContent}
-              onLoad={handleIframeLoad}
-              scrolling="no"
-              style={{
-                display: "block",
-                width: "100%",
-                height: `${iframeHeight}px`,
-                border: "none",
-                background: "transparent",
-                overflow: "hidden",
-              }}
-              sandbox="allow-same-origin"
-            />
+            <pre className="whitespace-pre font-mono text-[11px] leading-[14px] sm:text-[12px] sm:leading-[16px] text-black" style={{fontFamily: "'Courier New', Courier, monospace"}}>
+              {textContent}
+            </pre>
           </div>
         </div>
 

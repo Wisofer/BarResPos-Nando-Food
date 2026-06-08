@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { DEFAULT_TIPO_CAMBIO_USD, formatCurrency } from "../utils/currency.js";
 
@@ -24,6 +24,7 @@ export function PosProcesarVentaModal({
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [moneda, setMoneda] = useState("C$");
   const [comentario, setComentario] = useState("");
+  const montoInputRef = useRef(null);
   const tc = Number(exchangeRate) > 0 ? Number(exchangeRate) : DEFAULT_TIPO_CAMBIO_USD;
   const isUsd = moneda === "USD";
 
@@ -80,6 +81,28 @@ export function PosProcesarVentaModal({
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [tipoPago, totalAPagarMoneda, open]);
+
+  // --- NEW UX HOOKS ---
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && open && !busy) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, busy, onClose]);
+
+  useEffect(() => {
+    if (open && montoInputRef.current && tipoPago === "Efectivo") {
+      const timer = setTimeout(() => {
+        montoInputRef.current?.focus();
+        montoInputRef.current?.select();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [open, tipoPago]);
 
   if (!open) return null;
 
@@ -193,6 +216,7 @@ export function PosProcesarVentaModal({
                       min="0"
                       max={tipoDescuento === "porcentaje" ? "100" : undefined}
                       step="any"
+                      onWheel={(e) => e.target.blur()}
                       value={descuento}
                       onChange={(e) => setDescuento(e.target.value)}
                       placeholder="0"
@@ -226,12 +250,14 @@ export function PosProcesarVentaModal({
             <label className="text-xs font-medium text-slate-600">
               {tipoPago === "Efectivo" ? "Total efectivo (recibido)" : "Monto cobrado (= total)"}
               <input
+                ref={montoInputRef}
                 type="number"
                 min="0"
                 step="0.01"
+                onWheel={(e) => e.target.blur()}
                 value={montoRecibido}
                 onChange={(e) => setMontoRecibido(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                 disabled={busy || tipoPago !== "Efectivo"}
               />
             </label>

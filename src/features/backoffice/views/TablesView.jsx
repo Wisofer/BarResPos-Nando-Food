@@ -55,7 +55,7 @@ import {
   pagoResponseHasReciboPrintChannel,
   printKitchenTicketAfterEnviarCocina,
   tryPrintReciboFromPagoResponse,
-  openBackendPrintHtml,
+  openBackendPrintUrl,
   resolveBackendAssetUrl,
   withImpressionAccessTokenQuery,
 } from "../utils/backofficePrint.js";
@@ -1371,47 +1371,29 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           }
           if (!ordenId) throw new Error("No se encontró el ID de la orden.");
 
-          // 1. Intentamos obtener el HTML del backend para la previsualización
-          let html = "";
+          // 1. Intentamos obtener el TEXTO del backend para la previsualización
+          let text = "";
           try {
-            const pre = await backofficeApi.pedidoPrecuenta(ordenId);
-            const rawHtmlField = pre?.htmlPrecuenta ?? pre?.HtmlPrecuenta ?? "";
-            if (rawHtmlField) {
-              html = rawHtmlField;
-            } else {
-              const url = pre?.urlImpresionPrecuenta ?? pre?.UrlImpresionPrecuenta ?? pre?.urlImpresion ?? pre?.UrlImpresion;
-              if (url) {
-                const resolved = resolveBackendAssetUrl(url);
-                const fetchUrl = withImpressionAccessTokenQuery(resolved);
-                const res = await fetch(fetchUrl, {
-                  headers: { Authorization: `Bearer ${getToken()}` },
-                });
-                if (res.ok) {
-                  html = await res.text();
-                }
-              }
+            const fetchUrl = withImpressionAccessTokenQuery(resolveBackendAssetUrl(`/api/v1/impresion/comanda/${ordenId}/preview`));
+            const res = await fetch(fetchUrl, {
+              headers: { Authorization: `Bearer ${getToken()}` },
+            });
+            if (res.ok) {
+              const data = await res.json();
+              text = data.preview;
             }
           } catch {
             /* ignore */
           }
 
-          if (!html) {
-            try {
-              const rawHtml = await backofficeApi.pedidoPrecuentaHtml(ordenId);
-              html = rawHtml?.html ?? rawHtml?.Html ?? (typeof rawHtml === "string" ? rawHtml : "");
-            } catch {
-              /* ignore */
-            }
-          }
-
-          // Si obtuvimos el HTML del backend, abrimos la previsualización nativa
-          if (html) {
+          // Si obtuvimos el texto del backend, abrimos la previsualización nativa
+          if (text) {
             window.dispatchEvent(
               new CustomEvent("show-ticket-preview", {
                 detail: {
-                  html,
+                  text,
                   onConfirmPrint: async () => {
-                    await openBackendPrintHtml(html, { bypassPreview: true });
+                    await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
                     snackbar.success("Enviado a la impresora física.");
                   },
                   onCancelPrint: () => {},
@@ -1421,7 +1403,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             return;
           }
 
-          // Fallback: Si no hay HTML del backend, generamos y previsualizamos un ticket local hermoso
+          // Fallback: Si no hay texto del backend, generamos texto local
           let lines = posCartToModalLines(posCartRef.current);
 
           if (lines.length === 0) {
@@ -1445,46 +1427,19 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             }
           }
 
-          // Creamos una pre-cuenta local en HTML para que la previsualización se vea igual de hermosa
           const sym = currencySymbol;
-          const esc = (s) =>
-            String(s ?? "")
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;");
-          const rows = lines
-            .map(
-              (x) => `<tr>
-              <td>${esc(x.name)}</td>
-              <td style="text-align:center">${esc(x.qty)}</td>
-              <td style="text-align:right">${esc(formatCurrency(x.price, sym))}</td>
-              <td style="text-align:right">${esc(formatCurrency(x.lineTotal ?? Number(x.price || 0) * Number(x.qty || 0), sym))}</td>
-            </tr>`
-            )
-            .join("");
-          const localHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Pre-cuenta</title>
-            <style>
-              body{font-family:monospace;padding:8px;font-size:12px;color:#000;margin:0}
-              h1{font-size:15px;margin:0 0 4px;text-align:center} .sub{color:#000;font-size:11px;margin-bottom:12px;text-align:center}
-              table{width:100%;border-collapse:collapse;font-size:11px}
-              th,td{border-bottom:1px dashed #000;padding:4px 2px}
-              th{text-align:left;font-weight:bold}
-              .totals{margin-top:12px;text-align:right;font-size:13px;font-weight:bold}
-            </style></head><body>
-            <h1>Pre-cuenta</h1>
-            <div class="sub">${esc(posTable.zone)} · ${esc(posTable.displayId)}</div>
-            <table><thead><tr><th>Detalle</th><th style="text-align:center">Cant</th><th style="text-align:right">P.U</th><th style="text-align:right">P.T</th></tr></thead><tbody>${rows}</tbody></table>
-            <div class="totals"><strong>Total ${esc(formatCurrency(total, sym))}</strong></div>
-            <p style="font-size:10px;text-align:center;margin-top:16px">Vista informativa. El comprobante oficial se emite al registrar el pago.</p>
-            </body></html>`;
+          let fallbackText = `       [LOGO DEL NEGOCIO]\n       BAR REST POS\n------------------------------------------------\nCOMANDA: Local\nMESA:   ${posTable.displayId}\nFECHA:  ${new Date().toLocaleString()}\n------------------------------------------------\nCANT PRODUCTO                PRECIO\n------------------------------------------------\n`;
+          lines.forEach(x => {
+            fallbackText += `${String(x.qty).padEnd(6)}${String(x.name).substring(0,25).padEnd(28)}${formatCurrency(x.lineTotal, sym).padStart(14)}\n`;
+          });
+          fallbackText += `------------------------------------------------\nTOTAL:                                ${formatCurrency(total, sym).padStart(14)}\n------------------------------------------------\n       Comanda para mesero`;
 
           window.dispatchEvent(
             new CustomEvent("show-ticket-preview", {
               detail: {
-                html: localHtml,
+                text: fallbackText,
                 onConfirmPrint: async () => {
-                  await openBackendPrintHtml(localHtml, { bypassPreview: true });
+                  await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
                   snackbar.success("Enviado a la impresora física.");
                 },
                 onCancelPrint: () => {},

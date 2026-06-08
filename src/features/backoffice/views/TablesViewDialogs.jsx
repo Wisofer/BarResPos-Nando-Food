@@ -60,6 +60,7 @@ export function TableFormDialog({ open, form, setForm, saving, locations, onClos
             <input
               type="number"
               min="1"
+              onWheel={(e) => e.target.blur()}
               value={form.capacidad}
               onChange={(e) => setForm((f) => ({ ...f, capacidad: e.target.value }))}
               placeholder="Capacidad"

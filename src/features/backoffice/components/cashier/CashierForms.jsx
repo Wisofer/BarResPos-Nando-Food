@@ -44,6 +44,7 @@ export function CashierForms({
               type="number"
               step="0.01"
               min="0.01"
+              onWheel={(e) => e.target.blur()}
               value={montoInicial}
               onChange={(e) => setMontoInicial(e.target.value)}
               placeholder="0.00"
@@ -88,6 +89,7 @@ export function CashierForms({
               <input
                 type="number"
                 step="0.01"
+                onWheel={(e) => e.target.blur()}
                 value={cierreForm.montoReal}
                 onChange={(e) => setCierreForm((s) => ({ ...s, montoReal: e.target.value }))}
                 placeholder="0.00"

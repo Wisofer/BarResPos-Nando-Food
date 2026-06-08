@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle } from "lucide-react";
+import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle, Printer, Receipt, ChefHat, ClipboardList } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { authApi } from "../../../api/auth.js";
 import { BackofficeDialog, BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
@@ -72,6 +72,9 @@ export function SettingsView() {
   const [enablePantallaCocina, setEnablePantallaCocina] = useState(true);
   const [logoUrl, setLogoUrl] = useState("");
   const [appNameInput, setAppNameInput] = useState("");
+  const [impresoraCaja, setImpresoraCaja] = useState("");
+  const [impresoraCocina, setImpresoraCocina] = useState("");
+  const [impresoraComanda, setImpresoraComanda] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState({ open: false, id: null });
   const [pinCancelacionInput, setPinCancelacionInput] = useState("");
@@ -88,6 +91,7 @@ export function SettingsView() {
     { id: "general", label: "General & Moneda", icon: Sliders, desc: "Moneda, tipo de cambio y perfil" },
     { id: "visual", label: "Identidad Visual", icon: Image, desc: "Logo del negocio para tickets" },
     { id: "preferencias", label: "Preferencias POS", icon: Settings, desc: "Alertas, sonidos y vistas" },
+    { id: "impresoras", label: "Impresoras", icon: Printer, desc: "Configuración térmica" },
     { id: "seguridad", label: "Seguridad", icon: KeyRound, desc: "PIN de cancelación de pedidos" },
     { id: "whatsapp", label: "WhatsApp", icon: MessageSquare, desc: "Plantillas de facturación" },
     { id: "datos", label: "Datos", icon: Database, desc: "Mantenimiento y limpieza" },
@@ -118,6 +122,13 @@ export function SettingsView() {
 
     const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
     setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
+
+    const impCaja = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraCaja");
+    setImpresoraCaja(impCaja ? impCaja.valor || impCaja.Valor || "" : "");
+    const impCoc = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraCocina");
+    setImpresoraCocina(impCoc ? impCoc.valor || impCoc.Valor || "" : "");
+    const impCom = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraComanda");
+    setImpresoraComanda(impCom ? impCom.valor || impCom.Valor || "" : "");
   };
 
   useEffect(() => {
@@ -343,6 +354,21 @@ export function SettingsView() {
     }
   };
 
+  const savePrinters = async () => {
+    setSaving(true);
+    try {
+      await backofficeApi.upsertConfiguracion("Tickets:ImpresoraCaja", impresoraCaja, "Nombre de impresora Windows para Caja/Recibos");
+      await backofficeApi.upsertConfiguracion("Tickets:ImpresoraCocina", impresoraCocina, "Nombre de impresora Windows para Cocina");
+      await backofficeApi.upsertConfiguracion("Tickets:ImpresoraComanda", impresoraComanda, "Nombre de impresora Windows para Comandas");
+      await loadAll();
+      snackbar.success("Configuración de impresoras térmicas actualizada.");
+    } catch (err) {
+      snackbar.error(err.message || "Error al actualizar impresoras.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -482,7 +508,8 @@ export function SettingsView() {
       k !== "mesas:habilitarvistazonas" &&
       k !== "mesas:habilitarvistaplano" &&
       k !== "tickets:logourl" &&
-      k !== "tickets:companyname"
+      k !== "tickets:companyname" &&
+      !k.startsWith("tickets:impresora")
     );
   });
 
@@ -848,6 +875,106 @@ export function SettingsView() {
                           enablePantallaCocina ? "translate-x-6" : "translate-x-1",
                         )}
                       />
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {activeTab === "impresoras" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="border-b border-slate-100 p-5">
+                  <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <Printer className="h-5 w-5 text-blue-500" />
+                    Impresoras Térmicas (Nativas)
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Ingresa el nombre exacto de la impresora tal como aparece en Windows (Panel de Control).
+                  </p>
+                </div>
+                
+                <div className="p-0">
+                  <div className="flex flex-col">
+                    {/* Caja */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <div className="sm:w-1/3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                          <Receipt className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">Caja / Recibo</label>
+                          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Facturas de clientes finales.</p>
+                        </div>
+                      </div>
+                      <div className="sm:w-2/3">
+                        <input
+                          type="text"
+                          value={impresoraCaja}
+                          onChange={(e) => setImpresoraCaja(e.target.value)}
+                          placeholder="Ej. POS-80C Caja"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Cocina */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <div className="sm:w-1/3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                          <ChefHat className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">Cocina</label>
+                          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Órdenes para chefs.</p>
+                        </div>
+                      </div>
+                      <div className="sm:w-2/3">
+                        <input
+                          type="text"
+                          value={impresoraCocina}
+                          onChange={(e) => setImpresoraCocina(e.target.value)}
+                          placeholder="Ej. POS-80C Cocina"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Comanda */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-slate-50/50 transition-colors">
+                      <div className="sm:w-1/3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                          <ClipboardList className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">Comanda (Mesero)</label>
+                          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Pre-cuentas en mesa.</p>
+                        </div>
+                      </div>
+                      <div className="sm:w-2/3">
+                        <input
+                          type="text"
+                          value={impresoraComanda}
+                          onChange={(e) => setImpresoraComanda(e.target.value)}
+                          placeholder="Ej. POS-80C Barra"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-5 border-t border-slate-100">
+                    <p className="text-xs text-slate-500">
+                      💡 <b>Tip:</b> Si tienes solo una impresora, escribe el mismo nombre en todas las cajas.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void savePrinters()}
+                      disabled={saving}
+                      className="w-full sm:w-auto rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Guardar
                     </button>
                   </div>
                 </div>

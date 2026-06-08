@@ -199,6 +199,7 @@ export function ProductFormModal({
                         type="number"
                         step="0.01"
                         inputMode="decimal"
+                        onWheel={(e) => e.target.blur()}
                         value={usaPreciosPorOpcion ? "0" : form.precioVenta}
                         onChange={(e) => {
                           if (!usaPreciosPorOpcion) setForm((f) => ({ ...f, precioVenta: e.target.value }));
@@ -222,6 +223,7 @@ export function ProductFormModal({
                         type="number"
                         step="0.01"
                         inputMode="decimal"
+                        onWheel={(e) => e.target.blur()}
                         value={form.precioCompra}
                         onChange={(e) => setForm((f) => ({ ...f, precioCompra: e.target.value }))}
                         placeholder="0.00"
@@ -253,6 +255,7 @@ export function ProductFormModal({
                     <input
                       type="number"
                       inputMode="numeric"
+                      onWheel={(e) => e.target.blur()}
                       value={form.stock}
                       onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
                       placeholder="0"
@@ -264,6 +267,7 @@ export function ProductFormModal({
                     <input
                       type="number"
                       inputMode="numeric"
+                      onWheel={(e) => e.target.blur()}
                       value={form.stockMinimo}
                       onChange={(e) => setForm((f) => ({ ...f, stockMinimo: e.target.value }))}
                       placeholder="0"
@@ -355,6 +359,7 @@ export function ProductFormModal({
                           type="number"
                           step="0.01"
                           inputMode="decimal"
+                          onWheel={(e) => e.target.blur()}
                           value={(form.opcionesEspecialesPrices ?? [])[idx] ?? ""}
                           onChange={(e) =>
                             setForm((f) => {

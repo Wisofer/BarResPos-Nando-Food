@@ -65,6 +65,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
       search: search || undefined,
       categoriaId: categoriaId || undefined,
       activos: true,
+      incluirOpciones: true,
     });
     setProducts(Array.isArray(data?.items) ? data.items : []);
   };

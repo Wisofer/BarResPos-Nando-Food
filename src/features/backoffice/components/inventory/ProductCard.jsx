@@ -17,11 +17,12 @@ export function ProductCard({ product, currencySymbol, openEdit, openProductHist
   const img = getProductImageUrl(p);
   const categoriaLabel = String(p.categoriaProducto?.nombre ?? p.categoriaProducto ?? p.categoriaNombre ?? p.categoria ?? p.Categoria ?? "Sin categoría");
 
+  const basePrice = Number(p.precioVenta ?? p.precio ?? 0);
   const tieneOpcionesConPrecio = productoTieneOpcionesVisibles(p) && 
-    normalizeOpcionesGrupos(p).some((g) => {
+    (basePrice === 0 || normalizeOpcionesGrupos(p).some((g) => {
       const opts = g?.opciones ?? g?.Opciones ?? [];
       return opts.some((o) => o?.activo !== false && o?.Activo !== false && Number(o?.precioAdicional ?? o?.PrecioAdicional ?? 0) > 0);
-    });
+    }));
 
   const stockClass = lowStock 
     ? (criticalStock ? "bg-rose-50 border-rose-100 text-rose-600 font-extrabold" : "bg-amber-50 border-amber-100 text-amber-600 font-extrabold") 
@@ -89,7 +90,7 @@ export function ProductCard({ product, currencySymbol, openEdit, openProductHist
               </span>
             ) : (
               <p className="text-base font-black tabular-nums text-slate-850">
-                {formatCurrency(p.precioVenta ?? p.precio ?? 0, currencySymbol)}
+                {formatCurrency(basePrice, currencySymbol)}
               </p>
             )}
           </div>

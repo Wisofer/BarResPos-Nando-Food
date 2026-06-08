@@ -269,6 +269,7 @@ export function OrderDetailPanel({
                 <input
                   type="number"
                   min="1"
+                  onWheel={(e) => e.target.blur()}
                   value={editForm.mesaId}
                   onChange={(e) => setEditForm((s) => ({ ...s, mesaId: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
@@ -279,6 +280,7 @@ export function OrderDetailPanel({
                 <input
                   type="number"
                   min="0"
+                  onWheel={(e) => e.target.blur()}
                   value={editForm.clienteId}
                   onChange={(e) => setEditForm((s) => ({ ...s, clienteId: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
@@ -289,6 +291,7 @@ export function OrderDetailPanel({
                 <input
                   type="number"
                   min="0"
+                  onWheel={(e) => e.target.blur()}
                   value={editForm.meseroId}
                   onChange={(e) => setEditForm((s) => ({ ...s, meseroId: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
@@ -359,6 +362,7 @@ export function OrderDetailPanel({
                         <input
                           type="number"
                           min="1"
+                          onWheel={(e) => e.target.blur()}
                           value={it.servicioId === undefined || it.servicioId === null ? "" : String(it.servicioId)}
                           onChange={(e) =>
                             setEditForm((s) => ({
@@ -374,6 +378,7 @@ export function OrderDetailPanel({
                         <input
                           type="number"
                           min="1"
+                          onWheel={(e) => e.target.blur()}
                           value={it.cantidad}
                           onChange={(e) =>
                             setEditForm((s) => ({
@@ -390,6 +395,7 @@ export function OrderDetailPanel({
                           type="number"
                           step="0.01"
                           min="0"
+                          onWheel={(e) => e.target.blur()}
                           value={it.precioUnitario}
                           onChange={(e) =>
                             setEditForm((s) => ({
