@@ -96,19 +96,39 @@ export function extractUrlImpresionCocina(data) {
   return String(u || "").trim();
 }
 
+/** URL del ticket bar devuelta por PATCH `.../enviar-cocina`. */
+export function extractUrlImpresionBar(data) {
+  if (!data || typeof data !== "object") return "";
+  const u = data.urlImpresionBar ?? data.UrlImpresionBar ?? "";
+  return String(u || "").trim();
+}
+
 /**
- * Tras enviar a cocina (200 + data): manda a imprimir al hardware de cocina.
+ * Tras enviar a cocina (200 + data): manda a imprimir al hardware de cocina y/o bar.
  * @param {object} data — `data` del envelope API
  * @param {{ info?: (msg: string) => void }} [snackbar] — si falla, muestra aviso
  */
 export async function printKitchenTicketAfterEnviarCocina(data, snackbar) {
-  const url = extractUrlImpresionCocina(data);
-  if (!url) return false;
-  const printed = await openBackendPrintUrl(url);
-  if (!printed && typeof snackbar?.info === "function") {
+  const urlCocina = extractUrlImpresionCocina(data);
+  const urlBar = extractUrlImpresionBar(data);
+  
+  if (!urlCocina && !urlBar) return false;
+
+  let printedCocina = true;
+  let printedBar = true;
+
+  if (urlCocina) {
+      printedCocina = await openBackendPrintUrl(urlCocina);
+  }
+
+  if (urlBar) {
+      printedBar = await openBackendPrintUrl(urlBar);
+  }
+
+  if ((!printedCocina || !printedBar) && typeof snackbar?.info === "function") {
     snackbar.info(KITCHEN_PRINT_AUTO_FAIL_INFO);
   }
-  return printed;
+  return printedCocina || printedBar;
 }
 
 /** Extrae URL de impresión desde respuesta de precuenta. */

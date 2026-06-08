@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Printer, X } from "lucide-react";
+import { resolveBackendAssetUrl } from "../../features/backoffice/utils/backofficePrint.js";
 
 export function TicketPreviewModal() {
   const [open, setOpen] = useState(false);
@@ -21,6 +22,10 @@ export function TicketPreviewModal() {
     window.addEventListener("show-ticket-preview", handleShowPreview);
     return () => window.removeEventListener("show-ticket-preview", handleShowPreview);
   }, []);
+
+  const companyName = (() => { try { return localStorage.getItem("pos_app_name") || "BarRestPOS"; } catch { return "BarRestPOS"; } })();
+  const hasLogo = (() => { try { return !!localStorage.getItem("pos_logo_url"); } catch { return false; } })();
+  const logoUrl = (() => { try { return localStorage.getItem("pos_logo_url"); } catch { return null; } })();
 
   if (!open) return null;
 
@@ -45,8 +50,11 @@ export function TicketPreviewModal() {
               <Printer className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Previsualización de Ticket</h3>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Formato Térmico 80mm</p>
+              <h3 className="text-sm font-bold text-slate-800">{companyName}</h3>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Previsualización de Ticket · Formato Térmico 80mm
+                {hasLogo && <span className="ml-1.5 inline-flex items-center gap-0.5 text-emerald-600">· Logo ✓</span>}
+              </p>
             </div>
           </div>
           <button
@@ -71,6 +79,11 @@ export function TicketPreviewModal() {
               borderBottom: "3px dashed #cbd5e1",
             }}
           >
+            {hasLogo && logoUrl && (
+              <div className="flex justify-center mb-3">
+                <img src={resolveBackendAssetUrl(logoUrl)} alt="Logo del negocio" className="max-h-20 max-w-[280px] object-contain" onError={(e) => { e.target.style.display = "none"; }} />
+              </div>
+            )}
             <pre className="whitespace-pre font-mono text-[11px] leading-[14px] sm:text-[12px] sm:leading-[16px] text-black" style={{fontFamily: "'Courier New', Courier, monospace"}}>
               {textContent}
             </pre>

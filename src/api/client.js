@@ -122,6 +122,7 @@ async function request(path, options = {}, retryOnUnauthorized = true, withEnvel
 export const api = {
   get: (path) => request(path, { method: "GET" }),
   post: (path, body) => request(path, { method: "POST", body }),
+  postWithEnvelope: (path, body) => request(path, { method: "POST", body }, true, true),
   put: (path, body) => request(path, { method: "PUT", body }),
   patch: (path, body) => request(path, { method: "PATCH", body }),
   patchWithEnvelope: (path, body) => request(path, { method: "PATCH", body }, true, true),

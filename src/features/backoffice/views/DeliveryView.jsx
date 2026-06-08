@@ -29,6 +29,7 @@ import { PAGINATION } from "../constants/pagination.js";
 import { DEFAULT_TIPO_CAMBIO_USD, formatCurrency } from "../utils/currency.js";
 import {
   PRECUENTA_PRINT_READY_INFO,
+  openBackendPrintUrl,
   pagoResponseHasReciboPrintChannel,
   printKitchenTicketAfterEnviarCocina,
   tryPrintPrecuentaFromPayload,
@@ -664,15 +665,38 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         snackbar.info(PRECUENTA_PRINT_READY_INFO);
         return true;
       }
-
     } catch (err) {
-      if (err?.message === "CANCEL_BY_USER") {
-        return false;
-      }
+      if (err?.message === "CANCEL_BY_USER") return false;
     }
 
-    snackbar.error("No se pudo obtener la pre-cuenta para imprimir.");
-    return false;
+    // Fallback: generar ticket local
+    const companyName = (() => { try { return localStorage.getItem("pos_app_name") || "BarRestPOS"; } catch { return "BarRestPOS"; } })();
+    const hasLogo = (() => { try { return !!localStorage.getItem("pos_logo_url"); } catch { return false; } })();
+    const logoLine = hasLogo ? `       [LOGO]` : `       ${companyName}`;
+    const fechaLocal = new Date().toLocaleString("es-NI", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+    const lines = posCartToModalLines(cart);
+    const total = lines.reduce((s, x) => s + x.lineTotal, 0);
+    const sym = currencySymbol;
+    let fallbackText = `${logoLine}\n       ${companyName}\n------------------------------------------------\nCOMANDA: Delivery #${pid}\nFECHA:  ${fechaLocal}\n------------------------------------------------\nCANT PRODUCTO                PRECIO\n------------------------------------------------\n`;
+    lines.forEach(x => {
+      fallbackText += `${String(x.qty).padEnd(6)}${String(x.name).substring(0,25).padEnd(28)}${formatCurrency(x.lineTotal, sym).padStart(14)}\n`;
+    });
+    fallbackText += `------------------------------------------------\nTOTAL:                                ${formatCurrency(total, sym).padStart(14)}\n------------------------------------------------\n       Comanda Delivery\n       ${fechaLocal}`;
+
+    window.dispatchEvent(
+      new CustomEvent("show-ticket-preview", {
+        detail: {
+          text: fallbackText,
+          onConfirmPrint: async () => {
+            const printed = await openBackendPrintUrl(`/api/v1/impresion/comanda/${pid}`);
+            if (printed) snackbar.success("Enviado a la impresora física.");
+            else snackbar.warning("No se pudo imprimir. Verifique la impresora.");
+          },
+          onCancelPrint: () => {},
+        },
+      })
+    );
+    return true;
   };
 
   const handleEnviarCocina = async () => {
@@ -762,7 +786,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       }
 
       if (pagoResponseHasReciboPrintChannel(resp)) {
-        void tryPrintReciboFromPagoResponse(resp).catch(() => { });
+        const printed = await tryPrintReciboFromPagoResponse(resp);
+        if (!printed) snackbar.warning("Venta procesada, pero no se pudo imprimir el recibo.");
       }
 
       snackbar.success("Venta procesada.");

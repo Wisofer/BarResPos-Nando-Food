@@ -76,16 +76,17 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
     return;
   }
 
+  const companyName = (() => { try { return localStorage.getItem("pos_app_name") || "BarRestPOS"; } catch { return "BarRestPOS"; } })();
   const html = `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Ticket ${escapeHtml(order.numero || `#${order.id}`)}</title>
+    <title>${escapeHtml(companyName)} - Ticket ${escapeHtml(order.numero || `#${order.id}`)}</title>
     <style>
-      body{font-family:system-ui,-apple-system,sans-serif;padding:16px;color:#111;max-width:820px;margin:0 auto}
-      h1{font-size:18px;margin:0 0 4px}
+      body{font-family:system-ui,-apple-system,sans-serif;padding:16px;color:#111;max-width:820px;margin:0 auto;text-align:center}
+      h1{font-size:20px;margin:0 0 4px}
       .meta{font-size:12px;color:#555;margin-bottom:10px}
-      table{width:100%;border-collapse:collapse;font-size:12px}
+      table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
       th,td{padding:6px 4px;border-bottom:1px solid #e5e7eb}
       th{text-align:left;background:#f8fafc}
       .totals{margin-top:12px;text-align:right;font-size:13px;line-height:1.5}
@@ -93,7 +94,8 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
     </style>
   </head>
   <body>
-    <h1>Ticket de pedido</h1>
+    <h1>${escapeHtml(companyName)}</h1>
+    <p style="font-size:11px;color:#888;margin:0 0 8px">Ticket de pedido</p>
     <div class="meta">
       <div>Pedido: ${escapeHtml(order.numero || `#${order.id}`)}</div>
       <div>Mesa: ${escapeHtml(order.mesa || "-")}</div>

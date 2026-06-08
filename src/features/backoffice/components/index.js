@@ -15,3 +15,4 @@ export { PosProductCatalogTile } from "./PosProductCatalogTile.jsx";
 export { BackofficeDialog } from "./BackofficeDialog.jsx";
 export { BackofficeShellHeaderActions } from "./BackofficeShellHeaderActions.jsx";
 export { CancelPedidoPinModal } from "./CancelPedidoPinModal.jsx";
+export { default as SplitOrderModal } from "./SplitOrderModal.jsx";

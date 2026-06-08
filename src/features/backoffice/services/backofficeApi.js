@@ -26,6 +26,7 @@ export const backofficeApi = {
   listMesas: (params) => api.get(`/api/v1/mesas${qs(params)}`),
   getMesa: (id) => api.get(`/api/v1/mesas/${id}`),
   getMesaOrdenActiva: (id) => api.get(`/api/v1/mesas/${id}/orden-activa`),
+  getMesaOrdenesActivas: (id) => api.get(`/api/v1/mesas/${id}/ordenes-activas`),
   createMesa: (body) => api.post("/api/v1/mesas", body),
   updateMesa: (id, body) => api.put(`/api/v1/mesas/${id}`, body),
   patchMesaEstado: (id, estado) => api.patch(`/api/v1/mesas/${id}/estado`, { estado }),
@@ -44,6 +45,8 @@ export const backofficeApi = {
   /** Asigna el pedido a otra mesa (trasladar pedido, no la mesa). Opcional; si no existe, el front usa PUT pedido. */
   pedidoTrasladarMesa: (pedidoId, mesaIdDestino) =>
     api.patchWithEnvelope(`/api/v1/pedidos/${pedidoId}/mesa`, { mesaId: mesaIdDestino }),
+  pedidoSeparar: (pedidoId, payload) =>
+    api.postWithEnvelope(`/api/v1/pedidos/${pedidoId}/separar`, payload),
   updatePedido: (id, body) => api.put(`/api/v1/pedidos/${id}`, body),
   pedidoEliminarLinea: (pedidoId, lineaId) =>
     api.delete(`/api/v1/pedidos/${pedidoId}/lineas/${lineaId}`),

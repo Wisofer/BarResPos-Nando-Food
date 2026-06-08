@@ -25,6 +25,7 @@ import {
   PosProcesarVentaModal,
   PosActionLoadingOverlay,
   CancelPedidoPinModal,
+  SplitOrderModal,
 } from "../components/index.js";
 import { TableFormDialog, LocationsManagerDialog, DetailDialog } from "./TablesViewDialogs.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
@@ -138,6 +139,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [showInactiveLocations, setShowInactiveLocations] = useState(false);
   const [cajaAbierta, setCajaAbierta] = useState(true);
   const [posOpcionesModal, setPosOpcionesModal] = useState({ open: false, product: null });
+  const [posActiveOrders, setPosActiveOrders] = useState([]);
+  const [splitOrderOpen, setSplitOrderOpen] = useState(false);
   const [posInlineOpcionesProduct, setPosInlineOpcionesProduct] = useState(null);
   const [moveOrderOpen, setMoveOrderOpen] = useState(false);
   const [moveOrderTargetId, setMoveOrderTargetId] = useState("");
@@ -501,6 +504,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
       setPosProducts(catalog.products);
       setPosCategories(catalog.categories);
+
+      // Cargar órdenes activas múltiples (para tabs si hay split previo)
+      backofficeApi.getMesaOrdenesActivas(table.id).then((resp) => {
+        const ords = unwrapEnvelope(resp) || [];
+        if (ords.length > 1) setPosActiveOrders(ords);
+      }).catch(() => {});
     } catch (e) {
       snackbar.error(e.message || "No se pudo cargar productos para la mesa.");
     } finally {
@@ -643,6 +652,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const addProductToCart = async (product) => {
+    if (posActionBusy) return;
     if (!cajaAbierta) {
       const abiertaAhora = await syncCajaEstado();
       if (!abiertaAhora) {
@@ -761,6 +771,41 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     posCartRef.current = [];
     await loadTables();
     if (posTable) await refreshPosTableFromBackend(posTable.id);
+  };
+
+    const switchPosOrder = (order) => {
+    setPosOrderId(order.id);
+    const backendItems = getOrdenItems(order);
+    const mapped = backendItems ? mapBackendItemsToCart(backendItems) : [];
+    setPosCart(mapped);
+    posCartRef.current = mapped;
+  };
+
+  const handleSepararCuenta = async (lineasAMover) => {
+    if (lineasAMover.length === 0) return;
+    setPosActionBusy(true);
+    try {
+      let orderId = posOrderId ?? posOrderIdRef.current;
+      if (!orderId && posCart.length > 0) {
+        await ensurePosOrderSynced();
+        orderId = posOrderIdRef.current;
+      }
+      if (!orderId) {
+        snackbar.error("No hay una orden activa para separar.");
+        return;
+      }
+      await backofficeApi.pedidoSeparar(orderId, { lineasAMover });
+      snackbar.success("Cuenta separada exitosamente.");
+      setSplitOrderOpen(false);
+      const env = await backofficeApi.getMesaOrdenesActivas(posTable.id);
+      const ordenes = unwrapEnvelope(env) || [];
+      setPosActiveOrders(ordenes);
+      if (ordenes.length > 0) switchPosOrder(ordenes[0]);
+    } catch (e) {
+      snackbar.error(e?.message || "Error al separar la cuenta.");
+    } finally {
+      setPosActionBusy(false);
+    }
   };
 
   const reloadPosCartFromMesaActiva = async () => {
@@ -957,7 +1002,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     posCartRef.current = posCart;
   }, [posCart]);
 
-  const closePosView = () => {
+  const closePosView = async () => {
+    // Esperar sincronizaciones pendientes antes de limpiar estado
+    await posSyncChainRef.current.catch(() => {});
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
     setPosOpcionesModal({ open: false, product: null });
@@ -975,9 +1022,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     setSaleModalLines([]);
     setSaleBackendTotal(null);
     setPosCancelPinOpen(false);
+    setSplitOrderOpen(false);
+    setPosActiveOrders([]);
     clearBusyUi(setPosActionBusy, setPosBusyMessage);
     // Refresca el listado de mesas para que se vea el cambio de estado (rojo/ocupada).
-    loadTables();
+    await loadTables();
   };
 
   const openMoveOrderDialog = async () => {
@@ -1113,8 +1162,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     setError("");
     try {
       // Aseguramos que exista la orden activa (si por algún motivo no existe aún).
-      if (!posOrderId && posCart.length > 0) {
-        const productos = posCartToPosOrdenProductos(posCart);
+      if (!posOrderId && posCartRef.current.length > 0) {
+        const productos = posCartToPosOrdenProductos(posCartRef.current);
         const data = await backofficeApi.posOrdenes({
           mesaId: Number(posTable.id),
           ordenId: undefined,
@@ -1135,7 +1184,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
       // PUT reemplaza items: así queda 1:1 con el carrito (incluye +/-).
       const pedido = await backofficeApi.getPedido(currentId);
-      const items = posCartToPedidoItemsPayload(posCart);
+      const items = posCartToPedidoItemsPayload(posCartRef.current);
 
       const updateResp = await backofficeApi.updatePedido(currentId, {
         mesaId: pedido?.mesaId ?? pedido?.MesaId ?? Number(posTable.id),
@@ -1218,7 +1267,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         await backofficeApi.posCancelarOrden(posOrderId, codigo);
         snackbar.success("Pedido cancelado y mesa liberada.");
         setPosCancelPinOpen(false);
-        closePosView();
+        await closePosView();
         await loadTables();
       },
     );
@@ -1252,7 +1301,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
           await printKitchenTicketAfterEnviarCocina(data, snackbar);
 
-          closePosView();
+          await closePosView();
         },
       );
     } catch (e) {
@@ -1327,7 +1376,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       }
 
       if (pagoResponseHasReciboPrintChannel(resp)) {
-        void tryPrintReciboFromPagoResponse(resp).catch(() => {});
+        const printed = await tryPrintReciboFromPagoResponse(resp);
+        if (!printed) snackbar.warning("Venta procesada, pero no se pudo imprimir el recibo.");
       }
 
       snackbar.success("Venta procesada.");
@@ -1336,7 +1386,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       setSaleOrdenId(null);
       setSaleModalLines([]);
       setSaleBackendTotal(null);
-      closePosView();
+      await closePosView();
       await loadTables();
     } catch (e) {
       const msg = e?.message || "No se pudo registrar el pago.";
@@ -1368,6 +1418,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
           // 1. Intentamos obtener el TEXTO del backend para la previsualización
           let text = "";
+          const companyName = (() => { try { return localStorage.getItem("pos_app_name") || "BarRestPOS"; } catch { return "BarRestPOS"; } })();
           try {
             const fetchUrl = withImpressionAccessTokenQuery(resolveBackendAssetUrl(`/api/v1/impresion/comanda/${ordenId}/preview`));
             const res = await fetch(fetchUrl, {
@@ -1376,6 +1427,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             if (res.ok) {
               const data = await res.json();
               text = data.preview;
+              // Reemplazar placeholders hardcodeados del backend con valores reales
+              text = text.replace(/^[ \t]*\[LOGO DEL NEGOCIO\][ \t]*\n?/m, "")
+                         .replace(/BarResPos/gi, companyName);
             }
           } catch {
             /* ignore */
@@ -1388,8 +1442,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                 detail: {
                   text,
                   onConfirmPrint: async () => {
-                    await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
-                    snackbar.success("Enviado a la impresora física.");
+                    const printed = await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
+                    if (printed) snackbar.success("Enviado a la impresora física.");
+                    else snackbar.warning("No se pudo imprimir. Verifique la impresora.");
                   },
                   onCancelPrint: () => {},
                 },
@@ -1423,19 +1478,23 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           }
 
           const sym = currencySymbol;
-          let fallbackText = `       [LOGO DEL NEGOCIO]\n       BAR REST POS\n------------------------------------------------\nCOMANDA: Local\nMESA:   ${posTable.displayId}\nFECHA:  ${new Date().toLocaleString()}\n------------------------------------------------\nCANT PRODUCTO                PRECIO\n------------------------------------------------\n`;
+          const hasLogo = (() => { try { return !!localStorage.getItem("pos_logo_url"); } catch { return false; } })();
+          const logoLine = hasLogo ? `       [LOGO]` : `       ${companyName}`;
+          const fechaLocal = new Date().toLocaleString("es-NI", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+          let fallbackText = `${logoLine}\n       ${companyName}\n------------------------------------------------\nCOMANDA: ${ordenId}\nMESA:   ${posTable.displayId}\nFECHA:  ${fechaLocal}\n------------------------------------------------\nCANT PRODUCTO                PRECIO\n------------------------------------------------\n`;
           lines.forEach(x => {
             fallbackText += `${String(x.qty).padEnd(6)}${String(x.name).substring(0,25).padEnd(28)}${formatCurrency(x.lineTotal, sym).padStart(14)}\n`;
           });
-          fallbackText += `------------------------------------------------\nTOTAL:                                ${formatCurrency(total, sym).padStart(14)}\n------------------------------------------------\n       Comanda para mesero`;
+          fallbackText += `------------------------------------------------\nTOTAL:                                ${formatCurrency(total, sym).padStart(14)}\n------------------------------------------------\n       Comanda para mesero\n       ${fechaLocal}`;
 
           window.dispatchEvent(
             new CustomEvent("show-ticket-preview", {
               detail: {
                 text: fallbackText,
                 onConfirmPrint: async () => {
-                  await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
-                  snackbar.success("Enviado a la impresora física.");
+                  const printed = await openBackendPrintUrl(`/api/v1/impresion/comanda/${ordenId}`);
+                  if (printed) snackbar.success("Enviado a la impresora física.");
+                  else snackbar.warning("No se pudo imprimir. Verifique la impresora.");
                 },
                 onCancelPrint: () => {},
               },
@@ -1528,6 +1587,22 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                 >
                   <ArrowRightLeft className="h-3.5 w-3.5 shrink-0" />
                   Trasladar pedido
+                </button>
+              )}
+              {posCart.length >= 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    console.log("[DEBUG] Split button clicked, posOrderId:", posOrderId, "splitOrderOpen:", splitOrderOpen, "posActionBusy:", posActionBusy, "posCart:", posCart);
+                    document.title = "DEBUG: splitOrderOpen=" + true;
+                    setTimeout(() => document.title = "BarRestPOS", 2000);
+                    setSplitOrderOpen(true);
+                  }}
+                  disabled={posActionBusy}
+                  className="inline-flex items-center gap-1 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-900 hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+                  Separar cuenta
                 </button>
               )}
               <button
@@ -1627,6 +1702,24 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               </article>
             ) : (
               <article className="flex h-full min-h-[52vh] flex-col rounded-md border border-slate-300 bg-white p-3">
+                {posActiveOrders.length > 1 && (
+                  <div className="mb-2 flex gap-1 overflow-x-auto">
+                    {posActiveOrders.map((ord, idx) => (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        onClick={() => switchPosOrder(ord)}
+                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
+                          ord.id === posOrderId
+                            ? "bg-orange-500 text-white shadow"
+                            : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
+                        }`}
+                      >
+                        Cuenta {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <h3 className="mb-2 text-sm font-semibold text-slate-800">Orden</h3>
                 <div className="min-h-0 flex-1 space-y-2 overflow-auto rounded-md border border-slate-200 p-2">
                   {posLoading ? (
@@ -1757,8 +1850,26 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
           <div className="hidden min-h-0 flex-1 grid-cols-1 gap-3 lg:grid lg:grid-cols-[1.45fr_1fr]">
             <article className="flex min-h-0 h-full flex-col rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm p-4 shadow-lg shadow-slate-200/50">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-slate-800">Orden</h3>
+                {posActiveOrders.length > 1 && (
+                  <div className="flex gap-1 overflow-x-auto">
+                    {posActiveOrders.map((ord, idx) => (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        onClick={() => switchPosOrder(ord)}
+                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
+                          ord.id === posOrderId
+                            ? "bg-orange-500 text-white shadow"
+                            : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
+                        }`}
+                      >
+                        Cuenta {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-slate-100">
                 {posLoading ? (
@@ -2003,6 +2114,16 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               </div>
             </form>
           </BackofficeDialog>
+        )}
+        {splitOrderOpen && (
+          <SplitOrderModal
+            open={splitOrderOpen}
+            onClose={() => setSplitOrderOpen(false)}
+            posCart={posCart}
+            posActionBusy={posActionBusy}
+            onConfirmSeparar={handleSepararCuenta}
+            currencySymbol={currencySymbol}
+          />
         )}
       </>
     );
