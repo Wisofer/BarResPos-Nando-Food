@@ -93,20 +93,32 @@ export function posLineMergeKey(opcionesSeleccionadas, notas) {
   return `${k}\u001e${n}`;
 }
 
-/** Suma precioAdicional de las opciones elegidas según grupos del catálogo. */
-export function sumarPrecioAdicionalOpciones(grupos, seleccion) {
+/** Calcula los extras y el posible precio de reemplazo. */
+export function calcularPreciosOpciones(grupos, seleccion) {
   const pairs = normalizeOpcionesSeleccionadas(seleccion);
-  let sum = 0;
+  let sumaExtras = 0;
+  let precioReemplazo = 0;
+  let tieneReemplazo = false;
+
   for (const { grupoId, opcionId } of pairs) {
     const g = grupos.find((x) => Number(x?.id ?? x?.Id) === grupoId);
     if (!g) continue;
     const opts = g?.opciones ?? g?.Opciones ?? [];
     const op = opts.find((x) => Number(x?.id ?? x?.Id) === opcionId);
     if (!op) continue;
+    
     const add = Number(op?.precioAdicional ?? op?.PrecioAdicional ?? 0);
-    if (Number.isFinite(add)) sum += add;
+    if (Number.isFinite(add)) {
+      const reemplaza = g?.reemplazaPrecioBase ?? g?.ReemplazaPrecioBase ?? false;
+      if (reemplaza) {
+        precioReemplazo += add;
+        tieneReemplazo = true;
+      } else {
+        sumaExtras += add;
+      }
+    }
   }
-  return sum;
+  return { sumaExtras, precioReemplazo, tieneReemplazo };
 }
 
 /**

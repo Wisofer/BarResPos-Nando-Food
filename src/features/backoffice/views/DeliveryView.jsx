@@ -64,7 +64,7 @@ import {
   normalizeOpcionesSeleccionadas,
   opcionesSeleccionadasKey,
   productoTieneOpcionesVisibles,
-  sumarPrecioAdicionalOpciones,
+  calcularPreciosOpciones,
 } from "../utils/productoOpciones.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { useDebouncedListRefetch } from "../hooks/useDebouncedListRefetch.js";
@@ -377,11 +377,9 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     const grupos = normalizeOpcionesGrupos(product);
     const opsNorm = normalizeOpcionesSeleccionadas(opcionesSeleccionadas);
     const opsKey = opcionesSeleccionadasKey(opsNorm);
-    const extra = sumarPrecioAdicionalOpciones(grupos, opsNorm);
+    const { sumaExtras, precioReemplazo, tieneReemplazo } = calcularPreciosOpciones(grupos, opsNorm);
     const base = Number(product?.precio ?? product?.Precio ?? 0);
-    // Si precioAdicional de la opción es > 0, es el precio final de esa variante.
-    // Si no, usamos base + extra (compatibilidad hacia atrás).
-    const finalPrice = extra > 0 ? extra : base;
+    const finalPrice = (tieneReemplazo ? precioReemplazo : base) + sumaExtras;
     const resumen = buildOpcionesResumenLocal(grupos, opsNorm);
     setCart((prev) => {
       const idx = prev.findIndex(

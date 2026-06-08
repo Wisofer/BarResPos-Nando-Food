@@ -178,20 +178,18 @@ export function ProductFormModal({
 
             {/* Precios */}
             {(() => {
-              // Si hay opciones especiales con precio, el precio base no aplica
+              // Si las opciones reemplazan el precio base y tienen precio, el precio base se bloquea en 0
               const usaPreciosPorOpcion =
                 form.opcionesEspecialesOn &&
+                form.opcionesEspecialesReemplaza &&
                 (form.opcionesEspecialesPrices ?? []).some((p) => Number(p) > 0);
               return (
                 <div className="mb-4 rounded border border-slate-300 bg-white p-3">
                   <h4 className="mb-3 text-xs font-semibold uppercase text-slate-500">Precios</h4>
                   {usaPreciosPorOpcion && (
-                    <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                      <span className="mt-0.5 shrink-0 text-amber-500">ⓘ</span>
-                      <p className="text-xs text-amber-700">
-                        El precio de venta lo define cada opción especial. El precio base se establece en <strong>C$ 0</strong> automáticamente.
-                      </p>
-                    </div>
+                    <p className="mb-3 text-[11px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">
+                      ⓘ Precio base bloqueado en C$ 0. El total será definido por las opciones de abajo.
+                    </p>
                   )}
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field label={`Precio de venta * (${currencySymbol})`}>
@@ -299,7 +297,7 @@ export function ProductFormModal({
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <span className="text-xs font-semibold text-slate-600">Opciones especiales</span>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Cada opción tiene su precio final de venta</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Agrega variantes o extras a este producto</p>
                   </div>
                   <button
                     type="button"
@@ -328,9 +326,43 @@ export function ProductFormModal({
                 </div>
 
                 {form.opcionesEspecialesOn && (
-                  <div className="mt-3 space-y-2">
-                    {/* Encabezados de columnas */}
-                    <div className="flex items-center gap-2 px-1">
+                  <div className="mt-3 space-y-4">
+                    {/* Switch: Suma vs Reemplaza */}
+                    <div className="rounded bg-slate-50 p-2.5 border border-slate-200">
+                      <p className="text-xs font-semibold text-slate-600 mb-2">¿Cómo se cobran estas opciones?</p>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="opcionesReemplaza"
+                            checked={!form.opcionesEspecialesReemplaza}
+                            onChange={() => setForm(f => ({ ...f, opcionesEspecialesReemplaza: false }))}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm text-slate-700 block">Suman como Extra (+C$)</span>
+                            <span className="text-[10px] text-slate-500">Ideal para toppings (ej. Queso, Salsas)</span>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="opcionesReemplaza"
+                            checked={form.opcionesEspecialesReemplaza}
+                            onChange={() => setForm(f => ({ ...f, opcionesEspecialesReemplaza: true }))}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <span className="text-sm text-slate-700 block">Reemplazan el Precio Base</span>
+                            <span className="text-[10px] text-slate-500">Ideal para tamaños (ej. Pequeña, Grande)</span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Encabezados de columnas */}
+                      <div className="flex items-center gap-2 px-1">
                       <span className="w-12 shrink-0" />
                       <span className="flex-1 text-[10px] font-semibold text-slate-400 uppercase">Nombre variante</span>
                       <span className="w-24 shrink-0 text-[10px] font-semibold text-slate-400 uppercase text-right">Precio ({currencySymbol})</span>
@@ -403,6 +435,7 @@ export function ProductFormModal({
                     >
                       + Agregar opción
                     </button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -310,6 +310,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
         opcionesEspecialesLines: lineas,
         opcionesEspecialesPrices: precios,
         opcionesEspecialesGrupoId: parsed.grupoId,
+        opcionesEspecialesReemplaza: parsed.reemplazaPrecioBase,
       });
       setImageUploadFile(null);
       setModalOpen(true);
@@ -377,6 +378,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
         nombres: form.opcionesEspecialesLines,
         precios: form.opcionesEspecialesPrices ?? [],
         grupoIdConocido: form.opcionesEspecialesGrupoId,
+        reemplazaPrecioBase: form.opcionesEspecialesReemplaza,
       });
       if (!syncRes.ok) {
         if (!syncRes.skipped) {

@@ -1,4 +1,4 @@
-const STORAGE_KEY = "barrest-mesas-plano-positions-v1";
+const STORAGE_KEY = "barrest-mesas-plano-positions-v2";
 
 const CELL_W = 132;
 const CELL_H = 92;

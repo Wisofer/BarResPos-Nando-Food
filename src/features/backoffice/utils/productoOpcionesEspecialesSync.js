@@ -32,6 +32,7 @@ export function parseOpcionesEspecialesFromGruposApi(gruposRaw) {
     grupoId: gid != null && gid !== "" ? gid : null,
     lineas: lineas.length > 0 ? lineas : [""],
     precios: precios.length > 0 ? precios : [""],
+    reemplazaPrecioBase: g.reemplazaPrecioBase ?? g.ReemplazaPrecioBase ?? false,
   };
 }
 
@@ -40,7 +41,7 @@ function findGrupoById(gruposRaw, grupoId) {
   return grupos.find((x) => String(x?.id ?? x?.Id) === String(grupoId)) ?? null;
 }
 
-export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, precios, grupoIdConocido }) {
+export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, precios, grupoIdConocido, reemplazaPrecioBase }) {
   const names = [...new Set(nombres.map((s) => String(s || "").trim()).filter(Boolean))];
   // precios: array 1:1 con nombres (antes del dedup), los tomamos en orden
   const rawPrices = Array.isArray(precios) ? precios : [];
@@ -79,6 +80,7 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
       obligatorio: true,
       minSeleccion: 1,
       maxSeleccion: 1,
+      reemplazaPrecioBase: Boolean(reemplazaPrecioBase),
       activo: true,
     };
 
