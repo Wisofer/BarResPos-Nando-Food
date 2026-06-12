@@ -86,3 +86,22 @@ Para permitir una personalización profesional de los tickets sin alterar el dis
 2.  **Impresión y Previsualización**:
     *   Los tickets del cliente (pre-cuentas y recibos de caja/pago) muestran el nombre, la dirección y el teléfono del negocio en el encabezado.
     *   Las comandas destinadas a cocina y barra omiten estos datos automáticamente para mantener el formato limpio y enfocado únicamente en la preparación de alimentos y bebidas.
+
+---
+
+## 7. Corrección de Error "Failed to fetch" en el Instalador (.exe) y Compilación Exitosa
+
+*   **El Error**: Al instalar y ejecutar la aplicación compilada a través del ejecutable setup de producción (`.exe`), la pantalla mostraba un error persistente de conexión: **"Failed to fetch"**.
+*   **La Causa**: En desarrollo, el frontend web corre en el puerto `5229` de Vite y realiza peticiones mediante CORS a la API en localhost. Sin embargo, al compilar para producción con Vite, las variables de entorno `.env` que definían el backend como `http://localhost:5229` quedaban "quemadas" (estáticas) en el build final. En el entorno empaquetado de producción de Electron, el backend real corre en el puerto local `5000` y el frontend se carga directamente desde archivos locales a través de la URL de protocolo `file://`, provocando un fallo total en la comunicación.
+*   **La Solución**:
+    1.  Se modificó la función de configuración del backend en `src/api/config.js` para detectar en tiempo de ejecución si el frontend se ejecuta dentro del contenedor Electron (detectando el protocolo `file:`).
+    2.  Si está corriendo en el contenedor nativo (Electron), redirige de forma transparente todas las llamadas de la API local al puerto `http://localhost:5000`.
+    3.  Si corre en un navegador (ej. desde una tablet conectada a la red local LAN), utilizará la URL relativa del servidor para mayor flexibilidad.
+*   **Resultado de la Compilación**:
+    *   Se ejecutó de forma limpia la compilación y empaquetamiento del instalador para Windows mediante:
+        ```bash
+        npm run build:windows
+        ```
+    *   Se generó exitosamente el instalador autoejecutable en: `release/BarResPos Setup 0.0.0.exe`.
+    *   **El instalador ahora funciona a la perfección, levanta el backend local, se conecta automáticamente sin ningún error de "Failed to fetch" y permite guardar las configuraciones y facturar de inmediato.**
+
