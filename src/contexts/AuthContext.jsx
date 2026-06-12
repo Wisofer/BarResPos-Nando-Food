@@ -21,7 +21,10 @@ async function fetchAndCacheLogo() {
     window.dispatchEvent(new Event("pos_logo_updated"));
 
     // Cache Company/App Name
-    const hasName = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:companyname");
+    const hasName = list.find(cfg => {
+      const k = String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase();
+      return k === "tickets:companyname" || k === "tickets:nombrerestaurante";
+    });
     const name = hasName ? hasName.valor || hasName.Valor || "" : "";
     if (name) {
       localStorage.setItem("pos_app_name", name);
@@ -29,6 +32,24 @@ async function fetchAndCacheLogo() {
       localStorage.removeItem("pos_app_name");
     }
     window.dispatchEvent(new Event("pos_app_name_updated"));
+
+    // Cache Address
+    const hasAddress = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:direccionrestaurante");
+    const address = hasAddress ? hasAddress.valor || hasAddress.Valor || "" : "";
+    if (address) {
+      localStorage.setItem("pos_address", address);
+    } else {
+      localStorage.removeItem("pos_address");
+    }
+
+    // Cache Phone
+    const hasPhone = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:telefonorestaurante");
+    const phone = hasPhone ? hasPhone.valor || hasPhone.Valor || "" : "";
+    if (phone) {
+      localStorage.setItem("pos_phone", phone);
+    } else {
+      localStorage.removeItem("pos_phone");
+    }
   } catch (e) {
     console.error("No se pudo pre-cargar el logo y nombre al iniciar sesión", e);
   }

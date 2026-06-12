@@ -378,9 +378,9 @@ async function createProveedores() {
 // ── Usuarios adicionales ────────────────────────────────────────────────────
 
 const USUARIOS = [
-  { usuario: 'mesero1', nombre: 'Juan Pérez', rol: 'Normal', pass: 'mesero1' },
-  { usuario: 'cajero1', nombre: 'Carmen Rivas', rol: 'Caja', pass: 'cajero1' },
-  { usuario: 'cocina1', nombre: 'Don José', rol: 'Normal', pass: 'cocina1' },
+  { usuario: 'mesero1', nombre: 'Juan Pérez', rol: 'Mesero', pass: 'mesero1' },
+  { usuario: 'cajero1', nombre: 'Carmen Rivas', rol: 'Cajero', pass: 'cajero1' },
+  { usuario: 'cocina1', nombre: 'Don José', rol: 'Cocinero', pass: 'cocina1' },
 ];
 
 async function createUsuarios() {

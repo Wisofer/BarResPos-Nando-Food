@@ -77,6 +77,9 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
   }
 
   const companyName = (() => { try { return localStorage.getItem("pos_app_name") || "BarRestPOS"; } catch { return "BarRestPOS"; } })();
+  const address = (() => { try { return localStorage.getItem("pos_address") || ""; } catch { return ""; } })();
+  const phone = (() => { try { return localStorage.getItem("pos_phone") || ""; } catch { return ""; } })();
+
   const html = `<!doctype html>
 <html>
   <head>
@@ -95,6 +98,8 @@ export async function printOrderTicket({ order, currencySymbol, snackbar }) {
   </head>
   <body>
     <h1>${escapeHtml(companyName)}</h1>
+    ${address ? `<p style="font-size:11px;color:#555;margin:0 0 2px">${escapeHtml(address)}</p>` : ""}
+    ${phone ? `<p style="font-size:11px;color:#555;margin:0 0 8px">TEL: ${escapeHtml(phone)}</p>` : ""}
     <p style="font-size:11px;color:#888;margin:0 0 8px">Ticket de pedido</p>
     <div class="meta">
       <div>Pedido: ${escapeHtml(order.numero || `#${order.id}`)}</div>

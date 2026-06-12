@@ -72,6 +72,8 @@ export function SettingsView() {
   const [enablePantallaCocina, setEnablePantallaCocina] = useState(true);
   const [logoUrl, setLogoUrl] = useState("");
   const [appNameInput, setAppNameInput] = useState("");
+  const [direccionInput, setDireccionInput] = useState("");
+  const [telefonoInput, setTelefonoInput] = useState("");
   const [impresoraCaja, setImpresoraCaja] = useState("");
   const [impresoraCocina, setImpresoraCocina] = useState("");
   const [impresoraComanda, setImpresoraComanda] = useState("");
@@ -111,8 +113,17 @@ export function SettingsView() {
     const hasLogo = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:logourl");
     setLogoUrl(hasLogo ? hasLogo.valor || hasLogo.Valor || "" : "");
 
-    const hasName = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:companyname");
+    const hasName = list.find(cfg => {
+      const k = String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase();
+      return k === "tickets:companyname" || k === "tickets:nombrerestaurante";
+    });
     setAppNameInput(hasName ? hasName.valor || hasName.Valor || "" : "");
+
+    const hasAddress = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:direccionrestaurante");
+    setDireccionInput(hasAddress ? hasAddress.valor || hasAddress.Valor || "" : "");
+
+    const hasPhone = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:telefonorestaurante");
+    setTelefonoInput(hasPhone ? hasPhone.valor || hasPhone.Valor || "" : "");
 
     const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
     setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
@@ -392,21 +403,38 @@ export function SettingsView() {
     }
   };
 
-  const saveAppName = async () => {
-    const val = String(appNameInput || "").trim();
+  const saveDatosEstablecimiento = async () => {
+    const nameVal = String(appNameInput || "").trim();
+    const dirVal = String(direccionInput || "").trim();
+    const telVal = String(telefonoInput || "").trim();
     setSaving(true);
     try {
-      await backofficeApi.upsertConfiguracion("Tickets:CompanyName", val, "Nombre personalizado del negocio/aplicación");
-      if (val) {
-        localStorage.setItem("pos_app_name", val);
+      await backofficeApi.upsertConfiguracion("Tickets:CompanyName", nameVal, "Nombre personalizado del negocio/aplicación");
+      await backofficeApi.upsertConfiguracion("Tickets:NombreRestaurante", nameVal, "Nombre comercial del restaurante/bar para los tickets impresos y digitales");
+      await backofficeApi.upsertConfiguracion("Tickets:DireccionRestaurante", dirVal, "Dirección física del restaurante/bar para los tickets impresos y digitales");
+      await backofficeApi.upsertConfiguracion("Tickets:TelefonoRestaurante", telVal, "Teléfono de contacto del restaurante/bar para los tickets impresos y digitales");
+      
+      if (nameVal) {
+        localStorage.setItem("pos_app_name", nameVal);
       } else {
         localStorage.removeItem("pos_app_name");
       }
+      if (dirVal) {
+        localStorage.setItem("pos_address", dirVal);
+      } else {
+        localStorage.removeItem("pos_address");
+      }
+      if (telVal) {
+        localStorage.setItem("pos_phone", telVal);
+      } else {
+        localStorage.removeItem("pos_phone");
+      }
+      
       window.dispatchEvent(new Event("pos_app_name_updated"));
       await loadAll();
-      snackbar.success("Nombre del negocio actualizado correctamente.");
+      snackbar.success("Datos del establecimiento actualizados correctamente.");
     } catch (err) {
-      snackbar.error(err.message || "Error al actualizar el nombre del negocio.");
+      snackbar.error(err.message || "Error al actualizar los datos del establecimiento.");
     } finally {
       setSaving(false);
     }
@@ -438,6 +466,9 @@ export function SettingsView() {
       k !== "mesas:habilitarvistaplano" &&
       k !== "tickets:logourl" &&
       k !== "tickets:companyname" &&
+      k !== "tickets:nombrerestaurante" &&
+      k !== "tickets:direccionrestaurante" &&
+      k !== "tickets:telefonorestaurante" &&
       !k.startsWith("tickets:impresora")
     );
   });
@@ -667,15 +698,15 @@ export function SettingsView() {
                     <Sliders className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800">Nombre del Negocio</h3>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Personalización del Sistema</p>
+                    <h3 className="text-sm font-bold text-slate-800">Datos del Establecimiento</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Personalización del Sistema y Tickets</p>
                   </div>
                 </div>
                 <p className="mb-4 text-xs text-slate-500">
-                  Ingresa el nombre de tu bar o restaurante. Se mostrará en la barra lateral, en la pantalla de inicio de sesión y en las impresiones térmicas de los tickets.
+                  Configura el nombre comercial, la dirección y el teléfono del negocio. Esta información se imprimirá en los tickets de tus clientes y pre-cuentas de mesero (excepto en comandas de cocina/bar para mantenerlas limpias).
                 </p>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="min-w-0 flex-1">
+                <div className="space-y-4">
+                  <div>
                     <label htmlFor="company-name-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Nombre comercial
                     </label>
@@ -685,18 +716,52 @@ export function SettingsView() {
                       value={appNameInput}
                       onChange={(e) => setAppNameInput(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      placeholder="BarRestPOS"
+                      placeholder="Ej. BarRestPOS"
                       autoComplete="off"
                     />
                   </div>
-                  <button
-                     type="button"
-                     onClick={() => void saveAppName()}
-                     disabled={saving}
-                     className="shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
-                  >
-                    Guardar nombre
-                  </button>
+                  
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="direccion-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Dirección del Establecimiento
+                      </label>
+                      <input
+                        id="direccion-input"
+                        type="text"
+                        value={direccionInput}
+                        onChange={(e) => setDireccionInput(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Ej. Managua, Nicaragua"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="telefono-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Teléfono de contacto
+                      </label>
+                      <input
+                        id="telefono-input"
+                        type="text"
+                        value={telefonoInput}
+                        onChange={(e) => setTelefonoInput(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Ej. +505 8888-8888"
+                        autoComplete="off"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                       type="button"
+                       onClick={() => void saveDatosEstablecimiento()}
+                       disabled={saving}
+                       className="rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 shadow-sm shadow-blue-500/10 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
+                    >
+                      {saving ? "Guardando..." : "Guardar cambios"}
+                    </button>
+                  </div>
                 </div>
               </section>
             </div>

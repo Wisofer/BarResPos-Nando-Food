@@ -39,9 +39,22 @@ Se implementó el andamiaje para realizar pruebas de interfaz de usuario de form
 
 1.  **`playwright.config.js` (Raíz)**:
     *   Configura el puerto local de Vite (`http://localhost:5173`) y define que las pruebas se ejecuten en secuencia (`workers: 1`, `fullyParallel: false`) para no corromper la base de datos de pruebas SQLite en local.
-2.  **`tests/pos.spec.js` (Script de Prueba)**:
-    *   *Prueba 1*: Valida el inicio de sesión exitoso con credenciales correctas (`admin` / `admin`) y confirma la redirección automática al Dashboard.
-    *   *Prueba 2*: Valida el rechazo de credenciales incorrectas y la permanencia segura en la pantalla de Login.
+2.  **`tests/pos.spec.js`**:
+    *   *Prueba 1 (Acceso)*: Valida el inicio de sesión exitoso con credenciales correctas (`admin` / `admin`) y confirma la redirección automática al Dashboard.
+    *   *Prueba 2 (Seguridad)*: Valida el rechazo de credenciales incorrectas y la permanencia segura en la pantalla de Login.
+    *   *Prueba 3 (Rol Mesero)*: Valida que al iniciar sesión como Mesero (`mesero1`), la interfaz limite el acceso y solo muestre en el menú las opciones de "Mesas" y "Delivery", ocultando los módulos administrativos.
+    *   *Prueba 4 (Rol Cocinero)*: Valida que al iniciar sesión como Cocinero (`cocina1`), el menú de navegación restrinja todo y muestre exclusivamente la pantalla de "Cocina".
+3.  **`tests/inventory.spec.js`**:
+    *   *Flujo Completo*: Realiza un ciclo completo automatizado que abarca:
+        *   Creación de una categoría única.
+        *   Creación de un producto con opciones especiales con y sin precio adicional (ej. "Extra Queso" y "Sin Cebolla").
+        *   Realización de una Entrada de Stock (ajuste positivo) y validación del nuevo stock.
+        *   Realización de una Salida de Stock por daño (ajuste negativo) y validación del nuevo stock.
+        *   Selección de una mesa ("SALA 1") mediante doble clic en el plano del POS, selección de opciones especiales y agregado al carrito.
+        *   Envío de la orden a cocina y confirmación de que la comanda aparece correctamente en tiempo real en la pantalla de Cocina (KDS).
+        *   Marcado de la comanda como "Listo" en KDS para que cambie de estado.
+        *   Retorno al POS para procesar la orden y cobrar la mesa, dejándola libre de nuevo.
+        *   Verificación de la actualización de ventas reflejada en el Dashboard.
 
 ---
 
@@ -53,8 +66,23 @@ Se implementó el andamiaje para realizar pruebas de interfaz de usuario de form
 
 ---
 
+---
+
 ## 5. Plan de Pruebas Manual Completo
 
 Para realizar pruebas manuales detalladas de cada módulo del sistema antes del despliegue, puedes consultar el documento explicativo de QA en tu carpeta de trabajo:
 *   [plan_maestro_de_pruebas.md](file:///C:/Users/william/.gemini/antigravity-ide/brain/8a33165d-23f2-4e93-9262-1b2097fd3f84/plan_maestro_de_pruebas.md)
 
+---
+
+## 6. Configuración de Dirección y Teléfono en Tickets de Clientes
+
+Para permitir una personalización profesional de los tickets sin alterar el diseño de cocina:
+
+1.  **Pantalla de Configuraciones**:
+    *   Se transformó la sección "Nombre del Negocio" en **Datos del Establecimiento** dentro de la pestaña *Identidad Visual*.
+    *   Se agregaron campos para configurar la **Dirección del Establecimiento** y el **Teléfono de contacto**.
+    *   Ahora, al guardar, se actualizan simultáneamente las claves de base de datos `Tickets:CompanyName`, `Tickets:NombreRestaurante`, `Tickets:DireccionRestaurante` y `Tickets:TelefonoRestaurante`.
+2.  **Impresión y Previsualización**:
+    *   Los tickets del cliente (pre-cuentas y recibos de caja/pago) muestran el nombre, la dirección y el teléfono del negocio en el encabezado.
+    *   Las comandas destinadas a cocina y barra omiten estos datos automáticamente para mantener el formato limpio y enfocado únicamente en la preparación de alimentos y bebidas.
