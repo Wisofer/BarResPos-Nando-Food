@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle, Printer, Receipt, ChefHat, ClipboardList } from "lucide-react";
+import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle, Printer, Receipt, ChefHat, ClipboardList, Beer } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { authApi } from "../../../api/auth.js";
 import { BackofficeDialog, BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
@@ -76,6 +76,7 @@ export function SettingsView() {
   const [telefonoInput, setTelefonoInput] = useState("");
   const [impresoraCaja, setImpresoraCaja] = useState("");
   const [impresoraCocina, setImpresoraCocina] = useState("");
+  const [impresoraBar, setImpresoraBar] = useState("");
   const [impresoraComanda, setImpresoraComanda] = useState("");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState({ open: false, id: null });
@@ -132,6 +133,8 @@ export function SettingsView() {
     setImpresoraCaja(impCaja ? impCaja.valor || impCaja.Valor || "" : "");
     const impCoc = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraCocina");
     setImpresoraCocina(impCoc ? impCoc.valor || impCoc.Valor || "" : "");
+    const impBar = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraBar");
+    setImpresoraBar(impBar ? impBar.valor || impBar.Valor || "" : "");
     const impCom = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraComanda");
     setImpresoraComanda(impCom ? impCom.valor || impCom.Valor || "" : "");
   };
@@ -364,6 +367,7 @@ export function SettingsView() {
     try {
       await backofficeApi.upsertConfiguracion("Tickets:ImpresoraCaja", impresoraCaja, "Nombre de impresora Windows para Caja/Recibos");
       await backofficeApi.upsertConfiguracion("Tickets:ImpresoraCocina", impresoraCocina, "Nombre de impresora Windows para Cocina");
+      await backofficeApi.upsertConfiguracion("Tickets:ImpresoraBar", impresoraBar, "Nombre de impresora Windows para Barra/Bebidas");
       await backofficeApi.upsertConfiguracion("Tickets:ImpresoraComanda", impresoraComanda, "Nombre de impresora Windows para Comandas");
       await loadAll();
       snackbar.success("Configuración de impresoras térmicas actualizada.");
@@ -935,6 +939,28 @@ export function SettingsView() {
                       </div>
                     </div>
 
+                    {/* Barra */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <div className="sm:w-1/3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-yellow-50 text-yellow-600">
+                          <Beer className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-bold text-slate-700">Barra (Bebidas)</label>
+                          <p className="text-[10px] text-slate-400 leading-tight mt-0.5">Órdenes de bebidas, refrescos, alcohol.</p>
+                        </div>
+                      </div>
+                      <div className="sm:w-2/3">
+                        <input
+                          type="text"
+                          value={impresoraBar}
+                          onChange={(e) => setImpresoraBar(e.target.value)}
+                          placeholder="Ej. POS-80C Barra"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
                     {/* Comanda */}
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 hover:bg-slate-50/50 transition-colors">
                       <div className="sm:w-1/3 flex items-start gap-3">
@@ -951,7 +977,7 @@ export function SettingsView() {
                           type="text"
                           value={impresoraComanda}
                           onChange={(e) => setImpresoraComanda(e.target.value)}
-                          placeholder="Ej. POS-80C Barra"
+                          placeholder="Ej. POS-80C Mesero"
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>

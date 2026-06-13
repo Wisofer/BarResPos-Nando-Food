@@ -159,6 +159,7 @@ export const backofficeApi = {
   cajaCerrar: (body) => api.post("/api/v1/caja/cierre", body),
   cajaHistorial: (params) => api.get(`/api/v1/caja/historial${qs(params)}`),
   cajaDetalleCierre: (id) => api.get(`/api/v1/caja/cierre/${id}`),
+  cajaImprimirCorte: (id) => api.post(`/api/v1/impresion/corte/${id}`),
   /** BarRestPOS: GET /api/v1/caja/historial/excel?desde&hasta */
   exportarCajaHistorialExcel: async (params) => {
     const q = qs(params || {});

@@ -128,6 +128,17 @@ export function useCashier(currencySymbol = "C$") {
       setCierreForm({ montoReal: "", observaciones: "" });
       setShowCierreForm(false);
       await loadAll(1);
+      
+      // Auto-imprimir ticket
+      const cierreId = result?.id ?? result?.Id;
+      if (cierreId) {
+        try {
+          await backofficeApi.cajaImprimirCorte(cierreId);
+        } catch (printErr) {
+          console.error("Auto-print error:", printErr);
+          snackbar.warning("Caja cerrada, pero hubo un error al imprimir el corte automático.");
+        }
+      }
     } catch (err) {
       snackbar.error(err.message || "No se pudo cerrar la caja.");
     } finally {

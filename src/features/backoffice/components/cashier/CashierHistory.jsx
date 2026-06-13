@@ -4,6 +4,9 @@ import { BackofficeDialog } from "../index.js";
 import { formatCurrency } from "../../utils/currency.js";
 import { cierreFechaRaw, cierreHistorialMontoPrincipal, cierreId } from "../../utils/caja.js";
 import { CierreDetallePanel } from "./CierreDetallePanel.jsx";
+import { backofficeApi } from "../../services/backofficeApi.js";
+import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { Printer } from "lucide-react";
 
 export function CashierHistory({
   showHistorial,
@@ -18,6 +21,17 @@ export function CashierHistory({
   processing,
   currencySymbol,
 }) {
+  const snackbar = useSnackbar();
+
+  const handleImprimir = async (id) => {
+    try {
+      await backofficeApi.cajaImprimirCorte(id);
+      snackbar.success("Corte enviado a impresión térmica.");
+    } catch (e) {
+      snackbar.error(e?.message || "No se pudo imprimir el corte de caja.");
+    }
+  };
+
   return (
     <>
       <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -94,6 +108,15 @@ export function CashierHistory({
                           className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800 disabled:opacity-50"
                         >
                           Detalle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleImprimir(cierreId(item))}
+                          disabled={cierreId(item) == null || processing}
+                          title="Imprimir Corte Z"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                        >
+                          <Printer className="h-4 w-4" />
                         </button>
                       </div>
                     </li>

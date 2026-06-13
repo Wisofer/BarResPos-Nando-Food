@@ -81,7 +81,7 @@ export function extractPosOrdenResponseId(data, fallback = null) {
 
 export function mapBackendItemsToCart(items) {
   const list = Array.isArray(items) ? items : [];
-  return list
+  const mapped = list
     .map((it, idx) => {
       const opcionesSeleccionadas = normalizeOpcionesSeleccionadas(
         it?.opcionesSeleccionadas ?? it?.OpcionesSeleccionadas
@@ -145,6 +145,24 @@ export function mapBackendItemsToCart(items) {
       };
     })
     .filter((x) => x.qty > 0);
+
+  const grouped = [];
+  for (const item of mapped) {
+    const existing = grouped.find(
+      (g) =>
+        g.id === item.id &&
+        g.opcionesKey === item.opcionesKey &&
+        g.notas === item.notas &&
+        g.estado === item.estado
+    );
+    if (existing) {
+      existing.qty += item.qty;
+    } else {
+      grouped.push(item);
+    }
+  }
+
+  return grouped;
 }
 
 /** Líneas para modal de cobro / pre-cuenta local (mismo shape que espera el POS). */

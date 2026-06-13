@@ -123,10 +123,9 @@ export function seedClientsFromPastOrders(pastOrders) {
           clients.push(newClient);
           modified = true;
         } else {
-          // Si el cliente ya existe pero su conteo es menor al calculado de pedidos históricos
+          // Sincronizar conteo al valor real calculado de la lista actual
           const existing = phoneMap.get(tel);
-          const currentCount = existing.pedidosCount || 0;
-          if (currentCount < calculatedCount) {
+          if (existing.pedidosCount !== calculatedCount) {
             existing.pedidosCount = calculatedCount;
             modified = true;
           }
@@ -135,11 +134,11 @@ export function seedClientsFromPastOrders(pastOrders) {
     }
   });
 
-  // 2. Para clientes que ya existían pero su conteo no estaba inicializado o era menor al histórico
+  // 2. Sincronizar conteo para clientes que aparecen en la lista actual
   clients.forEach((c) => {
-    if (c.telefono && phoneCounts[c.telefono]) {
+    if (c.telefono && phoneCounts[c.telefono] !== undefined) {
       const calc = phoneCounts[c.telefono];
-      if ((c.pedidosCount || 0) < calc) {
+      if (c.pedidosCount !== calc) {
         c.pedidosCount = calc;
         modified = true;
       }

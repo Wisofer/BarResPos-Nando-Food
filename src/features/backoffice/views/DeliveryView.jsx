@@ -1196,6 +1196,20 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
             </table>
           </div>
         </section>
+        {cancelDeliveryPin.open && (
+          <CancelPedidoPinModal
+            open
+            onClose={() => !actionBusy && setCancelDeliveryPin({ open: false, row: null })}
+            loading={actionBusy}
+            title="Cancelar pedido delivery"
+            message={
+              cancelDeliveryPin.row
+                ? `Pedido ${cancelDeliveryPin.row.codigo || cancelDeliveryPin.row.pedidoId}. Ingresá el PIN de autorización.`
+                : "Ingresá el PIN de autorización."
+            }
+            onConfirm={executeDeliveryCancelConPin}
+          />
+        )}
       </>
     );
   }
@@ -1608,20 +1622,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
             </div>
           </BackofficeDialog>
         )}
-        {cancelDeliveryPin.open && (
-          <CancelPedidoPinModal
-            open
-            onClose={() => !actionBusy && setCancelDeliveryPin({ open: false, row: null })}
-            loading={actionBusy}
-            title="Cancelar pedido delivery"
-            message={
-              cancelDeliveryPin.row
-                ? `Pedido ${cancelDeliveryPin.row.codigo || cancelDeliveryPin.row.pedidoId}. Ingresá el PIN de autorización.`
-                : "Ingresá el PIN de autorización."
-            }
-            onConfirm={executeDeliveryCancelConPin}
-          />
-        )}
+
       </section>
     </>
   );
