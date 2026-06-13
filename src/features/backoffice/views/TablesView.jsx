@@ -1802,7 +1802,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                       </button>
                       <button type="button" onClick={handleEnviarCocina} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-amber-500 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
                         <ChefHat className="h-3.5 w-3.5" />
-                        Enviar cocina
+                        Mandar orden
                       </button>
                       <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
                         <Save className="h-3.5 w-3.5" />
@@ -1824,7 +1824,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     </button>
                     <button type="button" onClick={handleEnviarCocina} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-amber-500 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
                       <ChefHat className="h-3.5 w-3.5" />
-                      Enviar cocina
+                      Mandar orden
                     </button>
                     <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
                       <Save className="h-3.5 w-3.5" />
@@ -1977,7 +1977,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   </button>
                   <button type="button" onClick={handleEnviarCocina} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-amber-500/20 transition-all duration-200 hover:bg-amber-600 disabled:opacity-60">
                     <ChefHat className="h-3.5 w-3.5" />
-                    Enviar cocina
+                    Mandar orden
                   </button>
                   <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60">
                     <Save className="h-3.5 w-3.5" />

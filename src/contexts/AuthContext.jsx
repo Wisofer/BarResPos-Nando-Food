@@ -135,7 +135,41 @@ export function AuthProvider({ children }) {
         return { user: staticUser };
       }
 
-      const data = await authApi.login(nombreUsuario, contrasena);
+      let data = null;
+      let retries = 4; // Up to 4 attempts (approx 6 seconds total)
+      
+      while (retries > 0) {
+        try {
+          data = await authApi.login(nombreUsuario, contrasena);
+          break; // Exito
+        } catch (e) {
+          const msg = e?.message || "";
+          const isNetworkError = msg.includes("fetch") || msg.includes("Failed") || msg.includes("Connection") || msg.includes("Network");
+          
+          if (isNetworkError) {
+            retries--;
+            if (retries === 0) {
+              if (isStaticMode) {
+                const normalizedName = nombreUsuario?.trim();
+                if (normalizedName && contrasena) {
+                  const staticUser = normalizeAuthUser({ id: 1, nombreUsuario: normalizedName, rol: "admin" });
+                  setStoredStaticUser(staticUser);
+                  setUser(staticUser);
+                  return { user: staticUser };
+                }
+              } else {
+                throw new Error("El sistema de base de datos se está iniciando. Por favor, intenta de nuevo en unos segundos.");
+              }
+            } else {
+              // Esperar 1.5 segundos antes de reintentar
+              await new Promise(r => setTimeout(r, 1500));
+            }
+          } else {
+            throw e; // Error normal (credenciales incorrectas)
+          }
+        }
+      }
+
       if (data?.accessToken) setToken(data.accessToken);
       if (data?.refreshToken) setRefreshToken(data.refreshToken);
       let normalized = normalizeAuthUser(data);
@@ -152,23 +186,6 @@ export function AuthProvider({ children }) {
         void fetchAndCacheLogo();
       }
       return data;
-    } catch (e) {
-      // Fallback automatico para demos estaticas sin backend disponible.
-      const msg = e?.message || "";
-      if (msg.includes("fetch") || msg.includes("Failed") || msg.includes("Connection") || msg.includes("Network")) {
-        const normalizedName = nombreUsuario?.trim();
-        if (normalizedName && contrasena) {
-          const staticUser = normalizeAuthUser({
-            id: 1,
-            nombreUsuario: normalizedName,
-            rol: "admin",
-          });
-          setStoredStaticUser(staticUser);
-          setUser(staticUser);
-          return { user: staticUser };
-        }
-      }
-      throw e;
     } finally {
       setSessionLoading(false);
     }

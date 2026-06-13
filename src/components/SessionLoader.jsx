@@ -4,18 +4,25 @@ import { useAppName } from "../hooks/useAppName";
 export function SessionLoader({ message = "Cargando..." }) {
   const logoUrl = useAppLogo();
   const appName = useAppName();
+  
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100">
-      <div className="relative w-full max-w-xs rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm">
-        <div className="pointer-events-none absolute -left-8 -top-8 h-24 w-24 rounded-full bg-primary-100 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-emerald-100 blur-2xl" />
-        <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <img src={logoUrl} alt={`${appName} logo`} className="h-10 w-10 object-contain" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-[32px] border border-white/20 bg-white/80 p-8 text-center shadow-2xl backdrop-blur-xl">
+        {/* Luces decorativas */}
+        <div className="pointer-events-none absolute -left-12 -top-12 h-32 w-32 rounded-full bg-blue-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -right-12 h-32 w-32 rounded-full bg-indigo-400/20 blur-3xl" />
+        
+        {/* Contenedor del Logo */}
+        <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] border border-white bg-white/60 shadow-lg backdrop-blur-md">
+          <img src={logoUrl} alt={`${appName} logo`} className="h-12 w-12 object-contain animate-pulse" />
         </div>
-        <p className="relative mt-4 text-sm font-semibold text-slate-800">{appName}</p>
-        <p className="relative mt-1 text-xs text-slate-500">{message}</p>
-        <div className="relative mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-          <div className="h-full w-1/2 animate-[loader-slide_1.2s_ease-in-out_infinite] rounded-full bg-primary-500" />
+        
+        <p className="relative mt-6 text-xl font-black tracking-tight text-slate-800">{appName}</p>
+        <p className="relative mt-1.5 text-sm font-semibold text-slate-500">{message}</p>
+        
+        {/* Spinner Circular Moderno */}
+        <div className="relative mx-auto mt-6 flex items-center justify-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-primary-500" />
         </div>
       </div>
     </div>

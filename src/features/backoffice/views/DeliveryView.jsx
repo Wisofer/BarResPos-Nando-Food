@@ -1415,7 +1415,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                     className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-amber-500/20 transition-all duration-200 hover:bg-amber-600 disabled:opacity-60"
                   >
                     <ChefHat className="h-3.5 w-3.5" />
-                    Enviar cocina
+                    Mandar orden
                   </button>
                   <button
                     type="button"
