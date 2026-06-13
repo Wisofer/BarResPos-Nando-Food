@@ -34,6 +34,8 @@ export function saveCachedClient(client, isNewOrder = false) {
     idx = clients.findIndex((c) => c.id === client.id);
   } else if (telefono) {
     idx = clients.findIndex((c) => c.telefono === telefono);
+  } else if (nombre) {
+    idx = clients.findIndex((c) => String(c.nombre || "").trim().toLowerCase() === nombre.toLowerCase());
   }
 
   const existingCount = idx >= 0 ? (clients[idx].pedidosCount || 0) : 0;

@@ -109,7 +109,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const [products, setProducts] = useState([]);
   const [category, setCategory] = useState("");
   const [cart, setCart] = useState([]);
-  const [customer, setCustomer] = useState({ nombre: "", telefono: "", direccion: "", observaciones: "" });
+  const [customer, setCustomer] = useState({ id: null, nombre: "", telefono: "", direccion: "", observaciones: "" });
   const [listRows, setListRows] = useState([]);
   const [listSearch, setListSearch] = useState("");
   const [listLoading, setListLoading] = useState(true);
@@ -259,11 +259,27 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     setDeliveryPedidoId(Number.isFinite(id) ? id : null);
     setDeliveryCodigo(String(detail?.codigo ?? detail?.Codigo ?? "").trim() || (Number.isFinite(id) ? `#${id}` : ""));
     setPedidoEstado(String(detail?.estado ?? detail?.Estado ?? ""));
+    const name = detail?.clienteNombre ?? detail?.ClienteNombre ?? "";
+    const tel = detail?.clienteTelefono ?? detail?.ClienteTelefono ?? "";
+    const dir = detail?.clienteDireccion ?? detail?.ClienteDireccion ?? "";
+    const obs = detail?.observaciones ?? detail?.Observaciones ?? "";
+    
+    let restoredId = null;
+    if (name || tel) {
+      const cached = getCachedClients();
+      const match = cached.find(c => 
+        (tel && c.telefono === tel) || 
+        (!tel && String(c.nombre || "").trim().toLowerCase() === name.trim().toLowerCase())
+      );
+      if (match) restoredId = match.id;
+    }
+
     setCustomer({
-      nombre: detail?.clienteNombre ?? detail?.ClienteNombre ?? "",
-      telefono: detail?.clienteTelefono ?? detail?.ClienteTelefono ?? "",
-      direccion: detail?.clienteDireccion ?? detail?.ClienteDireccion ?? "",
-      observaciones: detail?.observaciones ?? detail?.Observaciones ?? "",
+      id: restoredId,
+      nombre: name,
+      telefono: tel,
+      direccion: dir,
+      observaciones: obs,
     });
     const items = detail?.items ?? detail?.Items ?? [];
     setCart(mapBackendItemsToCart(items));
@@ -283,7 +299,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     setCart([]);
     setSearch("");
     setCategory("");
-    setCustomer({ nombre: "", telefono: "", direccion: "", observaciones: "" });
+    setCustomer({ id: null, nombre: "", telefono: "", direccion: "", observaciones: "" });
     setDeliveryInlineOpcionesProduct(null);
     setLoading(true);
     try {
@@ -344,7 +360,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         setPedidoEstado(String(data?.estado ?? data?.Estado ?? "Guardado"));
         await loadDeliveryList();
         if (customer && (customer.nombre || customer.telefono)) {
-          saveCachedClient(customer, true);
+          const saved = saveCachedClient(customer, true);
+          if (saved) setCustomer(saved);
         }
         snackbar.success("Pedido guardado.");
         return id;
@@ -354,7 +371,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       setPedidoEstado(String(fresh?.estado ?? fresh?.Estado ?? ""));
       await loadDeliveryList();
       if (customer && (customer.nombre || customer.telefono)) {
-        saveCachedClient(customer);
+        const saved = saveCachedClient(customer);
+        if (saved) setCustomer(saved);
       }
       snackbar.success("Pedido actualizado.");
       return currentId;
@@ -635,7 +653,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       return;
     }
     setCart([]);
-    setCustomer({ nombre: "", telefono: "", direccion: "", observaciones: "" });
+    setCustomer({ id: null, nombre: "", telefono: "", direccion: "", observaciones: "" });
     snackbar.info("Borrador limpiado.");
   };
 
@@ -737,7 +755,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       setDeliveryCodigo("");
       setPedidoEstado("");
       setCart([]);
-      setCustomer({ nombre: "", telefono: "", direccion: "", observaciones: "" });
+      setCustomer({ id: null, nombre: "", telefono: "", direccion: "", observaciones: "" });
     }
   };
 
@@ -1508,12 +1526,14 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                           type="button"
                           onClick={() => {
                             setCustomer({
+                              id: c.id,
                               nombre: c.nombre || "",
                               telefono: c.telefono || "",
                               direccion: c.direccion || "",
                               observaciones: c.observaciones || ""
                             });
                             setClientSearchQuery("");
+                            setCustomerModalOpen(false);
                             snackbar.success(`Cliente "${c.nombre}" seleccionado.`);
                           }}
                           className="flex w-full flex-col px-4 py-2 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0"
