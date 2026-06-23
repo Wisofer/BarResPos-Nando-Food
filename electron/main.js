@@ -95,6 +95,16 @@ function createWindow() {
 
   // Configura el factor de zoom predeterminado al 100% (1.0)
   win.webContents.on('did-finish-load', () => {
+    win.webContents.setZoomFactor(win.isMaximized() ? 1.0 : 0.9)
+  })
+
+  // Ajuste dinámico: Si el cliente achica la pantalla (restaurar), bajar a 90% para que quepa todo
+  win.on('unmaximize', () => {
+    win.webContents.setZoomFactor(0.9)
+  })
+
+  // Si el cliente vuelve a maximizar la pantalla, regresar al 100%
+  win.on('maximize', () => {
     win.webContents.setZoomFactor(1.0)
   })
 

@@ -15,7 +15,7 @@ const getKdsCards = (orders) => {
   orders.forEach((o) => {
     const orderId = o?.id ?? o?.Id;
     const allItems = Array.isArray(o?.items ?? o?.Items) ? (o?.items ?? o?.Items) : [];
-    
+
     // Group items by FechaEnvioCocina (fallback to fechaCreacion if null)
     const batches = {};
     allItems.forEach((item) => {
@@ -110,11 +110,10 @@ function OrderTimer({ date }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${
-        isDelayed
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${isDelayed
           ? "bg-rose-50 border-rose-200 text-rose-600 animate-pulse"
           : "bg-slate-100 border-slate-200 text-slate-600"
-      }`}
+        }`}
     >
       <span className="relative flex h-1.5 w-1.5">
         {isDelayed && (
@@ -184,7 +183,7 @@ export function KitchenView() {
       if (timer) clearInterval(timer);
       const intervalMs = document.hidden ? 15000 : 3000;
       timer = setInterval(() => {
-        loadKitchen().catch(() => {});
+        loadKitchen().catch(() => { });
       }, intervalMs);
     };
 
@@ -334,147 +333,145 @@ export function KitchenView() {
       </section>
 
       {mode === "live" ? (
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {KDS_SECTIONS.map((section) => (
-          <article key={section.key} className="min-h-[400px] rounded-[24px] border border-slate-200/80 bg-slate-50/40 p-4 shadow-inner">
-            <div className="mb-4 flex items-center justify-between px-1">
-              <span className={`rounded-xl border px-3 py-1 text-xs font-bold ${stateStyle(section.states[0])}`}>{section.label}</span>
-              <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-bold text-slate-600 tabular-nums">
-                {grouped[section.key]?.length || 0}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {(grouped[section.key] || []).length === 0 && (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/50 py-10 px-4 text-center">
-                  <ChefHat className="h-8 w-8 text-slate-300 animate-pulse" />
-                  <p className="mt-2 text-xs font-medium text-slate-400">Sin órdenes en esta sección</p>
-                </div>
-              )}
-              {(grouped[section.key] || []).map((o, i) => {
-                const id = o?.id ?? o?.Id ?? i;
-                const numero = o?.numero || o?.Numero || `#${id}`;
-                const mesa = o?.mesa || o?.mesaNombre || o?.Mesa || "Mesa";
-                const createdAt = o?.fechaCreacion ?? o?.FechaCreacion;
-                const current = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
-                const rawItems = o?.Items ?? o?.items ?? [];
-                const items = Array.isArray(rawItems) ? rawItems : [];
-                const next = nextState(current);
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {KDS_SECTIONS.map((section) => (
+            <article key={section.key} className="min-h-[400px] rounded-[24px] border border-slate-200/80 bg-slate-50/40 p-4 shadow-inner">
+              <div className="mb-4 flex items-center justify-between px-1">
+                <span className={`rounded-xl border px-3 py-1 text-xs font-bold ${stateStyle(section.states[0])}`}>{section.label}</span>
+                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-bold text-slate-600 tabular-nums">
+                  {grouped[section.key]?.length || 0}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {(grouped[section.key] || []).length === 0 && (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/50 py-10 px-4 text-center">
+                    <ChefHat className="h-8 w-8 text-slate-300 animate-pulse" />
+                    <p className="mt-2 text-xs font-medium text-slate-400">Sin órdenes en esta sección</p>
+                  </div>
+                )}
+                {(grouped[section.key] || []).map((o, i) => {
+                  const id = o?.id ?? o?.Id ?? i;
+                  const numero = o?.numero || o?.Numero || `#${id}`;
+                  const mesa = o?.mesa || o?.mesaNombre || o?.Mesa || "Mesa";
+                  const createdAt = o?.fechaCreacion ?? o?.FechaCreacion;
+                  const current = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
+                  const rawItems = o?.Items ?? o?.items ?? [];
+                  const items = Array.isArray(rawItems) ? rawItems : [];
+                  const next = nextState(current);
 
-                const borderTopClass = current === "Pendiente" 
-                  ? "border-t-[5px] border-t-amber-400" 
-                  : current === "En Preparación" 
-                    ? "border-t-[5px] border-t-blue-500" 
-                    : "border-t-[5px] border-t-emerald-500";
+                  const borderTopClass = current === "Pendiente"
+                    ? "border-t-[5px] border-t-amber-400"
+                    : current === "En Preparación"
+                      ? "border-t-[5px] border-t-blue-500"
+                      : "border-t-[5px] border-t-emerald-500";
 
-                const buttonStyleClass = current === "Pendiente"
-                  ? "bg-amber-500 hover:bg-amber-600 shadow-sm shadow-amber-200/40 text-white"
-                  : current === "En Preparación"
-                    ? "bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200/40 text-white"
-                    : "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-200/40 text-white";
+                  const buttonStyleClass = current === "Pendiente"
+                    ? "bg-amber-500 hover:bg-amber-600 shadow-sm shadow-amber-200/40 text-white"
+                    : current === "En Preparación"
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200/40 text-white"
+                      : "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-200/40 text-white";
 
-                return (
-                  <div key={id} className={`relative rounded-2xl bg-white border border-slate-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${borderTopClass}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-extrabold text-slate-800 tracking-tight">{numero}</p>
-                      <div className="flex items-center gap-1.5">
-                        <OrderTimer date={createdAt} />
-                        <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${stateStyle(current)}`}>
-                          {current}
-                        </span>
+                  return (
+                    <div key={id} className={`relative rounded-2xl bg-white border border-slate-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${borderTopClass}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-extrabold text-slate-800 tracking-tight">{numero}</p>
+                        <div className="flex items-center gap-1.5">
+                          <OrderTimer date={createdAt} />
+                          <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${stateStyle(current)}`}>
+                            {current}
+                          </span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="mt-1 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                        <span>📍</span>
-                        <span>{mesa}</span>
-                      </p>
-                      <p className="text-[10px] font-medium text-slate-400">{formatDate(createdAt)}</p>
-                    </div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                          <span>📍</span>
+                          <span>{mesa}</span>
+                        </p>
+                        <p className="text-[10px] font-medium text-slate-400">{formatDate(createdAt)}</p>
+                      </div>
 
-                    <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-2.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos</p>
-                      {items.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic">Sin items en la orden.</p>
-                      ) : (
-                        <ul className="space-y-1.5">
-                          {items.map((it, idx) => {
-                            const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
-                            const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
-                            const producto = it?.Producto ?? it?.producto ?? "Producto";
-                            const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
-                            const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
-                            const notas = it?.Notas ?? it?.notas ?? "";
-                            const isChecked = (it?.Estado ?? it?.estado ?? "") === "Listo";
+                      <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos</p>
+                        {items.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic">Sin items en la orden.</p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {items.map((it, idx) => {
+                              const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
+                              const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
+                              const producto = it?.Producto ?? it?.producto ?? "Producto";
+                              const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
+                              const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
+                              const notas = it?.Notas ?? it?.notas ?? "";
+                              const isChecked = (it?.Estado ?? it?.estado ?? "") === "Listo";
 
-                            return (
-                              <li
-                                key={itemId}
-                                onClick={() => toggleItemCheck(o, it)}
-                                className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none min-h-[44px] ${
-                                  isChecked
-                                    ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
-                                    : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
-                                }`}
-                              >
-                                <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
-                                  isChecked
-                                    ? "border-emerald-500 bg-emerald-500 text-white"
-                                    : "border-slate-300 bg-white"
-                                }`}>
-                                  {isChecked && (
-                                    <svg className="h-3 w-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className={`text-xs font-semibold leading-tight ${isChecked ? "line-through opacity-60 text-slate-400" : "text-slate-800"}`}>
-                                    {qty > 0 && <span className="text-indigo-600 font-extrabold mr-1.5">{qty}x</span>}
-                                    {producto}
-                                  </p>
-                                  {opcionesTexto ? (
-                                    <p className={`mt-0.5 text-[11px] font-bold text-indigo-600 ${isChecked ? "line-through opacity-50 text-indigo-400" : ""}`}>
-                                      {opcionesTexto}
+                              return (
+                                <li
+                                  key={itemId}
+                                  onClick={() => toggleItemCheck(o, it)}
+                                  className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none min-h-[44px] ${isChecked
+                                      ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
+                                      : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
+                                    }`}
+                                >
+                                  <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${isChecked
+                                      ? "border-emerald-500 bg-emerald-500 text-white"
+                                      : "border-slate-300 bg-white"
+                                    }`}>
+                                    {isChecked && (
+                                      <svg className="h-3 w-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </span>
+                                  <div className="min-w-0 flex-1">
+                                    <p className={`text-xs font-semibold leading-tight ${isChecked ? "line-through opacity-60 text-slate-400" : "text-slate-800"}`}>
+                                      {qty > 0 && <span className="text-indigo-600 font-extrabold mr-1.5">{qty}x</span>}
+                                      {producto}
                                     </p>
-                                  ) : null}
-                                  {notas ? (
-                                    <p className="mt-0.5 text-[10px] text-amber-600 font-medium">Nota: {notas}</p>
-                                  ) : null}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                                    {opcionesTexto ? (
+                                      <p className={`mt-0.5 text-[11px] font-bold text-indigo-600 ${isChecked ? "line-through opacity-50 text-indigo-400" : ""}`}>
+                                        {opcionesTexto}
+                                      </p>
+                                    ) : null}
+                                    {notas ? (
+                                      <p className="mt-0.5 text-[10px] text-amber-600 font-medium">Nota: {notas}</p>
+                                    ) : null}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+
+                      {next ? (
+                        <div className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => patchState(o)}
+                            disabled={busyId === id}
+                            className={`mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
+                          >
+                            {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
+                            {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {current === "Listo" && <Send className="h-3.5 w-3.5" />}
+                            {busyId === id ? "Procesando..." : `Marcar ${next}`}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">
+                          ✓ Orden entregada
+                        </div>
                       )}
                     </div>
-
-                    {next ? (
-                      <div className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => patchState(o)}
-                          disabled={busyId === id}
-                          className={`mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
-                        >
-                          {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
-                          {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
-                          {current === "Listo" && <Send className="h-3.5 w-3.5" />}
-                          {busyId === id ? "Procesando..." : `Marcar ${next}`}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">
-                        ✓ Orden entregada
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </article>
-        ))}
-      </section>
+                  );
+                })}
+              </div>
+            </article>
+          ))}
+        </section>
       ) : (
         <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
           <div className="space-y-2 md:hidden">

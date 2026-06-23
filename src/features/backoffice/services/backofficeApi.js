@@ -52,6 +52,9 @@ export const backofficeApi = {
     api.delete(`/api/v1/pedidos/${pedidoId}/lineas/${lineaId}`),
   /** Cancelación unificada (mesa / delivery; llevar se trata como flujo de mesa). Requiere PIN. */
   pedidoCancelar: (id, codigo) => api.post(`/api/v1/pedidos/${id}/cancelar`, { codigo }),
+  /** Cancela una línea de pedido (mesa o delivery) con PIN e imprime ticket de aviso */
+  pedidoCancelarLineaConPin: (pedidoId, lineaId, codigo) =>
+    api.post(`/api/v1/impresion/cancelacion-linea/${pedidoId}/${lineaId}`, { codigo }),
   listProductos: (params) => api.get(`/api/v1/productos${qs(params)}`),
   getProducto: (id) => api.get(`/api/v1/productos/${id}`),
   createProducto: (body) => api.post("/api/v1/productos", body),

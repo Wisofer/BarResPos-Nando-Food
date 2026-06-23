@@ -11,6 +11,7 @@ import {
   Printer,
   Save,
   Trash2,
+  Lock,
   XCircle,
   X,
 } from "lucide-react";
@@ -147,6 +148,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [moveOrderTargetId, setMoveOrderTargetId] = useState("");
   const [moveOrderCandidates, setMoveOrderCandidates] = useState([]);
   const [posCancelPinOpen, setPosCancelPinOpen] = useState(false);
+  const [posCancelItemPinOpen, setPosCancelItemPinOpen] = useState(false);
+  const [pendingCancelItemLineId, setPendingCancelItemLineId] = useState(null);
   /** "zonas" | "plano" */
   const [mesasLayoutMode, setMesasLayoutMode] = useState("zonas");
   const [enableVistaZonas, setEnableVistaZonas] = useState(true);
@@ -934,6 +937,18 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   const removeFromCart = (lineId) => {
     if (posActionBusy) return;
+    const item = posCart.find((x) => x.lineId === lineId);
+    const isSentToKitchen = item && item.estado !== "Pendiente" && parsePosBackendLineId(lineId) !== null;
+
+    if (isSentToKitchen) {
+      setPendingCancelItemLineId(lineId);
+      setPosCancelItemPinOpen(true);
+      return;
+    }
+    executeRemoveFromCart(lineId);
+  };
+
+  const executeRemoveFromCart = (lineId) => {
     const prev = posCartRef.current;
     const next = prev.filter((item) => item.lineId !== lineId);
     if (next.length === prev.length) return;
@@ -983,6 +998,48 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       });
 
     void posSyncChainRef.current;
+  };
+
+  const confirmCancelItemWithPin = async (codigo) => {
+    const lineId = pendingCancelItemLineId;
+    if (!lineId) return;
+
+    const item = posCart.find((x) => x.lineId === lineId);
+    if (!item) return;
+
+    const lineaId = parsePosBackendLineId(lineId);
+    const ordenId = posOrderIdRef.current;
+
+    if (!lineaId || !ordenId) return;
+
+    setPosActionBusy(true);
+    setPosBusyMessage("Cancelando producto...");
+    try {
+      const resp = await backofficeApi.pedidoCancelarLineaConPin(ordenId, lineaId, codigo);
+      const data = unwrapEnvelope(resp);
+      const vacio = data?.vacio ?? data?.Vacio;
+      
+      const prev = posCartRef.current;
+      const next = prev.filter((x) => x.lineId !== lineId);
+      posCartRef.current = next;
+      setPosCart(next);
+      setPosCommitted(true);
+
+      if (vacio) {
+        await applyPosOrdenVacio();
+        snackbar.success("Línea eliminada. Pedido vacío.");
+      } else {
+        await reloadPosCartFromPedido(ordenId);
+        snackbar.success("Línea cancelada e impresa correctamente.");
+      }
+      setPosCancelItemPinOpen(false);
+      setPendingCancelItemLineId(null);
+    } catch (e) {
+      throw e;
+    } finally {
+      setPosActionBusy(false);
+      setPosBusyMessage("");
+    }
   };
 
   const updateCartNotas = (lineId, notas) => {
@@ -1748,14 +1805,26 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                                 className="mt-1.5 w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400"
                               />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeFromCart(item.lineId)}
-                              disabled={posActionBusy}
-                              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null ? (
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(item.lineId)}
+                                disabled={posActionBusy}
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Autorización requerida (PIN)"
+                              >
+                                <Lock className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => removeFromCart(item.lineId)}
+                                disabled={posActionBusy}
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                           <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600">
                             <div className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white p-0.5">
@@ -1942,14 +2011,26 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                           <td className="whitespace-nowrap px-2 py-2 align-middle font-semibold">
                             <div className="flex items-center justify-between gap-2">
                               <span>{formatCurrency(item.price * item.qty, currencySymbol)}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeFromCart(item.lineId)}
-                                disabled={posActionBusy}
-                                className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              {item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null ? (
+                                <button
+                                  type="button"
+                                  onClick={() => removeFromCart(item.lineId)}
+                                  disabled={posActionBusy}
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                  title="Autorización requerida (PIN)"
+                                >
+                                  <Lock className="h-3.5 w-3.5" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => removeFromCart(item.lineId)}
+                                  disabled={posActionBusy}
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -2071,6 +2152,17 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             title="Cancelar pedido en mesa"
             message="Ingresá el PIN de autorización para cancelar la orden y liberar la mesa."
             onConfirm={executePosCancelarConPin}
+          />
+        )}
+
+        {posCancelItemPinOpen && (
+          <CancelPedidoPinModal
+            open
+            onClose={() => !posActionBusy && setPosCancelItemPinOpen(false)}
+            loading={posActionBusy}
+            title="Cancelar producto"
+            message="Ingresá el PIN de autorización para eliminar el producto de esta orden."
+            onConfirm={confirmCancelItemWithPin}
           />
         )}
 

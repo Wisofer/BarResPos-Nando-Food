@@ -104,3 +104,84 @@ body::-webkit-scrollbar {
     transform: translateX(220%);
   }
 }
+
+/* Animaciones para el SessionLoader Claro */
+@keyframes float-aurora-1 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(60px, -40px) scale(1.15);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes float-aurora-2 {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-50px, 50px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes float-particle {
+  0% {
+    transform: translateY(100px) translateX(0) scale(0.8);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-200px) translateX(var(--x-offset, 20px)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes float-logo {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.animate-float-aurora-1 {
+  animation: float-aurora-1 25s infinite ease-in-out;
+}
+
+.animate-float-aurora-2 {
+  animation: float-aurora-2 20s infinite ease-in-out;
+}
+
+.animate-float-logo {
+  animation: float-logo 3.5s infinite ease-in-out;
+}
+
+.animate-particle-1 {
+  animation: float-particle 6s infinite linear;
+  --x-offset: -30px;
+}
+
+.animate-particle-2 {
+  animation: float-particle 8s infinite linear;
+  animation-delay: 2s;
+  --x-offset: 40px;
+}
+
+.animate-particle-3 {
+  animation: float-particle 7s infinite linear;
+  animation-delay: 4.5s;
+  --x-offset: -15px;
+}
+

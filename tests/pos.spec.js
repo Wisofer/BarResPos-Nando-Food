@@ -6,7 +6,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.goto("/login");
 
     // 2. Llenar el formulario con las credenciales por defecto (admin/admin)
-    await page.fill('input[placeholder="ej. administrador"]', "admin");
+    await page.fill('input[placeholder="ej. admin"]', "admin");
     await page.fill('input[placeholder="••••••••"]', "admin");
     
     // 3. Dar clic en el botón de submit
@@ -25,7 +25,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.goto("/login");
 
     // 2. Llenar el formulario con datos inválidos
-    await page.fill('input[placeholder="ej. administrador"]', "usuario_invalido");
+    await page.fill('input[placeholder="ej. admin"]', "usuario_invalido");
     await page.fill('input[placeholder="••••••••"]', "clave_incorrecta");
 
     // 3. Enviar formulario
@@ -40,7 +40,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.goto("/login");
 
     // 2. Iniciar sesión como mesero1
-    await page.fill('input[placeholder="ej. administrador"]', "mesero1");
+    await page.fill('input[placeholder="ej. admin"]', "mesero1");
     await page.fill('input[placeholder="••••••••"]', "mesero1");
     await page.click('button[type="submit"]');
 
@@ -64,7 +64,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.goto("/login");
 
     // 2. Iniciar sesión como cocina1
-    await page.fill('input[placeholder="ej. administrador"]', "cocina1");
+    await page.fill('input[placeholder="ej. admin"]', "cocina1");
     await page.fill('input[placeholder="••••••••"]', "cocina1");
     await page.click('button[type="submit"]');
 

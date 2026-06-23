@@ -74,6 +74,7 @@ export function SettingsView() {
   const [appNameInput, setAppNameInput] = useState("");
   const [direccionInput, setDireccionInput] = useState("");
   const [telefonoInput, setTelefonoInput] = useState("");
+  const [rucInput, setRucInput] = useState("");
   const [impresoraCaja, setImpresoraCaja] = useState("");
   const [impresoraCocina, setImpresoraCocina] = useState("");
   const [impresoraBar, setImpresoraBar] = useState("");
@@ -125,6 +126,9 @@ export function SettingsView() {
 
     const hasPhone = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:telefonorestaurante");
     setTelefonoInput(hasPhone ? hasPhone.valor || hasPhone.Valor || "" : "");
+
+    const hasRuc = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "").toLowerCase() === "tickets:rucrestaurante");
+    setRucInput(hasRuc ? hasRuc.valor || hasRuc.Valor || "" : "");
 
     const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
     setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
@@ -411,12 +415,14 @@ export function SettingsView() {
     const nameVal = String(appNameInput || "").trim();
     const dirVal = String(direccionInput || "").trim();
     const telVal = String(telefonoInput || "").trim();
+    const rucVal = String(rucInput || "").trim();
     setSaving(true);
     try {
       await backofficeApi.upsertConfiguracion("Tickets:CompanyName", nameVal, "Nombre personalizado del negocio/aplicación");
       await backofficeApi.upsertConfiguracion("Tickets:NombreRestaurante", nameVal, "Nombre comercial del restaurante/bar para los tickets impresos y digitales");
       await backofficeApi.upsertConfiguracion("Tickets:DireccionRestaurante", dirVal, "Dirección física del restaurante/bar para los tickets impresos y digitales");
       await backofficeApi.upsertConfiguracion("Tickets:TelefonoRestaurante", telVal, "Teléfono de contacto del restaurante/bar para los tickets impresos y digitales");
+      await backofficeApi.upsertConfiguracion("Tickets:RucRestaurante", rucVal, "RUC del establecimiento para los tickets impresos y digitales");
       
       if (nameVal) {
         localStorage.setItem("pos_app_name", nameVal);
@@ -432,6 +438,11 @@ export function SettingsView() {
         localStorage.setItem("pos_phone", telVal);
       } else {
         localStorage.removeItem("pos_phone");
+      }
+      if (rucVal) {
+        localStorage.setItem("pos_ruc", rucVal);
+      } else {
+        localStorage.removeItem("pos_ruc");
       }
       
       window.dispatchEvent(new Event("pos_app_name_updated"));
@@ -473,6 +484,7 @@ export function SettingsView() {
       k !== "tickets:nombrerestaurante" &&
       k !== "tickets:direccionrestaurante" &&
       k !== "tickets:telefonorestaurante" &&
+      k !== "tickets:rucrestaurante" &&
       !k.startsWith("tickets:impresora")
     );
   });
@@ -751,6 +763,20 @@ export function SettingsView() {
                         onChange={(e) => setTelefonoInput(e.target.value)}
                         className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         placeholder="Ej. +505 8888-8888"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="ruc-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        RUC del Establecimiento
+                      </label>
+                      <input
+                        id="ruc-input"
+                        type="text"
+                        value={rucInput}
+                        onChange={(e) => setRucInput(e.target.value)}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        placeholder="Ej. J0310000000000"
                         autoComplete="off"
                       />
                     </div>

@@ -4,10 +4,18 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
   test.beforeEach(async ({ page }) => {
     page.on("console", (msg) => console.log(`BROWSER CONSOLE [${msg.type()}]: ${msg.text()}`));
     page.on("pageerror", (err) => console.error(`BROWSER ERROR: ${err.message}`));
+    page.on("response", async (res) => {
+      if (res.status() >= 400) {
+        console.log(`HTTP ERROR: ${res.status()} ${res.url()}`);
+        try {
+          console.log(`RESPONSE BODY: ${await res.text()}`);
+        } catch {}
+      }
+    });
 
     // 1. Iniciar sesión antes de cada prueba
     await page.goto("/login");
-    await page.fill('input[placeholder="ej. administrador"]', "admin");
+    await page.fill('input[placeholder="ej. admin"]', "admin");
     await page.fill('input[placeholder="••••••••"]', "admin");
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/.*app/);
@@ -122,6 +130,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
     // --- 5. Flujo del POS (Mesas) ---
     await page.click('button:has-text("Mesas")');
     await expect(page.locator("h1")).toContainText("Gestion de mesas");
+    await page.click('button:has-text("Plano")');
 
     // Seleccionar una mesa (ej. SALA 1)
     const tableCard = page.locator('.mesa-plano-handle').filter({ has: page.locator('span', { hasText: /^\s*SALA 1\s*$/i }) }).locator('..');
@@ -137,7 +146,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
     await expect(page.locator(`div:has-text("${productName}")`).first()).toBeVisible();
 
     // --- 6. Enviar a Cocina y verificar KDS ---
-    await page.locator('button:has-text("Enviar cocina")').filter({ visible: true }).click();
+    await page.locator('button:has-text("Mandar orden")').filter({ visible: true }).click();
 
     // Navegar a Cocina (KDS)
     await page.click('button:has-text("Cocina")');
@@ -154,6 +163,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
 
     // --- 7. Cobro y Pago en el POS ---
     await page.click('button:has-text("Mesas")');
+    await page.click('button:has-text("Plano")');
     await tableCard.locator('button', { hasText: /Doble clic|OCUPADA/ }).dblclick();
 
     // Ir a pagar

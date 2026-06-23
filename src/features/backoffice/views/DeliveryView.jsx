@@ -11,6 +11,7 @@ import {
   Search,
   ShoppingBag,
   Trash2,
+  Lock,
   X,
   XCircle,
 } from "lucide-react";
@@ -148,6 +149,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const [showDetail, setShowDetail] = useState(false);
   const [cancelDeliveryPin, setCancelDeliveryPin] = useState({ open: false, row: null });
   const [cajaAbierta, setCajaAbierta] = useState(true);
+  const [posCancelItemPinOpen, setPosCancelItemPinOpen] = useState(false);
+  const [pendingCancelItemLineId, setPendingCancelItemLineId] = useState(null);
   const cajaAbiertaRef = useRef(true);
   cajaAbiertaRef.current = cajaAbierta;
 
@@ -453,6 +456,18 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
 
   const removeCartLine = (lineId) => {
     if (isPedidoBloqueado || actionBusy || !cajaAbierta) return;
+    const item = cart.find((x) => x.lineId === lineId);
+    const isSentToKitchen = item && item.estado !== "Pendiente" && parsePosBackendLineId(lineId) !== null;
+
+    if (isSentToKitchen) {
+      setPendingCancelItemLineId(lineId);
+      setPosCancelItemPinOpen(true);
+      return;
+    }
+    executeRemoveCartLine(lineId);
+  };
+
+  const executeRemoveCartLine = (lineId) => {
     const prev = cartRef.current;
     const next = prev.filter((x) => x.lineId !== lineId);
     if (next.length === prev.length) return;
@@ -500,6 +515,53 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       });
 
     void deliverySyncChainRef.current;
+  };
+
+  const confirmCancelItemWithPin = async (codigo) => {
+    const lineId = pendingCancelItemLineId;
+    if (!lineId) return;
+
+    const item = cart.find((x) => x.lineId === lineId);
+    if (!item) return;
+
+    const lineaId = parsePosBackendLineId(lineId);
+    const pedidoId = deliveryPedidoIdRef.current;
+
+    if (!lineaId || !pedidoId) return;
+
+    setActionBusy(true);
+    setDeliveryBusyMessage("Cancelando producto...");
+    try {
+      const resp = await backofficeApi.pedidoCancelarLineaConPin(pedidoId, lineaId, codigo);
+      const data = unwrapEnvelope(resp);
+      const vacio = data?.vacio ?? data?.Vacio;
+      
+      const prev = cartRef.current;
+      const next = prev.filter((x) => x.lineId !== lineId);
+      cartRef.current = next;
+      setCart(next);
+
+      if (vacio) {
+        setCart([]);
+        cartRef.current = [];
+        snackbar.success("Línea eliminada. Pedido vacío.");
+      } else {
+        const fresh = await backofficeApi.getDeliveryPedido(pedidoId);
+        const items = fresh?.items ?? fresh?.Items ?? [];
+        const mapped = mapBackendItemsToCart(items);
+        setCart(mapped);
+        cartRef.current = mapped;
+        snackbar.success("Línea cancelada e impresa correctamente.");
+      }
+      await loadDeliveryList();
+      setPosCancelItemPinOpen(false);
+      setPendingCancelItemLineId(null);
+    } catch (e) {
+      throw e;
+    } finally {
+      setActionBusy(false);
+      setDeliveryBusyMessage("");
+    }
   };
 
   const updateQty = (lineId, delta) => {
@@ -1361,14 +1423,26 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                         <td className="whitespace-nowrap px-2 py-2 align-middle font-semibold">
                           <div className="flex items-center justify-between gap-2">
                             <span>{formatCurrency(Number(item.price || 0) * Number(item.qty || 0), currencySymbol)}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeCartLine(item.lineId)}
-                              disabled={isPedidoBloqueado || actionBusy || !cajaAbierta}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:opacity-40"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null ? (
+                              <button
+                                type="button"
+                                onClick={() => removeCartLine(item.lineId)}
+                                disabled={isPedidoBloqueado || actionBusy || !cajaAbierta}
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:opacity-40"
+                                title="Autorización requerida (PIN)"
+                              >
+                                <Lock className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => removeCartLine(item.lineId)}
+                                disabled={isPedidoBloqueado || actionBusy || !cajaAbierta}
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-red-200 text-red-600 disabled:opacity-40"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1621,6 +1695,16 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
               </div>
             </div>
           </BackofficeDialog>
+        )}
+        {posCancelItemPinOpen && (
+          <CancelPedidoPinModal
+            open
+            onClose={() => !actionBusy && setPosCancelItemPinOpen(false)}
+            loading={actionBusy}
+            title="Cancelar producto"
+            message="Ingresá el PIN de autorización para eliminar el producto de esta orden."
+            onConfirm={confirmCancelItemWithPin}
+          />
         )}
 
       </section>

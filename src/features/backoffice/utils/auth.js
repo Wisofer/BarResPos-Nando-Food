@@ -22,7 +22,7 @@ export function isAdminUser(user) {
 
 export function isMeseroUser(user) {
   const role = getUserRoleText(user);
-  return role.includes("mesero") || role.includes("waiter");
+  return role.includes("mesero") || role.includes("waiter") || role.includes("normal");
 }
 
 export function isCajeroUser(user) {
