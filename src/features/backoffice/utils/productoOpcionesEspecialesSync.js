@@ -9,7 +9,13 @@ function normalizeGruposPayload(raw) {
 export function parseOpcionesEspecialesFromGruposApi(gruposRaw) {
   const grupos = normalizeGruposPayload(gruposRaw);
   const key = OPCIONES_ESPECIALES_GRUPO_NOMBRE.toLowerCase();
-  const g = grupos.find((x) => String(x?.nombre ?? x?.Nombre ?? "").trim().toLowerCase() === key) || null;
+  let g = grupos.find((x) => String(x?.nombre ?? x?.Nombre ?? "").trim().toLowerCase() === key) || null;
+  
+  // Si no se encuentra "Opciones especiales" pero el producto tiene algún grupo, tomamos el primero como fallback
+  if (!g && grupos.length > 0) {
+    g = grupos[0];
+  }
+  
   if (!g) {
     return { grupoId: null, lineas: [""], precios: [""] };
   }
@@ -26,10 +32,13 @@ export function parseOpcionesEspecialesFromGruposApi(gruposRaw) {
       const p = Number(o?.precioAdicional ?? o?.PrecioAdicional ?? 0);
       return p > 0 ? String(p) : "";
     });
+  const imagenes = filtered
+    .map((o) => o?.imagenUrl ?? o?.ImagenUrl ?? "");
   return {
     grupoId: gid != null && gid !== "" ? gid : null,
     lineas: lineas.length > 0 ? lineas : [""],
     precios: precios.length > 0 ? precios : [""],
+    imagenes: imagenes.length > 0 ? imagenes : [""],
     reemplazaPrecioBase: g.reemplazaPrecioBase ?? g.ReemplazaPrecioBase ?? false,
   };
 }
@@ -39,10 +48,11 @@ function findGrupoById(gruposRaw, grupoId) {
   return grupos.find((x) => String(x?.id ?? x?.Id) === String(grupoId)) ?? null;
 }
 
-export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, precios, grupoIdConocido, reemplazaPrecioBase }) {
+export async function syncOpcionesEspecialesBackend(api, productoId, { habilitado, nombres, precios, archivos, grupoIdConocido, reemplazaPrecioBase }) {
   const names = [...new Set(nombres.map((s) => String(s || "").trim()).filter(Boolean))];
-  // precios: array 1:1 con nombres (antes del dedup), los tomamos en orden
+  // precios y archivos: array 1:1 con nombres (antes del dedup), los tomamos en orden
   const rawPrices = Array.isArray(precios) ? precios : [];
+  const rawArchivos = Array.isArray(archivos) ? archivos : [];
 
   if (!habilitado) {
     if (grupoIdConocido == null || grupoIdConocido === "") return { ok: true, grupoId: null };
@@ -106,13 +116,17 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
       activo: o?.activo !== false && o?.Activo !== false,
     }));
 
-    // Construir mapa nombre→precio considerando duplicados que se eliminaron con dedup
-    // Usamos los nombres originales (con duplicados) para mapear precios correctamente
+    // Construir mapa nombre→precio y nombre→archivo considerando duplicados que se eliminaron con dedup
+    // Usamos los nombres originales (con duplicados) para mapear precios y archivos correctamente
     const nombrePrecioMap = new Map();
+    const nombreArchivoMap = new Map();
     nombres.forEach((n, i) => {
       const trimmed = String(n || "").trim();
       if (trimmed && !nombrePrecioMap.has(trimmed)) {
         nombrePrecioMap.set(trimmed, Number(rawPrices[i] || 0));
+        if (rawArchivos[i]) {
+          nombreArchivoMap.set(trimmed, rawArchivos[i]);
+        }
       }
     });
 
@@ -128,8 +142,11 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
         (x) => x.nombreLower === nombre.toLowerCase() && !reusedIds.has(x.id)
       );
 
+      let itemId = null;
+
       if (matched) {
         reusedIds.add(matched.id);
+        itemId = matched.id;
         // Actualizar el item existente
         await api.updateProductoOpcionItem(productoId, gid, matched.id, {
           nombre,
@@ -139,12 +156,22 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
         });
       } else {
         // Crear uno nuevo
-        await api.createProductoOpcionItem(productoId, gid, {
+        const created = await api.createProductoOpcionItem(productoId, gid, {
           nombre,
           orden: currentOrden++,
           precioAdicional,
           activo: true,
         });
+        itemId = created?.id ?? created?.Id;
+      }
+
+      const archivo = nombreArchivoMap.get(nombre);
+      if (archivo && itemId) {
+        try {
+          await api.subirImagenProductoOpcionItem(productoId, gid, itemId, archivo);
+        } catch (eImg) {
+          console.error("Error al subir imagen de opcion:", eImg);
+        }
       }
     }
 
@@ -154,7 +181,7 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
       try {
         // Intentar borrarlo
         await api.deleteProductoOpcionItem(productoId, gid, item.id);
-      } catch (e) {
+      } catch {
         // Si falla (por estar en uso), marcarlo como inactivo
         try {
           await api.updateProductoOpcionItem(productoId, gid, item.id, {
@@ -163,7 +190,7 @@ export async function syncOpcionesEspecialesBackend(api, productoId, { habilitad
             precioAdicional: item.precioAdicional,
             activo: false,
           });
-        } catch (e2) {
+        } catch {
           // Ignorar silenciosamente para no romper el flujo
         }
       }

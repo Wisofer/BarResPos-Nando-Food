@@ -105,3 +105,18 @@ Para permitir una personalización profesional de los tickets sin alterar el dis
     *   Se generó exitosamente el instalador autoejecutable en: `release/BarResPos Setup 0.0.0.exe`.
     *   **El instalador ahora funciona a la perfección, levanta el backend local, se conecta automáticamente sin ningún error de "Failed to fetch" y permite guardar las configuraciones y facturar de inmediato.**
 
+---
+
+## 8. Unificación de Opciones Especiales y Corrección de Duplicados en Modificadores
+
+*   **El Bug de Duplicación**: Al intentar editar un producto que poseía opciones sembradas de fábrica con un nombre personalizado (ej. "Elige tu Salsa" en el producto "Alitas"), el editor de productos del Backoffice no lo reconocía como el grupo de opciones del producto (ya que buscaba estrictamente el nombre exacto "Opciones especiales"). Al rellenar y guardar las opciones en el Backoffice, el sistema creaba un segundo grupo de opciones llamado "Opciones especiales", dejando al producto con múltiples grupos activos. Esto forzaba al POS a mostrar un modal de selección emergente complejo en lugar de la botonera en línea directa (inline) integrada en el catálogo.
+*   **La Solución**:
+    1.  **Backend (`InicializarDatosDemostracion.cs`)**: Se renombró el grupo de opciones de alitas sembrado inicialmente de `"Elige tu Salsa"` a `"Opciones especiales"` para garantizar plena consistencia.
+    2.  **Frontend (`productoOpcionesEspecialesSync.js`)**: Se optimizó la función `parseOpcionesEspecialesFromGruposApi` para que, en caso de no encontrar un grupo llamado "Opciones especiales", tome el primer grupo activo del producto como fallback. De esta forma, cualquier grupo preexistente se carga inmediatamente en el Backoffice al editar y se actualiza (o renombra a "Opciones especiales") en el mismo ID de base de datos sin duplicar registros.
+    3.  **Resultado**: Ahora el editor carga correctamente cualquier grupo existente, evita duplicados de raíz y permite al POS renderizar la botonera inline limpia e integrada en el catálogo de mesas y delivery.
+
+## 9. Ajuste de Opacidad Visual en Botoneras de Variantes
+
+*   **La Mejora**: Se redujo la opacidad del filtro degradado (`linear-gradient`) aplicado sobre los botones de opciones especiales que tienen imagen (`PosInlineOpcionesPanel.jsx`). Ahora la imagen de fondo se ve mucho más vibrante y clara, con el mismo brillo e impacto visual que los productos normales del catálogo, manteniendo el texto completamente legible mediante la adición de sombras de texto (`textShadow` y `drop-shadow`).
+
+

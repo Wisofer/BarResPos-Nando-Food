@@ -62,7 +62,7 @@ export function withImpressionAccessTokenQuery(absoluteUrl) {
 /**
  * Dispara la impresión nativa (ESC/POS) en el backend enviando un POST silencioso.
  */
-export async function openBackendPrintUrl(url, options = {}) {
+export async function openBackendPrintUrl(url) {
   if (!url) return false;
   const token = getToken();
   const resolved = resolveBackendAssetUrl(url);
@@ -139,9 +139,9 @@ export function extractPrecuentaUrlFromPayload(pre) {
 }
 
 /** Intenta imprimir precuenta (comanda) llamando a la API nativa. */
-export async function tryPrintPrecuentaFromPayload(pre, options = {}) {
+export async function tryPrintPrecuentaFromPayload(pre) {
   const url = extractPrecuentaUrlFromPayload(pre);
-  if (url && (await openBackendPrintUrl(url, options))) return true;
+  if (url && (await openBackendPrintUrl(url))) return true;
   return false;
 }
 

@@ -1,13 +1,30 @@
-import { useState } from "react";
+
 import { Check, ChefHat, ClipboardList, Coins, ImageIcon, Package, Pencil, Plus, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { BackofficeDialog } from "../BackofficeDialog.jsx";
 import { useObjectUrlForFile } from "../../hooks/useObjectUrlForFile.js";
 import { getProductImageUrl } from "../../utils/productImage.js";
 import { modalFormBodyScrollPlainClass, modalFormFooterClass, modalFormRootClass } from "../../utils/modalResponsiveClasses.js";
+import { getApiUrl } from "../../../../api/config.js";
 
 function categoriaRequiereCocina(c) {
   const v = c?.requiereCocina ?? c?.RequiereCocina;
   return v !== false;
+}
+
+function OptionImageUpload({ file, url, onChange }) {
+  const fileUrl = useObjectUrlForFile(file);
+  const src = fileUrl || (url ? `${url.startsWith('http') ? url : getApiUrl() + url}` : null);
+  
+  return (
+    <label className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded border border-slate-300 bg-slate-50 hover:bg-slate-100 shrink-0" title="Subir imagen">
+      {src ? (
+         <img src={src} className="h-full w-full object-cover" alt="" />
+      ) : (
+         <ImageIcon className="h-4 w-4 text-slate-400" />
+      )}
+      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} />
+    </label>
+  );
 }
 
 /* ── Minimal Field ───────────────────────────────────────────────── */
@@ -59,7 +76,6 @@ export function ProductFormModal({
   setImageUploadFile,
   currencySymbol = "C$",
 }) {
-  const [activeTab, setActiveTab] = useState("general");
   const imageFilePreviewUrl = useObjectUrlForFile(imageUploadFile);
   const existingImageUrl = getProductImageUrl(form);
   const imagePreviewSrc = imageFilePreviewUrl || existingImageUrl;
@@ -364,6 +380,7 @@ export function ProductFormModal({
                       {/* Encabezados de columnas */}
                       <div className="flex items-center gap-2 px-1">
                       <span className="w-12 shrink-0" />
+                      <span className="w-8 shrink-0" />
                       <span className="flex-1 text-[10px] font-semibold text-slate-400 uppercase">Nombre variante</span>
                       <span className="w-24 shrink-0 text-[10px] font-semibold text-slate-400 uppercase text-right">Precio ({currencySymbol})</span>
                       <span className="w-6 shrink-0" />
@@ -372,6 +389,16 @@ export function ProductFormModal({
                     {form.opcionesEspecialesLines.map((line, idx) => (
                       <div key={idx} className="flex items-center gap-2">
                         <span className="w-12 shrink-0 text-xs text-slate-500">Op. {idx + 1}</span>
+                        {/* Imagen */}
+                        <OptionImageUpload
+                          file={(form.opcionesEspecialesFiles ?? [])[idx]}
+                          url={(form.opcionesEspecialesImages ?? [])[idx]}
+                          onChange={(file) => setForm(f => {
+                            const next = [...(f.opcionesEspecialesFiles ?? f.opcionesEspecialesLines.map(() => null))];
+                            next[idx] = file;
+                            return { ...f, opcionesEspecialesFiles: next };
+                          })}
+                        />
                         {/* Nombre */}
                         <input
                           value={line}
@@ -415,6 +442,8 @@ export function ProductFormModal({
                                 ...f,
                                 opcionesEspecialesLines: nextLines.length ? nextLines : [""],
                                 opcionesEspecialesPrices: nextPrices.length ? nextPrices : [""],
+                                opcionesEspecialesImages: (f.opcionesEspecialesImages ?? []).filter((_, j) => j !== idx),
+                                opcionesEspecialesFiles: (f.opcionesEspecialesFiles ?? []).filter((_, j) => j !== idx),
                               };
                             })
                           }
@@ -430,6 +459,8 @@ export function ProductFormModal({
                         ...f,
                         opcionesEspecialesLines: [...f.opcionesEspecialesLines, ""],
                         opcionesEspecialesPrices: [...(f.opcionesEspecialesPrices ?? []), ""],
+                        opcionesEspecialesImages: [...(f.opcionesEspecialesImages ?? []), ""],
+                        opcionesEspecialesFiles: [...(f.opcionesEspecialesFiles ?? []), null],
                       }))}
                       className="text-xs text-slate-600 hover:text-slate-800"
                     >

@@ -9,7 +9,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
         console.log(`HTTP ERROR: ${res.status()} ${res.url()}`);
         try {
           console.log(`RESPONSE BODY: ${await res.text()}`);
-        } catch {}
+        } catch { /* ignore response body read errors */ }
       }
     });
 

@@ -533,7 +533,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     setDeliveryBusyMessage("Cancelando producto...");
     try {
       const resp = await backofficeApi.pedidoCancelarLineaConPin(pedidoId, lineaId, codigo);
-      const data = unwrapEnvelope(resp);
+      const data = resp?.data ?? resp?.Data ?? resp;
       const vacio = data?.vacio ?? data?.Vacio;
       
       const prev = cartRef.current;
@@ -557,7 +557,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       setPosCancelItemPinOpen(false);
       setPendingCancelItemLineId(null);
     } catch (e) {
-      throw e;
+      snackbar.error(e?.message || "No se pudo cancelar el producto.");
     } finally {
       setActionBusy(false);
       setDeliveryBusyMessage("");

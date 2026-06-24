@@ -6,51 +6,16 @@
 
 # Test info
 
-- Name: pos.spec.js >> Flujo de Autenticación y Navegación del POS >> Debería iniciar sesión como mesero y ver solo las opciones de mesas y delivery
-- Location: tests\pos.spec.js:38:3
+- Name: pos.spec.js >> Flujo de Autenticación y Navegación del POS >> Debería iniciar sesión como cocinero y ver solo la opción de Cocina
+- Location: pos.spec.js:62:3
 
 # Error details
 
 ```
-Error: expect(page).toHaveURL(expected) failed
-
-Expected pattern: /.*app/
-Received string:  "http://localhost:5173/login#/login"
-Timeout: 5000ms
-
+Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
 Call log:
-  - Expect "toHaveURL" with timeout 5000ms
-    14 × unexpected value "http://localhost:5173/login#/login"
+  - navigating to "/login", waiting until "load"
 
-```
-
-```yaml
-- img "BarRestPOS logo"
-- paragraph: BarRestPOS
-- heading "Diseñado para operar a la velocidad de tu servicio." [level=2]
-- paragraph: Ventas Semanales
-- text: ↗ +14.2%
-- paragraph: C$ 45,820.00
-- paragraph: Distribución de Salón
-- text: Mesa 1 Libre Mesa 2 Ocupada Mesa 3 Libre Mesa 4 Reservada MOP (Ocupación) 45%
-- paragraph: "Pedido #1042"
-- paragraph: Mesa 2 · Salon
-- text: "En Cocina 1x Hamburguesa C$ 180 1x Té Helado C$ 40 Total C$ 220.00 #1042-NANDO-FOOD Sencillo · Veloz · Confiable"
-- img "BarRestPOS logo"
-- heading "Iniciar sesión" [level=1]
-- paragraph: Accede al panel administrativo
-- paragraph: No autorizado
-- text: Usuario
-- textbox "ej. admin": mesero1
-- text: Contraseña
-- textbox "••••••••": mesero1
-- button "Ver contraseña"
-- button "Entrar al sistema"
-- paragraph: © 2026 BarRestPOS
-- paragraph:
-  - text: Desarrollado por
-  - link "COWIB":
-    - /url: https://www.cowib.es
 ```
 
 # Test source
@@ -103,8 +68,7 @@ Call log:
   45 |     await page.click('button[type="submit"]');
   46 | 
   47 |     // 3. Esperar redirección al POS/app
-> 48 |     await expect(page).toHaveURL(/.*app/);
-     |                        ^ Error: expect(page).toHaveURL(expected) failed
+  48 |     await expect(page).toHaveURL(/.*app/);
   49 | 
   50 |     // 4. El sidebar no debe mostrar "Dashboard", "Productos", "Usuarios", "Configuraciones" o "Reportes"
   51 |     const sidebar = page.locator('aside');
@@ -120,7 +84,8 @@ Call log:
   61 | 
   62 |   test("Debería iniciar sesión como cocinero y ver solo la opción de Cocina", async ({ page }) => {
   63 |     // 1. Navegar a la página de Login
-  64 |     await page.goto("/login");
+> 64 |     await page.goto("/login");
+     |                ^ Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
   65 | 
   66 |     // 2. Iniciar sesión como cocina1
   67 |     await page.fill('input[placeholder="ej. admin"]', "cocina1");

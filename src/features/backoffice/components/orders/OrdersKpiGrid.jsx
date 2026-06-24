@@ -38,6 +38,7 @@ export function OrdersKpiGrid({ cards, currencySymbol }) {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* eslint-disable-next-line no-unused-vars */}
       {kpis.map(({ label, value, icon: Icon, accent, iconBg, iconRing }) => (
         <div
           key={label}

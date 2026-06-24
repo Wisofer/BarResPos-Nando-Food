@@ -1,5 +1,5 @@
 import { Eye, Pencil, XCircle } from "lucide-react";
-import { orderStatusPillClass, formatDateTimeParts, labelDestinoPedido, labelTipoPedido, isPedidoEstadoBloqueadoParaEdicion } from "../../utils/ordersViewFormatters.js";
+import { formatDateTimeParts, labelDestinoPedido, labelTipoPedido, isPedidoEstadoBloqueadoParaEdicion } from "../../utils/ordersViewFormatters.js";
 
 const th = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400";
 

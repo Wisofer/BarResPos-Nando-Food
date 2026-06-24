@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { BackofficeDialog } from "./BackofficeDialog.jsx";
 import { formatCurrency } from "../utils/currency.js";
+import { getApiUrl } from "../../../api/config.js";
 import {
   effectiveMaxSeleccion,
   effectiveMinSeleccion,
@@ -112,19 +113,30 @@ export function PosProductOpcionesModal({ open, product, currencySymbol = "C$", 
                     const add = Number(op?.precioAdicional ?? op?.PrecioAdicional ?? 0);
                     const extra = Number.isFinite(add) && add > 0 ? ` +${formatCurrency(add, currencySymbol)}` : "";
                     const active = sel.has(oid);
+
+                    const imgUrl = op?.imagenUrl ?? op?.ImagenUrl;
+                    const fullImgUrl = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : getApiUrl() + imgUrl) : null;
+
                     return (
                       <button
                         key={oid}
                         type="button"
                         onClick={() => toggleOpcion(gid, oid, Number.isFinite(max) ? max : Infinity)}
-                        className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold transition ${
+                        className={`rounded-lg border px-3 py-2 text-left text-xs font-semibold transition relative overflow-hidden min-h-[60px] flex items-center gap-2 ${
                           active
-                            ? "border-violet-600 bg-violet-600 text-white"
+                            ? "border-violet-600 bg-violet-600 text-white shadow-md shadow-violet-500/30"
                             : "border-slate-300 bg-white text-slate-800 hover:border-violet-300"
                         }`}
                       >
-                        {oname}
-                        {extra ? <span className={active ? "text-violet-100" : "text-emerald-700"}>{extra}</span> : null}
+                        {fullImgUrl && (
+                          <div className={`h-10 w-10 shrink-0 rounded-md bg-white border overflow-hidden ${active ? "border-violet-400" : "border-slate-200"}`}>
+                            <img src={fullImgUrl} alt="" className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span>{oname}</span>
+                          {extra ? <span className={active ? "text-violet-100" : "text-emerald-700"}>{extra}</span> : null}
+                        </div>
                       </button>
                     );
                   })}

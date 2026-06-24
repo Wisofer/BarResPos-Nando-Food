@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { DollarSign, Eye, EyeOff, KeyRound, Pencil, Trash2, Image, Sliders, MessageSquare, Settings, Database, AlertTriangle, Printer, Receipt, ChefHat, ClipboardList, Beer } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { authApi } from "../../../api/auth.js";
 import { BackofficeDialog, BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
@@ -722,7 +721,8 @@ export function SettingsView() {
                   Configura el nombre comercial, la dirección y el teléfono del negocio. Esta información se imprimirá en los tickets de tus clientes y pre-cuentas de mesero (excepto en comandas de cocina/bar para mantenerlas limpias).
                 </p>
                 <div className="space-y-4">
-                  <div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
                     <label htmlFor="company-name-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       Nombre comercial
                     </label>
@@ -737,50 +737,49 @@ export function SettingsView() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label htmlFor="direccion-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        Dirección del Establecimiento
-                      </label>
-                      <input
-                        id="direccion-input"
-                        type="text"
-                        value={direccionInput}
-                        onChange={(e) => setDireccionInput(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        placeholder="Ej. Managua, Nicaragua"
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="telefono-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        Teléfono de contacto
-                      </label>
-                      <input
-                        id="telefono-input"
-                        type="text"
-                        value={telefonoInput}
-                        onChange={(e) => setTelefonoInput(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        placeholder="Ej. +505 8888-8888"
-                        autoComplete="off"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="ruc-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                        RUC del Establecimiento
-                      </label>
-                      <input
-                        id="ruc-input"
-                        type="text"
-                        value={rucInput}
-                        onChange={(e) => setRucInput(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        placeholder="Ej. J0310000000000"
-                        autoComplete="off"
-                      />
-                    </div>
+                  <div>
+                    <label htmlFor="direccion-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Dirección del Establecimiento
+                    </label>
+                    <input
+                      id="direccion-input"
+                      type="text"
+                      value={direccionInput}
+                      onChange={(e) => setDireccionInput(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Ej. Managua, Nicaragua"
+                      autoComplete="off"
+                    />
                   </div>
+                  <div>
+                    <label htmlFor="telefono-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Teléfono de contacto
+                    </label>
+                    <input
+                      id="telefono-input"
+                      type="text"
+                      value={telefonoInput}
+                      onChange={(e) => setTelefonoInput(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Ej. +505 8888-8888"
+                      autoComplete="off"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="ruc-input" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      RUC del Establecimiento
+                    </label>
+                    <input
+                      id="ruc-input"
+                      type="text"
+                      value={rucInput}
+                      onChange={(e) => setRucInput(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      placeholder="Ej. J0310000000000"
+                      autoComplete="off"
+                    />
+                  </div>
+                </div>
 
                   <div className="flex justify-end pt-2">
                     <button

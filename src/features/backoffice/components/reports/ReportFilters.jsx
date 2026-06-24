@@ -19,8 +19,6 @@ export function ReportFilters({
   setFiltroVentas,
   topN,
   setTopN,
-  loading,
-  resetFilters,
 }) {
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md">

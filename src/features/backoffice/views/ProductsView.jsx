@@ -296,6 +296,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
       const parsed = parseOpcionesEspecialesFromGruposApi(gruposRaw ?? []);
       const lineas = parsed.lineas.length ? parsed.lineas : [""];
       const precios = parsed.precios?.length ? parsed.precios : lineas.map(() => "");
+      const imagenes = parsed.imagenes?.length ? parsed.imagenes : lineas.map(() => "");
       const tieneOpciones = lineas.some((s) => String(s || "").trim());
       setForm({
         id: p.id,
@@ -315,6 +316,8 @@ export function ProductsView({ currencySymbol = "C$" }) {
         opcionesEspecialesOn: tieneOpciones,
         opcionesEspecialesLines: lineas,
         opcionesEspecialesPrices: precios,
+        opcionesEspecialesImages: imagenes,
+        opcionesEspecialesFiles: lineas.map(() => null),
         opcionesEspecialesGrupoId: parsed.grupoId,
         opcionesEspecialesReemplaza: parsed.reemplazaPrecioBase,
       });
@@ -383,6 +386,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
         habilitado: form.opcionesEspecialesOn,
         nombres: form.opcionesEspecialesLines,
         precios: form.opcionesEspecialesPrices ?? [],
+        archivos: form.opcionesEspecialesFiles ?? [],
         grupoIdConocido: form.opcionesEspecialesGrupoId,
         reemplazaPrecioBase: form.opcionesEspecialesReemplaza,
       });

@@ -1035,7 +1035,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       setPosCancelItemPinOpen(false);
       setPendingCancelItemLineId(null);
     } catch (e) {
-      throw e;
+      snackbar.error(e?.message || "No se pudo cancelar el producto.");
     } finally {
       setPosActionBusy(false);
       setPosBusyMessage("");

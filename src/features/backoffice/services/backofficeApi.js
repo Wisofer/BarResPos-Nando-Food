@@ -111,6 +111,33 @@ export const backofficeApi = {
     const data = payload?.data ?? payload?.Data ?? payload;
     return data;
   },
+  subirImagenProductoOpcionItem: async (productoId, grupoId, itemId, archivo) => {
+    const form = new FormData();
+    form.append("archivo", archivo);
+    const token = getToken();
+    const res = await fetch(`${getApiUrl()}/api/v1/productos/${encodeURIComponent(productoId)}/opciones/grupos/${encodeURIComponent(grupoId)}/items/${encodeURIComponent(itemId)}/imagen`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: form,
+    });
+    const text = await res.text();
+    let payload = null;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      payload = null;
+    }
+    if (!res.ok) {
+      const msg = payload?.message || payload?.Message || payload?.error || payload?.Error || `Error HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      throw err;
+    }
+    const data = payload?.data ?? payload?.Data ?? payload;
+    return data;
+  },
   listProductoOpcionesGrupos: (productoId) => api.get(`/api/v1/productos/${productoId}/opciones/grupos`),
   createProductoOpcionGrupo: (productoId, body) => api.post(`/api/v1/productos/${productoId}/opciones/grupos`, body),
   updateProductoOpcionGrupo: (productoId, grupoId, body) =>

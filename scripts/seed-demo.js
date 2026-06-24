@@ -189,7 +189,7 @@ async function loadExistingData() {
 
   const cats = (catsRaw?.items || catsRaw?.Items || catsRaw || []);
   const mesas = (mesasRaw?.items || mesasRaw?.Items || mesasRaw || []);
-  const ubicaciones = (ubicRaw?.items || ubicRaw?.Items || ubicRaw || []);
+  const _ubicaciones = (ubicRaw?.items || ubicRaw?.Items || ubicRaw || []);
   const configs = Array.isArray(configRaw) ? configRaw : (configRaw?.items || configRaw?.Items || []);
 
   const catMap = {};
@@ -316,12 +316,13 @@ function insertCliente(cliente) {
   return id;
 }
 
+// eslint-disable-next-line no-unused-vars
 function deleteClientes() {
   try {
     const db = new DatabaseSync(DB_PATH);
     db.prepare('DELETE FROM Clientes').run();
     db.close();
-  } catch {}
+  } catch { /* empty */ }
 }
 
 async function createClientes() {
@@ -486,7 +487,8 @@ const PEDIDOS_MESA = [
   },
 ];
 
-async function crearPedidosMesa(productosCreados, mesasDisponibles, clientesCreados) {
+// eslint-disable-next-line no-unused-vars
+async function crearPedidosMesa(productosCreados, mesasDisponibles, _clientesCreados) {
   step(9, 10, 'Creando pedidos en mesas');
 
   const prodMap = {};

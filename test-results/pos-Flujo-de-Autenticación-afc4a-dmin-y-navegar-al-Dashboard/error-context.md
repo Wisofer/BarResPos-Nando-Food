@@ -6,51 +6,16 @@
 
 # Test info
 
-- Name: pos.spec.js >> Flujo de Autenticación y Navegación del POS >> Debería iniciar sesión como cocinero y ver solo la opción de Cocina
-- Location: tests\pos.spec.js:62:3
+- Name: pos.spec.js >> Flujo de Autenticación y Navegación del POS >> Debería iniciar sesión correctamente con credenciales admin y navegar al Dashboard
+- Location: pos.spec.js:4:3
 
 # Error details
 
 ```
-Error: expect(page).toHaveURL(expected) failed
-
-Expected pattern: /.*app/
-Received string:  "http://localhost:5173/login#/login"
-Timeout: 5000ms
-
+Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
 Call log:
-  - Expect "toHaveURL" with timeout 5000ms
-    14 × unexpected value "http://localhost:5173/login#/login"
+  - navigating to "/login", waiting until "load"
 
-```
-
-```yaml
-- img "BarRestPOS logo"
-- paragraph: BarRestPOS
-- heading "Diseñado para operar a la velocidad de tu servicio." [level=2]
-- paragraph: Ventas Semanales
-- text: ↗ +14.2%
-- paragraph: C$ 45,820.00
-- paragraph: Distribución de Salón
-- text: Mesa 1 Libre Mesa 2 Ocupada Mesa 3 Libre Mesa 4 Reservada MOP (Ocupación) 45%
-- paragraph: "Pedido #1042"
-- paragraph: Mesa 2 · Salon
-- text: "En Cocina 1x Hamburguesa C$ 180 1x Té Helado C$ 40 Total C$ 220.00 #1042-NANDO-FOOD Sencillo · Veloz · Confiable"
-- img "BarRestPOS logo"
-- heading "Iniciar sesión" [level=1]
-- paragraph: Accede al panel administrativo
-- paragraph: No autorizado
-- text: Usuario
-- textbox "ej. admin": cocina1
-- text: Contraseña
-- textbox "••••••••": cocina1
-- button "Ver contraseña"
-- button "Entrar al sistema"
-- paragraph: © 2026 BarRestPOS
-- paragraph:
-  - text: Desarrollado por
-  - link "COWIB":
-    - /url: https://www.cowib.es
 ```
 
 # Test source
@@ -61,7 +26,8 @@ Call log:
   3  | test.describe("Flujo de Autenticación y Navegación del POS", () => {
   4  |   test("Debería iniciar sesión correctamente con credenciales admin y navegar al Dashboard", async ({ page }) => {
   5  |     // 1. Navegar a la página de Login
-  6  |     await page.goto("/login");
+> 6  |     await page.goto("/login");
+     |                ^ Error: page.goto: Protocol error (Page.navigate): Cannot navigate to invalid URL
   7  | 
   8  |     // 2. Llenar el formulario con las credenciales por defecto (admin/admin)
   9  |     await page.fill('input[placeholder="ej. admin"]', "admin");
@@ -127,8 +93,7 @@ Call log:
   69 |     await page.click('button[type="submit"]');
   70 | 
   71 |     // 3. Esperar redirección al POS/app
-> 72 |     await expect(page).toHaveURL(/.*app/);
-     |                        ^ Error: expect(page).toHaveURL(expected) failed
+  72 |     await expect(page).toHaveURL(/.*app/);
   73 | 
   74 |     // 4. El sidebar no debe mostrar "Mesas", "Delivery", "Dashboard", "Productos", etc.
   75 |     const sidebar = page.locator('aside');
