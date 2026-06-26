@@ -75,6 +75,8 @@ import {
   saveCachedClient,
   seedClientsFromPastOrders,
 } from "../utils/clientStorage.js";
+import { useAuth } from "../../../contexts/AuthContext.jsx";
+import { isAdminUser, isCajeroUser } from "../utils/auth.js";
 
 function statusClass(status) {
   if (status === "Listo") return "bg-emerald-50 text-emerald-700";
@@ -102,6 +104,8 @@ function formatDateTimeLabel(value) {
 
 export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const snackbar = useSnackbar();
+  const { user } = useAuth();
+  const isCajeroOrAdmin = isAdminUser(user) || isCajeroUser(user);
   const tc = Number(exchangeRate) > 0 ? Number(exchangeRate) : DEFAULT_TIPO_CAMBIO_USD;
   const [openBuilder, setOpenBuilder] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -1491,15 +1495,17 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                     <ChefHat className="h-3.5 w-3.5" />
                     Mandar orden
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleProcesarOrden()}
-                    disabled={actionBusy || saleProcessing || isPedidoBloqueado || !cajaAbierta}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    Procesar orden
-                  </button>
+                  {isCajeroOrAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => void handleProcesarOrden()}
+                      disabled={actionBusy || saleProcessing || isPedidoBloqueado || !cajaAbierta}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Procesar orden
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={handleGuardar}

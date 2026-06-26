@@ -353,6 +353,7 @@ export function KitchenView() {
                   const id = o?.id ?? o?.Id ?? i;
                   const numero = o?.numero || o?.Numero || `#${id}`;
                   const mesa = o?.mesa || o?.mesaNombre || o?.Mesa || "Mesa";
+                  const mesero = o?.mesero || o?.Mesero || "";
                   const createdAt = o?.fechaCreacion ?? o?.FechaCreacion;
                   const current = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
                   const rawItems = o?.Items ?? o?.items ?? [];
@@ -384,11 +385,19 @@ export function KitchenView() {
                       </div>
 
                       <div className="mt-1 flex items-center justify-between">
-                        <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                          <span>📍</span>
-                          <span>{mesa}</span>
-                        </p>
-                        <p className="text-[10px] font-medium text-slate-400">{formatDate(createdAt)}</p>
+                        <div className="flex flex-col">
+                          <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                            <span>📍</span>
+                            <span>{mesa}</span>
+                          </p>
+                          {mesero && mesero !== "N/A" && (
+                            <p className="text-[11px] font-medium text-slate-500 mt-0.5 flex items-center gap-1">
+                              <span className="opacity-80">🧑‍🍳</span>
+                              <span>{mesero}</span>
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-medium text-slate-400 self-start">{formatDate(createdAt)}</p>
                       </div>
 
                       <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-2.5">

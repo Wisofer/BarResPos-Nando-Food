@@ -51,7 +51,7 @@ import {
   posCartToPosOrdenProductos,
   unwrapEnvelope,
 } from "../utils/posPedido.js";
-import { isAdminUser } from "../utils/auth.js";
+import { isAdminUser, isCajeroUser } from "../utils/auth.js";
 import {
   PRECUENTA_PRINT_READY_INFO,
   pagoResponseHasReciboPrintChannel,
@@ -156,6 +156,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [enableVistaPlano, setEnableVistaPlano] = useState(true);
   const [planoFullScreen, setPlanoFullScreen] = useState(false);
   const isAdmin = isAdminUser(user);
+  const isCajeroOrAdmin = isAdmin || isCajeroUser(user);
 
   const syncCajaEstado = async () => {
     try {
@@ -1873,10 +1874,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                         <ChefHat className="h-3.5 w-3.5" />
                         Mandar orden
                       </button>
-                      <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
-                        <Save className="h-3.5 w-3.5" />
-                        Procesar orden
-                      </button>
+                      {isCajeroOrAdmin && (
+                        <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
+                          <Save className="h-3.5 w-3.5" />
+                          Procesar orden
+                        </button>
+                      )}
                     </div>
                   </>
                 )}
@@ -1895,10 +1898,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                       <ChefHat className="h-3.5 w-3.5" />
                       Mandar orden
                     </button>
-                    <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
-                      <Save className="h-3.5 w-3.5" />
-                      Procesar orden
-                    </button>
+                    {isCajeroOrAdmin && (
+                      <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center justify-center gap-1 rounded-sm bg-emerald-600 px-2 py-2 text-[11px] font-semibold text-white disabled:opacity-60">
+                        <Save className="h-3.5 w-3.5" />
+                        Procesar orden
+                      </button>
+                    )}
                   </div>
                 )}
               </article>
@@ -2060,10 +2065,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     <ChefHat className="h-3.5 w-3.5" />
                     Mandar orden
                   </button>
-                  <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60">
-                    <Save className="h-3.5 w-3.5" />
-                    Procesar orden
-                  </button>
+                  {isCajeroOrAdmin && (
+                    <button type="button" onClick={openProcesarVentaModal} disabled={posActionBusy || saleProcessing} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-bold text-white shadow-md shadow-emerald-500/20 transition-all duration-200 hover:bg-emerald-700 disabled:opacity-60">
+                      <Save className="h-3.5 w-3.5" />
+                      Procesar orden
+                    </button>
+                  )}
                 </div>
               )}
             </article>
