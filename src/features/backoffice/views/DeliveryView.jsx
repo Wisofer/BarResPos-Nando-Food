@@ -498,10 +498,10 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
             }
           } else {
             const fresh = await backofficeApi.getDeliveryPedido(pedidoId);
-            const items = fresh?.items ?? fresh?.Items ?? [];
-            const mapped = mapBackendItemsToCart(items);
-            setCart(mapped);
+            const freshItems = fresh?.items ?? fresh?.Items ?? [];
+            const mapped = mapBackendItemsToCart(freshItems);
             cartRef.current = mapped;
+            setCart(mapped);
           }
           await loadDeliveryList();
           return;
@@ -551,10 +551,10 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         snackbar.success("Línea eliminada. Pedido vacío.");
       } else {
         const fresh = await backofficeApi.getDeliveryPedido(pedidoId);
-        const items = fresh?.items ?? fresh?.Items ?? [];
-        const mapped = mapBackendItemsToCart(items);
-        setCart(mapped);
+        const freshItems = fresh?.items ?? fresh?.Items ?? [];
+        const mapped = mapBackendItemsToCart(freshItems);
         cartRef.current = mapped;
+        setCart(mapped);
         snackbar.success("Línea cancelada e impresa correctamente.");
       }
       await loadDeliveryList();
