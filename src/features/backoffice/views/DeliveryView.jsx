@@ -803,7 +803,11 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
           await printKitchenTicketAfterEnviarCocina(data, snackbar);
 
           const fresh = await backofficeApi.getDeliveryPedido(pid);
-          setPedidoEstado(String(fresh?.estado ?? fresh?.Estado ?? ""));
+          if (fresh) {
+            // applyPedidoDetail sincroniza TODO: estado, cart con lineIds "b-123"
+            // y estado "En Preparación" → activa el candado 🔒 en items enviados
+            applyPedidoDetail(fresh);
+          }
           await loadDeliveryList();
         },
       );
