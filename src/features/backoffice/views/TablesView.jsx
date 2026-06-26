@@ -679,7 +679,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
     const prev = posCartRef.current;
     const idx = prev.findIndex(
-      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
+      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget && (!x.estado || x.estado === "Pendiente" || x.estado === "Pending")
     );
     let ops, notas, rollbackLineId, next;
     if (idx >= 0) {
@@ -735,7 +735,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
     const prev = posCartRef.current;
     const idx = prev.findIndex(
-      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget
+      (x) => Number(x.id) === pid && posLineMergeKey(x.opcionesSeleccionadas, x.notas) === mergeTarget && (!x.estado || x.estado === "Pendiente" || x.estado === "Pending")
     );
     let ops, notas, rollbackLineId, next;
     if (idx >= 0) {
@@ -924,6 +924,42 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     const prev = posCartRef.current;
     const item = prev.find((x) => x.lineId === lineId);
     if (!item) return;
+
+    const isPending = !item.estado || item.estado === "Pendiente" || item.estado === "Pending";
+
+    if (!isPending) {
+      if (delta > 0) {
+        // En lugar de modificar la línea bloqueada, buscamos una pendiente o creamos una nueva
+        const pIdx = prev.findIndex(
+          (x) =>
+            Number(x.id) === Number(item.id) &&
+            String(x.opcionesKey ?? "") === String(item.opcionesKey ?? "") &&
+            String(x.notas ?? "").trim() === String(item.notas ?? "").trim() &&
+            (!x.estado || x.estado === "Pendiente" || x.estado === "Pending")
+        );
+        let next = [...prev];
+        if (pIdx >= 0) {
+          next[pIdx] = { ...next[pIdx], qty: next[pIdx].qty + delta };
+        } else {
+          next.push({
+            ...item,
+            lineId: genPosLineId(),
+            qty: delta,
+            estado: "Pendiente",
+          });
+        }
+        posCartRef.current = next;
+        setPosCart(next);
+        setPosCommitted(false);
+        syncPosCartSnapshot(next);
+        return;
+      } else {
+        // Bloquear disminución de productos enviados
+        snackbar.error("No se puede restar un producto enviado. Anúlelo con la X si es necesario.");
+        return;
+      }
+    }
+
     const newQty = Math.max(0, Number(item.qty || 0) + delta);
     if (newQty <= 0) {
       removeFromCart(lineId);

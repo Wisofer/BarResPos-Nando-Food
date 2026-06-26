@@ -45,6 +45,7 @@ const getKdsCards = (orders) => {
           orderId,
           numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
           mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          mesero: o?.mesero ?? o?.Mesero ?? "",
           fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
           estadoCocina: "En Preparación",
           items: activeItems,
@@ -58,6 +59,7 @@ const getKdsCards = (orders) => {
           orderId,
           numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
           mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          mesero: o?.mesero ?? o?.Mesero ?? "",
           fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
           estadoCocina: "Listo",
           items: readyItems,
@@ -324,7 +326,7 @@ export function KitchenView() {
               onClick={() => {
                 setMode("history");
               }}
-              className={`min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "history" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`hidden min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "history" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
             >
               Historial
             </button>
@@ -353,7 +355,7 @@ export function KitchenView() {
                   const id = o?.id ?? o?.Id ?? i;
                   const numero = o?.numero || o?.Numero || `#${id}`;
                   const mesa = o?.mesa || o?.mesaNombre || o?.Mesa || "Mesa";
-                  const mesero = o?.mesero || o?.Mesero || "";
+                  const mesero = o?.mesero || o?.Mesero || o?.originalOrder?.mesero || o?.originalOrder?.Mesero || "";
                   const createdAt = o?.fechaCreacion ?? o?.FechaCreacion;
                   const current = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
                   const rawItems = o?.Items ?? o?.items ?? [];

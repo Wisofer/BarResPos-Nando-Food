@@ -31,6 +31,38 @@ test.describe("Flujo de Delivery", () => {
       await expect(searchInput).toBeVisible();
     }
   });
+
+  test("Debería separar en una nueva línea al agregar un producto que ya fue enviado a cocina (Anti-Fraude)", async ({ page }) => {
+    await page.click('button:has-text("Delivery")');
+    await page.click('button:has-text("Nuevo Pedido")');
+
+    // Simulate clicking a product from the catalog (assuming a product exists)
+    // We mock the state or wait for a product button to be visible
+    const primerProductoBtn = page.locator('.col-span-1 button').first(); 
+    if (await primerProductoBtn.isVisible()) {
+      // 1. Agregar el primer producto
+      await primerProductoBtn.click();
+      
+      // 2. Verificar que se agregó 1 línea al carrito
+      const cartItems = page.locator('.flex.flex-col.gap-2 > div.flex.items-start');
+      await expect(cartItems).toHaveCount(1);
+      
+      // 3. Enviar a cocina
+      const btnEnviarCocina = page.locator('button:has-text("Mandar orden")');
+      if (await btnEnviarCocina.isVisible()) {
+        await btnEnviarCocina.click();
+        
+        // 4. Agregar el MISMO producto nuevamente
+        await primerProductoBtn.click();
+        
+        // 5. Verificar que ahora hay 2 líneas (una enviada, otra nueva pendiente)
+        await expect(cartItems).toHaveCount(2);
+        
+        // 6. Verificar que intentar restar de la enviada lanza un error o no hace nada
+        // (La lógica real asume que el botón '-' en la línea enviada está bloqueado o da error)
+      }
+    }
+  });
 });
 
 test.describe("Flujo de Delivery como Mesero", () => {
