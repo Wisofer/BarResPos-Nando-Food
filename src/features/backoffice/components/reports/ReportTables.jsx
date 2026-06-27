@@ -60,21 +60,21 @@ export function ReportTables({
           <tbody className="divide-y divide-slate-100">
             {ventasRows.length ? (
               ventasRows.map((x, idx) => {
-                const estadoStr = String(x.estado ?? x.Estado ?? "—");
+                const estadoStr = String(x.estado ?? x.Estado ?? "Desconocido");
                 const isPagado = estadoStr.toLowerCase() === "pagado";
                 return (
                   <tr key={`${x.id ?? x.Id ?? idx}-${idx}`} className="group hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-4 text-slate-600">
                       {formatDateTime(x.fecha ?? x.Fecha ?? x.fechaVenta ?? x.FechaVenta ?? x.fechaCierre ?? x.FechaCierre)}
                     </td>
-                    <td className="px-4 py-4 font-semibold text-slate-900">{x.numero ?? x.Numero ?? "—"}</td>
+                    <td className="px-4 py-4 font-semibold text-slate-900">{x.numero ?? x.Numero ?? <span className="text-slate-400 italic font-normal">S/N</span>}</td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isPagado ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
                         {estadoStr}
                       </span>
                     </td>
-                    <td className="px-4 py-4 text-slate-600">{x.metodoPago ?? x.MetodoPago ?? "—"}</td>
-                    <td className="px-4 py-4 text-slate-600">{x.moneda ?? x.Moneda ?? "—"}</td>
+                    <td className="px-4 py-4 text-slate-600">{x.metodoPago ?? x.MetodoPago ?? <span className="text-slate-400 italic">No aplica</span>}</td>
+                    <td className="px-4 py-4 text-slate-600">{x.moneda ?? x.Moneda ?? <span className="text-slate-400 italic">No aplica</span>}</td>
                     <td className="px-4 py-4 font-bold text-slate-900">
                       {formatCurrency(x.totalCobrado ?? x.TotalCobrado ?? x.total ?? x.Total ?? 0)}
                     </td>
@@ -157,7 +157,7 @@ export function ReportTables({
                 <tr key={idx} className={`group hover:bg-slate-50 transition-colors ${idx === 0 ? 'bg-orange-50/50' : ''}`}>
                   <td className="px-4 py-4 font-semibold text-slate-900">
                     {idx === 0 && <span className="mr-2" title="Mejor vendedor">🔥</span>}
-                    {x.mesero || x.vendedor || x.usuario || "—"}
+                    {x.mesero || x.vendedor || x.usuario || <span className="text-slate-400 italic font-normal">Sistema / Cajero</span>}
                   </td>
                   <td className="px-4 py-4 text-slate-600">{x.cantidadOrdenes ?? x.CantidadOrdenes ?? x.cantidadVentas ?? x.ordenes ?? 0}</td>
                   <td className="px-4 py-4 font-bold text-emerald-600">{formatCurrency(x.totalNeto ?? x.TotalNeto ?? x.total ?? x.monto ?? 0)}</td>
@@ -249,13 +249,13 @@ export function ReportTables({
                   return (
                     <React.Fragment key={cierreId(row) ?? idx}>
                       <tr className="group hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-4 font-bold text-slate-400">#{cierreId(row) ?? "—"}</td>
+                        <td className="px-4 py-4 font-bold text-slate-400">#{cierreId(row) ?? <span className="text-slate-400 italic font-normal">N/A</span>}</td>
                         <td className="px-4 py-4 font-semibold text-slate-600">
-                          {String(cierreFechaRaw(row) || "—").slice(0, 10)}
+                          {cierreFechaRaw(row) ? String(cierreFechaRaw(row)).slice(0, 10) : <span className="text-slate-400 italic font-normal">Sin fecha</span>}
                         </td>
                         <td className="px-4 py-4">
                           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                            {row.estado || row.Estado || "—"}
+                            {row.estado || row.Estado || "Desconocido"}
                           </span>
                         </td>
                         <td className="px-4 py-4 text-right font-medium text-slate-600">
@@ -268,10 +268,10 @@ export function ReportTables({
                           {formatCurrency(cierreHistorialMontoEsperado(row), currencySymbol)}
                         </td>
                         <td className="px-4 py-4 text-right font-bold text-slate-900">
-                          {real == null ? "—" : formatCurrency(real, currencySymbol)}
+                          {real == null ? <span className="text-slate-400 italic font-normal">{formatCurrency(0, currencySymbol)}</span> : formatCurrency(real, currencySymbol)}
                         </td>
                         <td className={`px-4 py-4 text-right font-bold ${diffClass}`}>
-                          {diff == null ? "—" : formatCurrency(diff, currencySymbol)}
+                          {diff == null ? <span className="text-slate-400 italic font-normal">{formatCurrency(0, currencySymbol)}</span> : formatCurrency(diff, currencySymbol)}
                           {diff != null && diff < 0 && <span className="ml-1 text-xs">⚠️</span>}
                           {diff != null && diff === 0 && <span className="ml-1 text-xs">✅</span>}
                         </td>

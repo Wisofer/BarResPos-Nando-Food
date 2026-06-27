@@ -204,13 +204,13 @@ export function ClientsView() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-600 shadow-sm">
                           {c.nombre?.charAt(0).toUpperCase() || "?"}
                         </div>
-                        <span className="font-semibold text-slate-900">{c.nombre || "—"}</span>
+                        <span className={`font-semibold ${c.nombre ? "text-slate-900" : "text-slate-400 italic"}`}>{c.nombre || "Sin nombre"}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 tabular-nums text-slate-600">{c.telefono || "—"}</td>
+                    <td className="px-5 py-4 tabular-nums text-slate-600">{c.telefono || <span className="text-slate-400 italic font-normal">Sin teléfono</span>}</td>
                     <td className="px-5 py-4 text-center">{renderPedidosBadge(c.pedidosCount)}</td>
-                    <td className="px-5 py-4 max-w-[280px] break-words whitespace-pre-wrap text-slate-700">{c.direccion || "—"}</td>
-                    <td className="px-5 py-4 max-w-[220px] break-words text-xs text-slate-500 whitespace-pre-wrap">{c.observaciones || "—"}</td>
+                    <td className="px-5 py-4 max-w-[280px] break-words whitespace-pre-wrap text-slate-700">{c.direccion || <span className="text-slate-400 italic font-normal">Sin dirección</span>}</td>
+                    <td className="px-5 py-4 max-w-[220px] break-words text-xs text-slate-500 whitespace-pre-wrap">{c.observaciones || <span className="text-slate-400 italic font-normal">Sin observaciones</span>}</td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex justify-end gap-1.5">
                         <button

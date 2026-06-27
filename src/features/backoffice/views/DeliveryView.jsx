@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Trash2,
   Lock,
+  User,
   X,
   XCircle,
 } from "lucide-react";
@@ -1025,8 +1026,18 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                   <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Numero</p><p className="font-bold text-slate-800">{codigo}</p></article>
                   <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Fecha y Hora</p><p className="font-bold text-slate-800">{createdAtLabel}</p></article>
                   <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Origen</p><p className="font-bold text-slate-800">Delivery</p></article>
-                  <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cliente</p><p className="font-bold text-slate-800">{detailOrder.clienteNombre ?? detailOrder.ClienteNombre ?? "-"}</p></article>
-                  <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Telefono</p><p className="font-bold text-slate-800">{detailOrder.clienteTelefono ?? detailOrder.ClienteTelefono ?? "-"}</p></article>
+                  <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cliente</p>
+                    <p className={`font-bold ${detailOrder.clienteNombre || detailOrder.ClienteNombre ? "text-slate-800" : "text-slate-400 italic font-medium"}`}>
+                      {detailOrder.clienteNombre ?? detailOrder.ClienteNombre ?? "Cliente Eventual"}
+                    </p>
+                  </article>
+                  <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Telefono</p>
+                    <p className={`font-bold ${detailOrder.clienteTelefono || detailOrder.ClienteTelefono ? "text-slate-800" : "text-slate-400 italic font-medium"}`}>
+                      {detailOrder.clienteTelefono ?? detailOrder.ClienteTelefono ?? "Sin contacto"}
+                    </p>
+                  </article>
                   <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Estado</p><span className={`rounded-lg px-2 py-1 text-xs font-bold ${statusClass(estadoDetalle || "Pendiente")}`}>{estadoDetalle || "Pendiente"}</span></article>
                   <article className="rounded-xl border border-slate-200 bg-white/80 backdrop-blur-sm p-3 shadow-sm sm:col-span-2 xl:col-span-3"><p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Direccion / observaciones</p><p className="font-semibold text-slate-700">{detailOrder.clienteDireccion ?? detailOrder.ClienteDireccion ?? detailOrder.observaciones ?? detailOrder.Observaciones ?? "-"}</p></article>
                 </div>
@@ -1224,14 +1235,19 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-semibold text-slate-600 shadow-sm">
-                            {x.customer?.nombre?.charAt(0).toUpperCase() || "?"}
-                          </div>
-                          <span className="font-medium text-slate-700">{x.customer?.nombre || "—"}</span>
+                        <div className="flex items-center">
+                          <span className={`font-medium ${x.customer?.nombre ? "text-slate-700" : "text-slate-400 italic"}`}>
+                            {x.customer?.nombre || "Cliente Eventual"}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-slate-600">{x.customer?.telefono || "—"}</td>
+                      <td className="px-5 py-4">
+                        {x.customer?.telefono ? (
+                          <span className="text-slate-600">{x.customer.telefono}</span>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Sin contacto</span>
+                        )}
+                      </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${statusClass(x.estado)}`}>
                           {x.estado || "—"}

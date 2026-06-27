@@ -126,8 +126,8 @@ export function OrderDetailPanel({
                   </p>,
                 )}
                 {infoCard("Fecha y hora", <p className="font-semibold text-slate-800">{createdAtLabel}</p>)}
-                {infoCard("Mesa", <p className="font-semibold text-slate-800">{detailOrder.mesa || "—"}</p>)}
-                {infoCard("Mesero", <p className="font-semibold text-slate-800">{detailOrder.mesero || "—"}</p>)}
+                {infoCard("Mesa", <p className={`font-semibold ${detailOrder.mesa ? "text-slate-800" : "text-slate-400 italic font-normal"}`}>{detailOrder.mesa || "Para llevar"}</p>)}
+                {infoCard("Mesero", <p className={`font-semibold ${detailOrder.mesero ? "text-slate-800" : "text-slate-400 italic font-normal"}`}>{detailOrder.mesero || "Sistema / Cajero"}</p>)}
                 {infoCard(
                   "Estado",
                   <span className={`inline-flex rounded-md px-2.5 py-0.5 text-xs font-medium ${orderStatusPillClass(detailOrder.estado || "Pendiente")}`}>
@@ -136,7 +136,7 @@ export function OrderDetailPanel({
                 )}
                 <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3.5 py-3 sm:col-span-2 lg:col-span-2 xl:col-span-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Observaciones</p>
-                  <div className="mt-1"><p className="font-medium text-slate-700">{detailOrder.observaciones || "—"}</p></div>
+                  <div className="mt-1"><p className={`font-medium ${detailOrder.observaciones ? "text-slate-700" : "text-slate-400 italic font-normal"}`}>{detailOrder.observaciones || "Sin observaciones"}</p></div>
                 </div>
               </div>
             </div>
@@ -157,11 +157,11 @@ export function OrderDetailPanel({
                   <tbody className="divide-y divide-slate-100 text-slate-800">
                     {items.map((it) => (
                       <tr key={it.id || `${it.servicioId}-${it.servicio}`}>
-                        <td className="py-2.5 pr-3 font-medium">{it.servicio || "—"}</td>
+                        <td className="py-2.5 pr-3 font-medium">{it.servicio || <span className="text-slate-400 italic font-normal">Desconocido</span>}</td>
                         <td className="py-2.5 pr-3 text-slate-600">{it.cantidad || 0}</td>
                         <td className="py-2.5 pr-3 text-slate-600">{formatCurrency(it.precioUnitario || 0, currencySymbol)}</td>
                         <td className="py-2.5 pr-3 font-semibold tabular-nums">{formatCurrency(it.monto || 0, currencySymbol)}</td>
-                        <td className="max-w-xs py-2.5 text-slate-600">{it.notas || "—"}</td>
+                        <td className="max-w-xs py-2.5 text-slate-600">{it.notas || <span className="text-slate-400 italic">Sin observaciones</span>}</td>
                       </tr>
                     ))}
                   </tbody>

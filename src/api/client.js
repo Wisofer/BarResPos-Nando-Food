@@ -95,6 +95,8 @@ async function request(path, options = {}, retryOnUnauthorized = true, withEnvel
       errMsg =
         data.message ||
         data.Message ||
+        data.mensaje ||
+        data.Mensaje ||
         data.error ||
         data.Error ||
         data.title ||

@@ -34,7 +34,7 @@ export function CierreDetallePanel({ detalle, currencySymbol = "C$", onClose }) 
         <div>
           <h2 className="text-base font-semibold text-slate-900">Detalle del cierre</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Cierre #{detalle.id ?? detalle.Id ?? "—"} · {cierreDetalleFechaDisplay(detalle)}
+            Cierre #{detalle.id ?? detalle.Id ?? "No guardado"} · {cierreDetalleFechaDisplay(detalle)}
           </p>
         </div>
         {onClose ? (
@@ -54,9 +54,11 @@ export function CierreDetallePanel({ detalle, currencySymbol = "C$", onClose }) 
           <div key={i} className={`rounded-xl border p-4 ${d.bg} ${d.border}`}>
             <p className="text-xs font-medium text-slate-500">{d.label}</p>
             <p className={`mt-1 text-xl font-semibold tabular-nums ${d.color}`}>
-              {d.optional && (d.value == null || !Number.isFinite(Number(d.value)))
-                ? "—"
-                : formatCurrency(d.value ?? 0, currencySymbol)}
+            {d.optional && (d.value == null || !Number.isFinite(Number(d.value))) ? (
+              <span className="text-slate-400 italic text-sm font-normal">Sin especificar</span>
+            ) : (
+              formatCurrency(d.value ?? 0, currencySymbol)
+            )}
             </p>
           </div>
         ))}
@@ -66,19 +68,19 @@ export function CierreDetallePanel({ detalle, currencySymbol = "C$", onClose }) 
         <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs font-medium text-slate-500">Efectivo (ventas)</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900">
-            {efectivoDet != null ? formatCurrency(efectivoDet, currencySymbol) : "—"}
+            {efectivoDet != null ? formatCurrency(efectivoDet, currencySymbol) : <span className="text-slate-400 italic">{formatCurrency(0, currencySymbol)}</span>}
           </p>
         </div>
         <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs font-medium text-slate-500">Tarjeta</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900">
-            {tarjetaDet != null ? formatCurrency(tarjetaDet, currencySymbol) : "—"}
+            {tarjetaDet != null ? formatCurrency(tarjetaDet, currencySymbol) : <span className="text-slate-400 italic">{formatCurrency(0, currencySymbol)}</span>}
           </p>
         </div>
         <div className="rounded-xl border border-slate-100 bg-white p-4">
           <p className="text-xs font-medium text-slate-500">Transferencia</p>
           <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900">
-            {transferDet != null ? formatCurrency(transferDet, currencySymbol) : "—"}
+            {transferDet != null ? formatCurrency(transferDet, currencySymbol) : <span className="text-slate-400 italic">{formatCurrency(0, currencySymbol)}</span>}
           </p>
         </div>
       </div>

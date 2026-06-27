@@ -144,8 +144,8 @@ export function Navbar({ onMenuClick, collapsed = false, onToggleCollapse }) {
             <div className="absolute right-0 top-full mt-1 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-50 overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60">
                 <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{user?.nombreCompleto || "Usuario"}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">@{user?.usuario || "—"}</p>
-                <p className="text-xs text-primary-600 mt-1">{user?.rol || "—"}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">@{user?.usuario || "cargando..."}</p>
+                <p className="text-xs text-primary-600 mt-1">{user?.rol || "Usuario estándar"}</p>
                 {user?.estado && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Estado: {user.estado}</p>
                 )}

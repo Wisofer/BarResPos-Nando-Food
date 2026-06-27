@@ -116,6 +116,7 @@ export function normalizeReporteTicketDetalle(raw) {
     moneda: d.moneda ?? d.Moneda ?? null,
     origen: d.origen ?? d.Origen ?? "",
     referenciaOrigen: d.referenciaOrigen ?? d.ReferenciaOrigen ?? "",
+    mesero: d.mesero ?? d.Mesero ?? d.usuario ?? d.Usuario ?? null,
     cantidadLineas: Number(d.cantidadLineas ?? d.CantidadLineas ?? itemsRaw.length ?? 0),
     cantidadUnidades: Number(d.cantidadUnidades ?? d.CantidadUnidades ?? 0),
     subtotalLineas: Number(d.subtotalLineas ?? d.SubtotalLineas ?? 0),

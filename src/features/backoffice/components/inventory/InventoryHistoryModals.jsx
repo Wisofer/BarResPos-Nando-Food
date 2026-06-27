@@ -20,12 +20,12 @@ function movimientoDetalle(m) {
   if (sub && sub !== "-") return String(sub);
   const o = m.observaciones ?? m.Observaciones;
   if (o) return String(o);
-  return "—";
+  return <span className="text-slate-400 italic">Sin observaciones</span>;
 }
 
 function movimientoCantDisplay(m) {
   const c = m.cantidad ?? m.Cantidad;
-  if (c == null || c === "") return "—";
+  if (c == null || c === "") return <span className="text-slate-400 italic">N/A</span>;
   const n = Number(c);
   if (Number.isNaN(n)) return String(c);
   const k = movementTipoKind(m);
@@ -76,7 +76,7 @@ export function GlobalMovementsModal({ open, onClose, movementRows, productListF
               <tbody className="divide-y divide-slate-100 bg-white">
                 {movementRows.map((m, i) => {
                   const kind = movementTipoKind(m);
-                  const tipo = m.tipo ?? m.Tipo ?? "—";
+                  const tipo = m.tipo ?? m.Tipo ?? "Desconocido";
                   const pid = movementProductId(m);
                   const name = movementProductLabel(m, productListForLabel);
                   const ant = m.stockAnterior ?? m.StockAnterior;
@@ -84,7 +84,7 @@ export function GlobalMovementsModal({ open, onClose, movementRows, productListF
                   return (
                     <tr key={m.id ?? m.Id ?? i} className="hover:bg-slate-50/80">
                       <td className="whitespace-nowrap px-3 py-2.5 text-[11px] font-bold text-slate-500 sm:px-4">
-                        {formatMovementDate(m) ?? "—"}
+                        {formatMovementDate(m) ?? <span className="text-slate-400 italic font-normal">Sin fecha</span>}
                       </td>
                       <td className="px-3 py-2.5 sm:px-4">
                         <span
@@ -111,7 +111,7 @@ export function GlobalMovementsModal({ open, onClose, movementRows, productListF
                         {movimientoDetalle(m)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-right text-xs tabular-nums text-slate-500 sm:px-4">
-                        {ant != null && nue != null ? `${ant} → ${nue}` : "—"}
+                        {ant != null && nue != null ? `${ant} → ${nue}` : <span className="text-slate-400 italic font-normal">N/A</span>}
                       </td>
                     </tr>
                   );
@@ -154,7 +154,7 @@ export function ProductHistoryModal({ open, onClose, historyRows, selectedProduc
               <tbody className="divide-y divide-slate-100">
                 {historyRows.map((m, i) => {
                   const kind = movementTipoKind(m);
-                  const tipo = m.tipo ?? m.Tipo ?? "—";
+                  const tipo = m.tipo ?? m.Tipo ?? "Desconocido";
                   const sub = m.subtipo ?? m.Subtipo;
                   const cant = m.cantidad ?? m.Cantidad;
                   const ant = m.stockAnterior ?? m.StockAnterior;
@@ -162,7 +162,7 @@ export function ProductHistoryModal({ open, onClose, historyRows, selectedProduc
                   return (
                     <tr key={m.id ?? m.Id ?? i} className="hover:bg-slate-50/80">
                       <td className="px-3 py-2 text-[10px] font-bold text-slate-500 sm:px-4">
-                        {formatMovementDate(m) ?? "—"}
+                        {formatMovementDate(m) ?? <span className="text-slate-400 italic font-normal">Sin fecha</span>}
                       </td>
                       <td className="px-3 py-2 sm:px-4">
                         <span
@@ -176,8 +176,8 @@ export function ProductHistoryModal({ open, onClose, historyRows, selectedProduc
                           {tipo}
                         </span>
                       </td>
-                      <td className="max-w-[8rem] truncate px-3 py-2 text-slate-600 sm:px-4 sm:max-w-[12rem]" title={sub && sub !== "-" ? sub : "—"}>
-                        {sub && sub !== "-" ? sub : "—"}
+                      <td className="max-w-[8rem] truncate px-3 py-2 text-slate-600 sm:px-4 sm:max-w-[12rem]" title={sub && sub !== "-" ? sub : "Sin observaciones"}>
+                        {sub && sub !== "-" ? sub : <span className="text-slate-400 italic font-normal">Sin observaciones</span>}
                       </td>
                       <td
                         className={cn(
@@ -187,10 +187,10 @@ export function ProductHistoryModal({ open, onClose, historyRows, selectedProduc
                           kind === "ajuste" && "text-sky-600"
                         )}
                       >
-                        {kind === "entrada" && cant != null && cant !== "" && !Number.isNaN(Number(cant)) ? `+${cant}` : String(cant ?? "—")}
+                        {kind === "entrada" && cant != null && cant !== "" && !Number.isNaN(Number(cant)) ? `+${cant}` : (cant != null ? String(cant) : <span className="text-slate-400 italic font-normal">N/A</span>)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2 text-right text-xs tabular-nums text-slate-500 sm:px-4">
-                        {ant != null && nue != null ? `${ant} → ${nue}` : "—"}
+                        {ant != null && nue != null ? `${ant} → ${nue}` : <span className="text-slate-400 italic font-normal">N/A</span>}
                       </td>
                     </tr>
                   );

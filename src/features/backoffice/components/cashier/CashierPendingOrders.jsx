@@ -50,10 +50,10 @@ export function CashierPendingOrders({ items = [], currencySymbol = "C$" }) {
             <tbody>
               {list.map((r) => (
                 <tr key={r.id ?? r.Id} className="border-t border-amber-200/60 text-amber-950">
-                  <td className="px-2 py-2 font-medium tabular-nums">{r.numero ?? r.Numero ?? "—"}</td>
-                  <td className="px-2 py-2">{r.mesa ?? r.Mesa ?? "—"}</td>
-                  <td className="px-2 py-2">{r.cliente ?? r.Cliente ?? "—"}</td>
-                  <td className="px-2 py-2 text-xs">{r.estado ?? r.Estado ?? "—"}</td>
+                  <td className="px-2 py-2 font-medium tabular-nums">{r.numero ?? r.Numero ?? <span className="text-amber-900/50 italic font-normal">S/N</span>}</td>
+                  <td className="px-2 py-2">{r.mesa ?? r.Mesa ?? <span className="text-amber-900/60 italic text-xs">Para llevar</span>}</td>
+                  <td className="px-2 py-2">{r.cliente ?? r.Cliente ?? <span className="text-amber-900/60 italic text-xs">Cliente Eventual</span>}</td>
+                  <td className="px-2 py-2 text-xs">{r.estado ?? r.Estado ?? <span className="text-amber-900/50 italic">Desconocido</span>}</td>
                   <td className="px-2 py-2 font-semibold tabular-nums">{formatCurrency(rowMonto(r), currencySymbol)}</td>
                   <td className="px-2 py-2 text-xs text-amber-900/85">
                     {formatDateTime(r.fechaCreacion ?? r.FechaCreacion)}

@@ -25,15 +25,25 @@ export function OrderDetailModal({ open, onClose, loading, data }) {
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-slate-500">Origen / Ref.</p>
               <p className="font-semibold text-slate-900">
-                <span className="capitalize">{d.origen || "—"}</span>
-                {d.referenciaOrigen && d.referenciaOrigen !== "-" ? <span className="text-slate-500 font-normal"> · {d.referenciaOrigen}</span> : null}
+                {d.origen?.toLowerCase() === "mesa" && d.referenciaOrigen && d.referenciaOrigen !== "-" ? (
+                  d.referenciaOrigen
+                ) : (
+                  <>
+                    <span className="capitalize">{d.origen || "—"}</span>
+                    {d.referenciaOrigen && d.referenciaOrigen !== "-" ? <span className="text-slate-500 font-normal"> · {d.referenciaOrigen}</span> : null}
+                  </>
+                )}
               </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <p className="text-slate-500">Atendido por</p>
+              <p className={`font-semibold ${d.mesero ? "text-slate-900" : "text-slate-400 italic font-normal"}`}>{d.mesero || "Sistema / Cajero"}</p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-slate-500">Método</p>
               <p className="font-semibold text-slate-900">{reporteMetodoPagoLabel(d.metodoPago)}</p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm md:col-span-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
               <p className="text-slate-500">Moneda</p>
               <p className="font-semibold text-slate-900">{reporteMonedaLabel(d.moneda)}</p>
             </div>
