@@ -1,14 +1,16 @@
 import { normalizeOpcionesSeleccionadas } from "./productoOpciones.js";
+import { parsePosBackendLineId } from "./posPedido.js";
 
 /** Body POST/PUT /api/v1/delivery/pedidos */
 export function buildDeliveryPedidoBody(customer, cart) {
   const items = cart.map((x) => {
     const o = normalizeOpcionesSeleccionadas(x.opcionesSeleccionadas);
     const row = {
+      id: x.lineId ? parsePosBackendLineId(x.lineId) : undefined,
       servicioId: Number(x.id),
       cantidad: Number(x.qty),
       precioUnitario: Number(x.price) > 0 ? Number(x.price) : null,
-      estado: null,
+      estado: x.estado || null,
       notas: String(x.notas ?? "").trim() || null,
     };
     if (o.length > 0) row.opcionesSeleccionadas = o;

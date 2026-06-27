@@ -18,6 +18,7 @@ export function normalizeMovementRow(row) {
     fecha: r.fecha ?? r.Fecha ?? r.createdAt ?? r.CreatedAt ?? "",
     productoId: r.productoId ?? r.ProductoId ?? r.producto?.id ?? r.Producto?.id ?? null,
     productoNombre,
+    categoriaProducto: r.categoriaProducto ?? r.CategoriaProducto ?? r.categoria ?? r.Categoria ?? "",
     tipo: r.tipo ?? r.Tipo ?? r.subtipo ?? r.Subtipo ?? "",
     subtipo: r.subtipo ?? r.Subtipo ?? "",
     cantidad: Number(r.cantidad ?? r.Cantidad ?? 0),

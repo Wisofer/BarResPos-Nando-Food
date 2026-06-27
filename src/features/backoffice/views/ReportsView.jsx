@@ -22,6 +22,8 @@ export function ReportsView({ currencySymbol = "C$" }) {
     setFiltroVentas,
     topN,
     setTopN,
+    peores,
+    setPeores,
     dateFilters,
     setDateFilters,
     reportData,
@@ -129,6 +131,8 @@ export function ReportsView({ currencySymbol = "C$" }) {
             setFiltroVentas={setFiltroVentas}
             topN={topN}
             setTopN={setTopN}
+            peores={peores}
+            setPeores={setPeores}
             loading={loading}
             resetFilters={resetFilters}
           />

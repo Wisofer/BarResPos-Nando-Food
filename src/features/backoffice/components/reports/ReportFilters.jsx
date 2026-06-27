@@ -19,6 +19,8 @@ export function ReportFilters({
   setFiltroVentas,
   topN,
   setTopN,
+  peores,
+  setPeores,
 }) {
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md">
@@ -84,17 +86,39 @@ export function ReportFilters({
           )}
 
           {activeReport === "productos-top" && (
-            <div className="flex items-center rounded-xl bg-slate-100 px-3 py-1.5 shadow-inner">
-              <span className="text-sm font-medium text-slate-500 mr-2">Top</span>
-              <select
-                value={topN}
-                onChange={(e) => setTopN(Number(e.target.value))}
-                className="bg-transparent text-sm font-medium text-slate-900 outline-none"
-              >
-                {topOptions.map((n) => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-xl bg-slate-100 p-1 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setPeores(false)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                    !peores ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Más Vendidos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeores(true)}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                    peores ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  Menos Vendidos
+                </button>
+              </div>
+              <div className="flex items-center rounded-xl bg-slate-100 px-3 py-1.5 shadow-inner">
+                <span className="text-sm font-medium text-slate-500 mr-2">Top</span>
+                <select
+                  value={topN}
+                  onChange={(e) => setTopN(Number(e.target.value))}
+                  className="bg-transparent text-sm font-medium text-slate-900 outline-none"
+                >
+                  {topOptions.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </div>

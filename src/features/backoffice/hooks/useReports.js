@@ -71,6 +71,7 @@ export function useReports(showSuccess, showError) {
   const [search, setSearch] = useState("");
   const [filtroVentas, setFiltroVentas] = useState("todas");
   const [topN, setTopN] = useState(10);
+  const [peores, setPeores] = useState(false);
   const [dateFilters, setDateFilters] = useState({ desde: todayISO(), hasta: todayISO() });
   const [reportData, setReportData] = useState({
     ventasResumen: null,
@@ -99,13 +100,16 @@ export function useReports(showSuccess, showError) {
         p.filtroVentas = "todas";
       } else p.filtroVentas = "activas";
     }
-    if (activeReport === "productos-top") p.top = topN;
+    if (activeReport === "productos-top") {
+      p.top = topN;
+      if (peores) p.peores = true;
+    }
     // Inventario usa `<= fechaFin`; para incluir todo el "hasta" elegido sumamos 1 día.
     if (activeReport === "movimientos" && p.hasta) {
       p.hasta = addOneCalendarDay(p.hasta);
     }
     return p;
-  }, [activeReport, dateFilters, filtroVentas, topN]);
+  }, [activeReport, dateFilters, filtroVentas, topN, peores]);
 
   const loadReportData = useCallback(async () => {
     if (!activeReport) return;
@@ -227,6 +231,7 @@ export function useReports(showSuccess, showError) {
     setSearch("");
     setFiltroVentas("todas");
     setTopN(10);
+    setPeores(false);
   }, []);
 
   const onOpenVentaDetail = useCallback(
@@ -320,6 +325,8 @@ export function useReports(showSuccess, showError) {
     setFiltroVentas,
     topN,
     setTopN,
+    peores,
+    setPeores,
     dateFilters,
     setDateFilters,
     reportData,

@@ -26,6 +26,7 @@ export function posCartToPedidoItemsPayload(cart) {
   return list.map((x) =>
     withOpcionesSeleccionadas(
       {
+        id: x.lineId ? parsePosBackendLineId(x.lineId) : undefined,
         servicioId: Number(x.id),
         cantidad: Number(x.qty),
         precioUnitario: Number(x.price || 0),
