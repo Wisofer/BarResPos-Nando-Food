@@ -14,6 +14,7 @@ export async function fetchPosProductosYCategorias(api, pageSize) {
     api.catalogoCategoriasProducto(),
   ]);
   const products = Array.isArray(productsData?.items) ? productsData.items : [];
-  const categories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.items || [];
+  const allCategories = Array.isArray(categoriesData) ? categoriesData : categoriesData?.items || [];
+  const categories = allCategories.filter(c => (c.activo ?? c.Activo) !== false);
   return { products, categories };
 }
