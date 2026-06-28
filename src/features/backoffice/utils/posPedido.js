@@ -154,7 +154,10 @@ export function mapBackendItemsToCart(items) {
         g.id === item.id &&
         g.opcionesKey === item.opcionesKey &&
         g.notas === item.notas &&
-        g.estado === item.estado
+        g.estado === item.estado &&
+        // No agrupar registros que vienen de la base de datos con IDs diferentes,
+        // para evitar el error Anti-Fraude en actualizaciones subsecuentes.
+        g.lineId === item.lineId
     );
     if (existing) {
       existing.qty += item.qty;

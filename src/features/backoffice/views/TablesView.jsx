@@ -1279,10 +1279,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       setPosBusyMessage("Sincronizando orden…");
       setPosActionBusy(true);
     }
-    setError("");
+    let currentId = posOrderId ?? posOrderIdRef.current;
     try {
       // Aseguramos que exista la orden activa (si por algún motivo no existe aún).
-      if (!posOrderId && posCartRef.current.length > 0) {
+      if (!currentId && posCartRef.current.length > 0) {
         const productos = posCartToPosOrdenProductos(posCartRef.current);
         const data = await backofficeApi.posOrdenes({
           mesaId: Number(tableForSync.id),
@@ -1294,9 +1294,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         if (!newOrderId) throw new Error("No se pudo crear la orden activa en backend.");
         setPosOrderId(newOrderId);
         posOrderIdRef.current = newOrderId;
+        currentId = newOrderId;
       }
 
-      const currentId = posOrderId ?? posOrderIdRef.current;
       if (!currentId) {
         setPosCommitted(true);
         return null;
