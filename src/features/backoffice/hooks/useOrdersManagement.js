@@ -5,7 +5,6 @@ import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { useAuth } from "../../../contexts/AuthContext.jsx";
 import { isAdminUser } from "../utils/auth.js";
 import { printOrderTicket } from "../utils/orderTicketPrint.js";
-import { isPedidoEstadoBloqueadoParaEdicion } from "../utils/ordersViewFormatters.js";
 import { mapListadoPedidoToRow, mapResumenToCards } from "../utils/ordersViewMappers.js";
 
 function isEmptyDraftOrder(order) {
@@ -41,17 +40,7 @@ export function useOrdersManagement(currencySymbol) {
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalItems: 0 });
   const [detailOrder, setDetailOrder] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState({ open: false, order: null });
-  const [editForm, setEditForm] = useState({
-    mesaId: "",
-    clienteId: "",
-    meseroId: "",
-    estado: "",
-    estadoCocina: "",
-    observaciones: "",
-    items: [],
-  });
   const [filters, setFilters] = useState({
     estado: "",
     desde: "",
@@ -109,12 +98,6 @@ export function useOrdersManagement(currencySymbol) {
     setDataNonce((n) => n + 1);
   }, []);
 
-  useEffect(() => {
-    if (!detailOrder || !showEdit) return;
-    if (isPedidoEstadoBloqueadoParaEdicion(detailOrder.estado)) {
-      setShowEdit(false);
-    }
-  }, [detailOrder, showEdit]);
 
   const filteredOrders = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -179,7 +162,6 @@ export function useOrdersManagement(currencySymbol) {
       const detail = await backofficeApi.getPedido(order.rowId);
       setDetailOrder(detail);
       setShowDetail(true);
-      setShowEdit(false);
     } catch (err) {
       setError(err.message || "No se pudo cargar el detalle del pedido.");
     } finally {
@@ -187,79 +169,6 @@ export function useOrdersManagement(currencySymbol) {
     }
   };
 
-  const openEdit = (detail) => {
-    if (isPedidoEstadoBloqueadoParaEdicion(detail?.estado)) {
-      snackbar.info("Los pedidos pagados o cancelados no se pueden editar.");
-      return;
-    }
-    setEditForm({
-      mesaId: detail?.mesaId ?? "",
-      clienteId: detail?.clienteId ?? "",
-      meseroId: detail?.meseroId ?? "",
-      estado: detail?.estado || "",
-      estadoCocina: detail?.estadoCocina || "",
-      observaciones: detail?.observaciones || "",
-      items: (detail?.items || []).map((it) => ({
-        id: it.id,
-        servicioId: it.servicioId,
-        servicio: it.servicio || "Producto",
-        cantidad: String(it.cantidad ?? 1),
-        precioUnitario: String(it.precioUnitario ?? 0),
-        estado: it.estado || "",
-        notas: it.notas || "",
-      })),
-    });
-    setShowEdit(true);
-  };
-
-  const openEditFromRow = async (order) => {
-    setBusyAction(true);
-    setError("");
-    try {
-      const detail = await backofficeApi.getPedido(order.rowId);
-      setDetailOrder(detail);
-      openEdit(detail);
-      setShowDetail(true);
-    } catch (err) {
-      setError(err.message || "No se pudo abrir edicion del pedido.");
-    } finally {
-      setBusyAction(false);
-    }
-  };
-
-  const saveEdit = async (e) => {
-    e.preventDefault();
-    if (!detailOrder?.id) return;
-    setBusyAction(true);
-    setError("");
-    try {
-      const items = editForm.items.map((it) => ({
-        servicioId: Number(it.servicioId),
-        cantidad: Number(it.cantidad),
-        precioUnitario: it.precioUnitario === "" ? null : Number(it.precioUnitario),
-        estado: it.estado || null,
-        notas: it.notas || null,
-      }));
-      await backofficeApi.updatePedido(detailOrder.id, {
-        mesaId: editForm.mesaId === "" ? null : Number(editForm.mesaId),
-        clienteId: editForm.clienteId === "" ? null : Number(editForm.clienteId),
-        meseroId: editForm.meseroId === "" ? null : Number(editForm.meseroId),
-        estado: editForm.estado || null,
-        estadoCocina: editForm.estadoCocina || null,
-        observaciones: editForm.observaciones || null,
-        items,
-      });
-      const refreshed = await backofficeApi.getPedido(detailOrder.id);
-      setDetailOrder(refreshed);
-      setShowEdit(false);
-      snackbar.success("Pedido actualizado correctamente.");
-      refreshList();
-    } catch (err) {
-      snackbar.error(err.message || "No se pudo editar el pedido.");
-    } finally {
-      setBusyAction(false);
-    }
-  };
 
   const printDetail = () => {
     if (!detailOrder) return;
@@ -272,7 +181,6 @@ export function useOrdersManagement(currencySymbol) {
 
   const backFromDetail = () => {
     setShowDetail(false);
-    setShowEdit(false);
   };
 
   const onCancelPedidoConfirm = async (codigo) => {
@@ -317,10 +225,6 @@ export function useOrdersManagement(currencySymbol) {
     busyAction,
     detailOrder,
     showDetail,
-    showEdit,
-    setShowEdit,
-    editForm,
-    setEditForm,
     confirmCancel,
     setConfirmCancel,
     onCancelPedidoConfirm,
@@ -330,9 +234,6 @@ export function useOrdersManagement(currencySymbol) {
     clearFilters,
     handleExport,
     openDetail,
-    openEditFromRow,
-    openEdit,
-    saveEdit,
     cancelOrder,
     printDetail,
     backFromDetail,

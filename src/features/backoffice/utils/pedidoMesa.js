@@ -1,3 +1,5 @@
+import { withOpcionesSeleccionadas } from "./productoOpciones.js";
+
 /**
  * Construye el cuerpo de PUT /pedidos/:id para cambiar solo la mesa,
  * conservando ítems y metadatos (mismo contrato que OrdersView / ensurePosOrderSynced).
@@ -19,13 +21,14 @@ export function buildUpdatePedidoPayloadForMesaChange(pedido, mesaIdDestino) {
             ? montoLinea / cantidad
             : Number(it.precio ?? it.Precio ?? 0);
 
-      return {
+      const item = {
         servicioId,
         cantidad,
         precioUnitario: Number.isFinite(precioUnitario) ? precioUnitario : 0,
         estado: it.estado ?? it.Estado ?? "Listo",
         notas: it.notas ?? it.Notas ?? "",
       };
+      return withOpcionesSeleccionadas(item, it?.opcionesSeleccionadas ?? it?.OpcionesSeleccionadas);
     })
     .filter((x) => x.servicioId > 0 && x.cantidad > 0);
 

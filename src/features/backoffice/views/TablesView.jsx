@@ -815,6 +815,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   const reloadPosCartFromMesaActiva = async () => {
     if (!posTable) return;
+    const currentId = posOrderIdRef.current;
+    if (currentId) {
+      await reloadPosCartFromPedido(currentId);
+      return;
+    }
     const freshRaw = await backofficeApi.getMesaOrdenActiva(posTable.id);
     const fresh = unwrapEnvelope(freshRaw);
     const backendItems = getOrdenItems(fresh);
@@ -903,10 +908,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         snackbar.error(msg);
         if (!tableForSync) return;
         try {
-          const freshRaw = await backofficeApi.getMesaOrdenActiva(tableForSync.id);
-          const fresh = unwrapEnvelope(freshRaw);
-          const backendItems = getOrdenItems(fresh);
-          setPosCart(backendItems ? mapBackendItemsToCart(backendItems) : []);
+          const currentId = posOrderIdRef.current;
+          if (currentId) {
+            await reloadPosCartFromPedido(currentId);
+          } else {
+            setPosCart([]);
+          }
           setPosCommitted(true);
         } catch {
           /* ignore */
@@ -1185,6 +1192,13 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           const orderId = posOrderId ?? posOrderIdRef.current;
           if (!orderId) throw new Error("No se encontró el pedido activo.");
 
+          // Re-validar que la mesa destino siga libre
+          const destRaw = await backofficeApi.getMesa(destId).catch(() => null);
+          const destMapped = destRaw ? mapTable(destRaw, 0) : null;
+          if (!destMapped || destMapped.status !== "Libre") {
+            throw new Error(`La mesa "${destMapped?.displayId || destId}" ya no está libre. Se canceló el traslado.`);
+          }
+
           let trasladarMessage = "";
           try {
             const env = await backofficeApi.pedidoTrasladarMesa(orderId, destId);
@@ -1197,10 +1211,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             await backofficeApi.updatePedido(orderId, body);
           }
 
-          const [, mesaRes, rawOrden] = await Promise.all([
+          const [, mesaRes, ordenesActivasRaw] = await Promise.all([
             loadTables(),
             backofficeApi.getMesa(destId).catch(() => null),
-            backofficeApi.getMesaOrdenActiva(destId).catch(() => null),
+            backofficeApi.getMesaOrdenesActivas(destId).catch(() => null),
           ]);
 
           let newTable;
@@ -1212,9 +1226,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             newTable = fromList;
           }
 
-          const orderActive = unwrapEnvelope(rawOrden);
-          const nextId = getOrdenPedidoId(orderActive, orderId);
-          const backendItems = getOrdenItems(orderActive);
+          const ordenesActivas = unwrapEnvelope(ordenesActivasRaw);
+          const ordenesList = Array.isArray(ordenesActivas) ? ordenesActivas : [];
+          const orderActiva = ordenesList.find((o) => getOrdenPedidoId(o, null) === orderId) || ordenesList[0] || null;
+          const nextId = getOrdenPedidoId(orderActiva, orderId);
+          const backendItems = getOrdenItems(orderActiva);
           let nextCart = posCartRef.current;
           if (backendItems?.length) {
             nextCart = mapBackendItemsToCart(backendItems);
@@ -1227,6 +1243,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               /* mantiene carrito actual */
             }
           }
+
+          setPosActiveOrders(ordenesList.length > 1 ? ordenesList : []);
 
           // Un solo bloque de estado: evita un frame con mesa nueva y carrito/pedido desalineados
           // (el efecto de carrito vacío podía dispararse mal en ese intervalo).
@@ -1309,9 +1327,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         return null;
       }
 
-      const freshRaw = await backofficeApi.getMesaOrdenActiva(tableForSync.id).catch(() => null);
-      const fresh = unwrapEnvelope(freshRaw);
-      const backendItems = getOrdenItems(fresh);
+      const pedidoActualizado = await backofficeApi.getPedido(currentId).catch(() => null);
+      const backendItems = getOrdenItems(pedidoActualizado);
       const syncedCart = backendItems ? mapBackendItemsToCart(backendItems) : [];
       posCartRef.current = syncedCart;
       setPosCart(syncedCart);
@@ -1334,9 +1351,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       const stockConflict = isStockShortageConflict409(status, normalized, false);
       if (status === 409 && tableForSync) {
         try {
-          const freshRaw = await backofficeApi.getMesaOrdenActiva(tableForSync.id);
-          const fresh = unwrapEnvelope(freshRaw);
-          const backendItems = getOrdenItems(fresh);
+          const pedido = await backofficeApi.getPedido(currentId);
+          const backendItems = getOrdenItems(pedido);
           if (backendItems) setPosCart(mapBackendItemsToCart(backendItems));
         } catch {
           /* ignore */
@@ -1415,6 +1431,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const openProcesarVentaModal = async () => {
     if (!posTable) return;
     if (posActionBusy || saleProcessing) return;
+    if (!isCajeroOrAdmin) {
+      snackbar.error("Solo cajeros y administradores pueden procesar pagos.");
+      return;
+    }
     try {
       await runWithBusyUi(
         { setBusy: setPosActionBusy, setMessage: setPosBusyMessage, caption: "Preparando cobro…" },
@@ -1460,10 +1480,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const handleGuardarVenta = async (form) => {
     if (!posTable || !saleOrdenId) return;
     if (saleProcessingGuardRef.current) return;
-    saleProcessingGuardRef.current = true;
-    setSaleProcessing(true);
-    setError("");
     try {
+      saleProcessingGuardRef.current = true;
+      setSaleProcessing(true);
+      setError("");
       const payload = buildPagoPayload({
         ordenId: saleOrdenId,
         form,
@@ -2176,7 +2196,14 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
         <PosProcesarVentaModal
           open={saleModalOpen}
-          onClose={() => !saleProcessing && setSaleModalOpen(false)}
+          onClose={() => {
+            if (!saleProcessing) {
+              setSaleModalOpen(false);
+              setSaleOrdenId(null);
+              setSaleModalLines([]);
+              setSaleBackendTotal(null);
+            }
+          }}
           mesaLabel={`${String(posTable?.zone || "").toUpperCase()} | ${posTable?.displayId || ""}`}
           currencySymbol={currencySymbol}
           exchangeRate={tipoCambio ?? DEFAULT_TIPO_CAMBIO_USD}

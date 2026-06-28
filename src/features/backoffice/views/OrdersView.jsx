@@ -16,17 +16,11 @@ export function OrdersView({ currencySymbol = "C$" }) {
         <OrderDetailPanel
           error={om.error}
           detailOrder={om.detailOrder}
-          showEdit={om.showEdit}
-          setShowEdit={om.setShowEdit}
           isAdmin={om.isAdmin}
           busyAction={om.busyAction}
           currencySymbol={currencySymbol}
           onBack={om.backFromDetail}
           onPrint={om.printDetail}
-          onStartEdit={() => om.openEdit(om.detailOrder)}
-          editForm={om.editForm}
-          setEditForm={om.setEditForm}
-          onSubmitEdit={om.saveEdit}
           onCancelPedido={() => {
             const d = om.detailOrder;
             if (!d?.id) return;
@@ -100,7 +94,6 @@ export function OrdersView({ currencySymbol = "C$" }) {
           isAdmin={om.isAdmin}
           busyAction={om.busyAction}
           onView={om.openDetail}
-          onEdit={om.openEditFromRow}
           onCancel={om.cancelOrder}
         />
         <div className="border-t border-slate-100 px-5 py-3.5">

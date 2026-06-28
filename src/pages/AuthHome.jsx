@@ -177,7 +177,7 @@ export function AuthHome() {
           const parsed = parseTipoCambioApiResponse(tc);
           setTipoCambio(parsed != null ? parsed : DEFAULT_TIPO_CAMBIO_USD);
         },
-      );
+      ).catch(() => {});
     };
     window.addEventListener(POS_EXCHANGE_RATE_UPDATED_EVENT, onTcUpdated);
     return () => window.removeEventListener(POS_EXCHANGE_RATE_UPDATED_EVENT, onTcUpdated);

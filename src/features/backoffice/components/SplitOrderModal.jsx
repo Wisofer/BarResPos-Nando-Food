@@ -8,7 +8,6 @@ export default function SplitOrderModal({
   posCart,
   posActionBusy,
   onConfirmSeparar,
-  currencySymbol = "C$",
 }) {
   const [selectedQtys, setSelectedQtys] = useState({});
 

@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Pencil, Printer, X, XCircle } from "lucide-react";
+import { ArrowLeft, Printer, XCircle } from "lucide-react";
 import { formatCurrency } from "../../utils/currency.js";
 import {
   pagoDescuentoAtribuidoCordobas,
@@ -14,8 +14,6 @@ import {
 import { orderStatusPillClass, formatDateTimeLabel, labelTipoPedido, isPedidoEstadoBloqueadoParaEdicion } from "../../utils/ordersViewFormatters.js";
 
 const ESTADOS_PEDIDO = ["Pendiente", "En cocina", "Despacho", "Listo", "Entregado", "Pagado", "Cancelado"];
-const ESTADOS_COCINA = ["Pendiente", "En cocina", "Listo", "Entregado", "Cancelado"];
-const ESTADOS_LINEA = ["Pendiente", "En cocina", "Listo", "Entregado", "Cancelado"];
 
 function infoCard(label, children) {
   return (
@@ -29,18 +27,12 @@ function infoCard(label, children) {
 export function OrderDetailPanel({
   error,
   detailOrder,
-  showEdit,
-  setShowEdit,
   isAdmin,
   busyAction,
   currencySymbol,
   onBack,
   onPrint,
-  onStartEdit,
   onCancelPedido,
-  editForm,
-  setEditForm,
-  onSubmitEdit,
 }) {
   const createdAtLabel = formatDateTimeLabel(detailOrder.fechaCreacion);
   const paidAtLabel = formatDateTimeLabel(detailOrder.fechaPagado);
@@ -52,7 +44,6 @@ export function OrderDetailPanel({
   const netoCobradoDetalle = pedidoTotalNetoCobradoCordobas(detailOrder);
   const pagosDetalle = pedidoPagosLista(detailOrder);
   const estadoDetalle = String(detailOrder.estado || "");
-  const puedeEditarPedido = isAdmin && !isPedidoEstadoBloqueadoParaEdicion(estadoDetalle);
   const puedeCancelarPedido = isAdmin && !isPedidoEstadoBloqueadoParaEdicion(estadoDetalle);
 
   return (
@@ -77,25 +68,18 @@ export function OrderDetailPanel({
             <ArrowLeft className="h-3.5 w-3.5 shrink-0" />
             Volver
           </button>
-          <button
-            type="button"
-            onClick={onPrint}
-            className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:shadow-md active:scale-95"
-          >
-            <Printer className="h-3.5 w-3.5 shrink-0" />
-            Imprimir
-          </button>
-          {puedeEditarPedido && !showEdit && (
+          {estadoDetalle !== "Cancelado" && (
             <button
               type="button"
-              onClick={onStartEdit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 active:scale-95"
+              onClick={onPrint}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50 hover:shadow-md active:scale-95"
             >
-              <Pencil className="h-3.5 w-3.5 shrink-0" />
-              Editar
+              <Printer className="h-3.5 w-3.5 shrink-0" />
+              Imprimir
             </button>
           )}
-          {typeof onCancelPedido === "function" && puedeCancelarPedido && !showEdit && (
+
+          {typeof onCancelPedido === "function" && puedeCancelarPedido && (
             <button
               type="button"
               onClick={onCancelPedido}
@@ -109,7 +93,7 @@ export function OrderDetailPanel({
         </div>
       </header>
 
-      {!showEdit ? (
+
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1.6fr_1fr]">
           <section className="min-w-0 space-y-4">
             <div className="rounded-3xl border border-slate-100 bg-white p-4 shadow-sm sm:p-5">
@@ -251,221 +235,9 @@ export function OrderDetailPanel({
                 ))}
               </ul>
             </div>
-
           </aside>
         </div>
-      ) : (
-        <form onSubmit={onSubmitEdit} className="space-y-4">
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-            <p className="font-semibold">Modo edición</p>
-            <p className="mt-0.5 text-xs text-amber-900/90">Guardá los cambios o cancelá para volver al detalle.</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6">
-            <h2 className="text-sm font-semibold text-slate-900">Datos del pedido</h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <label className="text-xs font-semibold text-slate-600">
-                Mesa ID
-                <input
-                  type="number"
-                  min="1"
-                  onWheel={(e) => e.target.blur()}
-                  value={editForm.mesaId}
-                  onChange={(e) => setEditForm((s) => ({ ...s, mesaId: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
-                />
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Cliente ID
-                <input
-                  type="number"
-                  min="0"
-                  onWheel={(e) => e.target.blur()}
-                  value={editForm.clienteId}
-                  onChange={(e) => setEditForm((s) => ({ ...s, clienteId: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
-                />
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Mesero ID
-                <input
-                  type="number"
-                  min="0"
-                  onWheel={(e) => e.target.blur()}
-                  value={editForm.meseroId}
-                  onChange={(e) => setEditForm((s) => ({ ...s, meseroId: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200/60"
-                />
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Estado del pedido
-                <select
-                  value={editForm.estado}
-                  onChange={(e) => setEditForm((s) => ({ ...s, estado: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm"
-                >
-                  {ESTADOS_PEDIDO.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-xs font-semibold text-slate-600">
-                Estado cocina
-                <select
-                  value={editForm.estadoCocina}
-                  onChange={(e) => setEditForm((s) => ({ ...s, estadoCocina: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm"
-                >
-                  <option value="">Sin definir</option>
-                  {ESTADOS_COCINA.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="mt-4 block text-xs font-semibold text-slate-600">
-              Observaciones
-              <textarea
-                value={editForm.observaciones}
-                onChange={(e) => setEditForm((s) => ({ ...s, observaciones: e.target.value }))}
-                rows={3}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-sm"
-              />
-            </label>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-6">
-            <h2 className="text-sm font-semibold text-slate-900">Líneas</h2>
-            <div className="mt-4 space-y-4">
-              {editForm.items.map((it, idx) => {
-                const q = Number(it.cantidad) || 0;
-                const pu = Number(it.precioUnitario) || 0;
-                const sub = q * pu;
-                return (
-                  <div key={`${it.servicioId}-${idx}`} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-slate-800">{it.servicio || "Producto"}</p>
-                        <p className="text-xs text-slate-500">Línea {idx + 1}</p>
-                      </div>
-                      <span className="rounded-md bg-white px-2.5 py-0.5 text-xs font-semibold tabular-nums text-slate-800 ring-1 ring-slate-200">
-                        {formatCurrency(sub, currencySymbol)}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <label className="text-xs font-semibold text-slate-600 sm:col-span-2 lg:col-span-1">
-                        ID servicio
-                        <input
-                          type="number"
-                          min="1"
-                          onWheel={(e) => e.target.blur()}
-                          value={it.servicioId === undefined || it.servicioId === null ? "" : String(it.servicioId)}
-                          onChange={(e) =>
-                            setEditForm((s) => ({
-                              ...s,
-                              items: s.items.map((x, i) => (i === idx ? { ...x, servicioId: e.target.value } : x)),
-                            }))
-                          }
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="text-xs font-semibold text-slate-600">
-                        Cantidad
-                        <input
-                          type="number"
-                          min="1"
-                          onWheel={(e) => e.target.blur()}
-                          value={it.cantidad}
-                          onChange={(e) =>
-                            setEditForm((s) => ({
-                              ...s,
-                              items: s.items.map((x, i) => (i === idx ? { ...x, cantidad: e.target.value } : x)),
-                            }))
-                          }
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="text-xs font-semibold text-slate-600">
-                        P. unit. ({currencySymbol})
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          onWheel={(e) => e.target.blur()}
-                          value={it.precioUnitario}
-                          onChange={(e) =>
-                            setEditForm((s) => ({
-                              ...s,
-                              items: s.items.map((x, i) => (i === idx ? { ...x, precioUnitario: e.target.value } : x)),
-                            }))
-                          }
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="text-xs font-semibold text-slate-600">
-                        Estado línea
-                        <select
-                          value={it.estado}
-                          onChange={(e) =>
-                            setEditForm((s) => ({
-                              ...s,
-                              items: s.items.map((x, i) => (i === idx ? { ...x, estado: e.target.value } : x)),
-                            }))
-                          }
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                        >
-                          <option value="">Sin definir</option>
-                          {ESTADOS_LINEA.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <label className="mt-3 block text-xs font-semibold text-slate-600">
-                      Notas
-                      <input
-                        value={it.notas}
-                        onChange={(e) =>
-                          setEditForm((s) => ({
-                            ...s,
-                            items: s.items.map((x, i) => (i === idx ? { ...x, notas: e.target.value } : x)),
-                          }))
-                        }
-                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      />
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setShowEdit(false)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-slate-50 sm:w-auto w-full"
-            >
-              <X className="h-4 w-4 shrink-0" />
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={busyAction}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 sm:w-auto w-full"
-            >
-              <Check className="h-4 w-4 shrink-0" />
-              {busyAction ? "Guardando…" : "Guardar"}
-            </button>
-          </div>
-        </form>
-      )}
     </div>
   );
 }
+

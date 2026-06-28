@@ -1,4 +1,4 @@
-import { Eye, Pencil, XCircle } from "lucide-react";
+import { Eye, XCircle } from "lucide-react";
 import { formatDateTimeParts, labelDestinoPedido, labelTipoPedido, isPedidoEstadoBloqueadoParaEdicion } from "../../utils/ordersViewFormatters.js";
 
 const th = "px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400";
@@ -26,7 +26,6 @@ export function OrdersListTable({
   isAdmin,
   busyAction,
   onView,
-  onEdit,
   onCancel,
 }) {
   return (
@@ -125,21 +124,7 @@ export function OrdersListTable({
                     >
                       <Eye className="h-[15px] w-[15px]" />
                     </button>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => onEdit(order)}
-                        disabled={busyAction || isEmptyDraft || isPedidoEstadoBloqueadoParaEdicion(order.status)}
-                        title={
-                          isPedidoEstadoBloqueadoParaEdicion(order.status)
-                            ? "Pedido pagado o cancelado: no se puede editar"
-                            : "Editar"
-                        }
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-30"
-                      >
-                        <Pencil className="h-[14px] w-[14px]" />
-                      </button>
-                    )}
+
                     {isAdmin && (
                       <button
                         type="button"

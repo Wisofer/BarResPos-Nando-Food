@@ -85,8 +85,6 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
 
     const entradaBtn = page.locator('button:has-text("Entrada Stock")');
     const salidaBtn = page.locator('button:has-text("Salida Stock")');
-    const ajusteBtn = page.locator('button:has-text("Ajuste Stock")');
-
     if (await entradaBtn.isVisible()) {
       await expect(entradaBtn).toBeVisible();
       await expect(salidaBtn).toBeVisible();
