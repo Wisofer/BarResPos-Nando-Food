@@ -183,12 +183,6 @@ export function ProductFormModal({
                   checked={form.activo}
                   onChange={(val) => setForm((f) => ({ ...f, activo: val }))}
                 />
-                <SimpleCheck
-                  label="Es preparado"
-                  note="pasa a cocina"
-                  checked={form.esPreparado}
-                  onChange={(val) => setForm((f) => ({ ...f, esPreparado: val }))}
-                />
               </div>
             </div>
 

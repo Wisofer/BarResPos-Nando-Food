@@ -11,8 +11,7 @@ function emptyProductFormCore() {
     stock: "",
     stockMinimo: "",
     controlarStock: true,
-    /** true = comida en cocina; no se devuelve stock al cancelar pedido */
-    esPreparado: true,
+
     imagenUrl: "",
     activo: true,
     opcionesEspecialesOn: false,

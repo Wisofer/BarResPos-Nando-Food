@@ -329,7 +329,6 @@ export function ProductsView({ currencySymbol = "C$" }) {
         stock: p.stock ?? "",
         stockMinimo: p.stockMinimo ?? "",
         controlarStock: Boolean(p.controlarStock),
-        esPreparado: Boolean(p.esPreparado ?? p.EsPreparado ?? true),
         imagenUrl: p.imagenUrl ?? p.ImagenUrl ?? "",
         activo: p.activo !== false,
         opcionesEspecialesOn: tieneOpciones,
@@ -351,10 +350,6 @@ export function ProductsView({ currencySymbol = "C$" }) {
 
   const saveProduct = async (e) => {
     e.preventDefault();
-    if (imageUploadFile && !form.esPreparado) {
-      snackbar.error("Para subir imagen, el producto debe tener activado 'Es preparado (cocina)'.");
-      return;
-    }
     if (
       form.opcionesEspecialesOn &&
       !form.opcionesEspecialesLines.some((s) => String(s || "").trim())
@@ -382,7 +377,6 @@ export function ProductsView({ currencySymbol = "C$" }) {
         ...(form.proveedorId ? { proveedorId: Number(form.proveedorId) } : {}),
         stockMinimo: Number(form.stockMinimo || 0),
         controlarStock: Boolean(form.controlarStock),
-        esPreparado: Boolean(form.esPreparado),
         imagenUrl: String(form.imagenUrl || "").trim() || null,
         activo: Boolean(form.activo),
         ...(form.id ? {} : { stock: Number(form.stock || 0) }),
