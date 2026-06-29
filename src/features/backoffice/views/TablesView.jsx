@@ -147,6 +147,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [moveOrderOpen, setMoveOrderOpen] = useState(false);
   const [moveOrderTargetId, setMoveOrderTargetId] = useState("");
   const [moveOrderCandidates, setMoveOrderCandidates] = useState([]);
+  const [moveOrderSearch, setMoveOrderSearch] = useState("");
+  const [moveOrderSelectedZone, setMoveOrderSelectedZone] = useState("");
   const [posCancelPinOpen, setPosCancelPinOpen] = useState(false);
   const [posCancelItemPinOpen, setPosCancelItemPinOpen] = useState(false);
   const [pendingCancelItemLineId, setPendingCancelItemLineId] = useState(null);
@@ -232,7 +234,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     return () => {
       mounted = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCreate = () => {
@@ -514,7 +516,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       backofficeApi.getMesaOrdenesActivas(table.id).then((resp) => {
         const ords = unwrapEnvelope(resp) || [];
         if (ords.length > 1) setPosActiveOrders(ords);
-      }).catch(() => {});
+      }).catch(() => { });
     } catch (e) {
       snackbar.error(e.message || "No se pudo cargar productos para la mesa.");
     } finally {
@@ -778,7 +780,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     if (posTable) await refreshPosTableFromBackend(posTable.id);
   };
 
-    const switchPosOrder = (order) => {
+  const switchPosOrder = (order) => {
     setPosOrderId(order.id);
     const backendItems = getOrdenItems(order);
     const mapped = backendItems ? mapBackendItemsToCart(backendItems) : [];
@@ -1062,7 +1064,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       const resp = await backofficeApi.pedidoCancelarLineaConPin(ordenId, lineaId, codigo);
       const data = unwrapEnvelope(resp);
       const vacio = data?.vacio ?? data?.Vacio;
-      
+
       const prev = posCartRef.current;
       const next = prev.filter((x) => x.lineId !== lineId);
       posCartRef.current = next;
@@ -1111,7 +1113,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   const closePosView = async () => {
     // Esperar sincronizaciones pendientes antes de limpiar estado
-    await posSyncChainRef.current.catch(() => {});
+    await posSyncChainRef.current.catch(() => { });
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
     setPosOpcionesModal({ open: false, product: null });
@@ -1163,6 +1165,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       }
       setMoveOrderCandidates(free);
       setMoveOrderTargetId(String(free[0].id));
+      setMoveOrderSearch("");
+      setMoveOrderSelectedZone("");
       setMoveOrderOpen(true);
     } catch (e) {
       const msg = e?.message || "No se pudo cargar mesas para el traslado.";
@@ -1399,7 +1403,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         { setBusy: setPosActionBusy, setMessage: setPosBusyMessage, caption: "Enviando a cocina…" },
         async () => {
           if (posCart.length > 0) await ensurePosOrderSynced({ manageBusy: false });
-          
+
           const activeOrderId = posOrderId ?? posOrderIdRef.current;
           if (!activeOrderId) throw new Error("No hay orden activa para enviar a cocina.");
 
@@ -1552,7 +1556,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               text = data.preview;
               // Reemplazar placeholders hardcodeados del backend con valores reales
               text = text.replace(/^[ \t]*\[LOGO DEL NEGOCIO\][ \t]*\n?/m, "")
-                         .replace(/BarResPos/gi, companyName);
+                .replace(/BarResPos/gi, companyName);
             }
           } catch {
             /* ignore */
@@ -1569,7 +1573,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     if (printed) snackbar.success("Enviado a la impresora física.");
                     else snackbar.warning("No se pudo imprimir. Verifique la impresora.");
                   },
-                  onCancelPrint: () => {},
+                  onCancelPrint: () => { },
                 },
               })
             );
@@ -1606,7 +1610,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           const fechaLocal = new Date().toLocaleString("es-NI", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
           let fallbackText = `${logoLine}\n       ${companyName}\n------------------------------------------------\nCOMANDA: ${ordenId}\nMESA:   ${posTable.displayId}\nFECHA:  ${fechaLocal}\n------------------------------------------------\nCANT PRODUCTO                PRECIO\n------------------------------------------------\n`;
           lines.forEach(x => {
-            fallbackText += `${String(x.qty).padEnd(6)}${String(x.name).substring(0,25).padEnd(28)}${formatCurrency(x.lineTotal, sym).padStart(14)}\n`;
+            fallbackText += `${String(x.qty).padEnd(6)}${String(x.name).substring(0, 25).padEnd(28)}${formatCurrency(x.lineTotal, sym).padStart(14)}\n`;
           });
           fallbackText += `------------------------------------------------\nTOTAL:                                ${formatCurrency(total, sym).padStart(14)}\n------------------------------------------------\n       Comanda para mesero\n       ${fechaLocal}`;
 
@@ -1619,7 +1623,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   if (printed) snackbar.success("Enviado a la impresora física.");
                   else snackbar.warning("No se pudo imprimir. Verifique la impresora.");
                 },
-                onCancelPrint: () => {},
+                onCancelPrint: () => { },
               },
             })
           );
@@ -1719,7 +1723,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   disabled={posActionBusy}
                   className="inline-flex items-center gap-1 rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-xs font-semibold text-orange-900 hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5" /><path d="M8 3H3v5" /><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" /><path d="m15 9 6-6" /></svg>
                   Separar cuenta
                 </button>
               )}
@@ -1827,11 +1831,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                         key={ord.id}
                         type="button"
                         onClick={() => switchPosOrder(ord)}
-                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
-                          ord.id === posOrderId
-                            ? "bg-orange-500 text-white shadow"
-                            : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
-                        }`}
+                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${ord.id === posOrderId
+                          ? "bg-orange-500 text-white shadow"
+                          : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
+                          }`}
                       >
                         Cuenta {idx + 1}
                       </button>
@@ -1993,11 +1996,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                         key={ord.id}
                         type="button"
                         onClick={() => switchPosOrder(ord)}
-                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${
-                          ord.id === posOrderId
-                            ? "bg-orange-500 text-white shadow"
-                            : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
-                        }`}
+                        className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${ord.id === posOrderId
+                          ? "bg-orange-500 text-white shadow"
+                          : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
+                          }`}
                       >
                         Cuenta {idx + 1}
                       </button>
@@ -2236,51 +2238,202 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           />
         )}
 
-        {moveOrderOpen && posTable && (
-          <BackofficeDialog
-            maxWidthClass="max-w-md"
-            onBackdropClick={posActionBusy ? undefined : () => setMoveOrderOpen(false)}
-          >
-            <form onSubmit={handleConfirmTrasladarPedido} className="w-full min-w-0">
-              <h3 className="text-lg font-semibold text-slate-800">Trasladar pedido a otra mesa</h3>
-              <label className="mt-4 block text-xs font-semibold text-slate-600">
-                Mesa destino (solo libres)
-                <select
-                  value={moveOrderTargetId}
-                  onChange={(e) => setMoveOrderTargetId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                  required
-                >
-                  {moveOrderCandidates.map((t) => (
-                    <option key={t.id} value={String(t.id)}>
-                      {t.zone} · {t.displayId} (cap. {t.capacity})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoveOrderOpen(false);
-                    setMoveOrderCandidates([]);
-                  }}
-                  disabled={posActionBusy}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 sm:w-auto"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={posActionBusy || moveOrderCandidates.length === 0}
-                  className="w-full rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50 sm:w-auto"
-                >
-                  {posActionBusy ? "Trasladando pedido…" : "Confirmar traslado del pedido"}
-                </button>
-              </div>
-            </form>
-          </BackofficeDialog>
-        )}
+        {moveOrderOpen && posTable && (() => {
+          const moveOrderZones = ["", ...new Set(moveOrderCandidates.map((t) => t.zone).filter(Boolean))];
+          const filteredCandidates = moveOrderCandidates.filter((t) => {
+            const matchesSearch =
+              !moveOrderSearch ||
+              t.displayId.toLowerCase().includes(moveOrderSearch.toLowerCase()) ||
+              (t.zone || "").toLowerCase().includes(moveOrderSearch.toLowerCase());
+            const matchesZone = !moveOrderSelectedZone || t.zone === moveOrderSelectedZone;
+            return matchesSearch && matchesZone;
+          });
+          return (
+            <BackofficeDialog
+              maxWidthClass="max-w-4xl"
+              onBackdropClick={posActionBusy ? undefined : () => {
+                setMoveOrderOpen(false);
+                setMoveOrderCandidates([]);
+              }}
+            >
+              <form onSubmit={handleConfirmTrasladarPedido} className="w-full min-w-0 p-0 overflow-hidden">
+                <div className="flex flex-col md:flex-row md:min-h-[500px]">
+
+                  {/* Columna Izquierda: Detalles del Ticket (Fondo Claro Premium) */}
+                  <div className="md:w-2/5 bg-slate-50 text-slate-700 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-200">
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full border border-violet-100">
+                          Ticket Activo
+                        </span>
+                        <h4 className="text-lg font-extrabold text-slate-850 mt-3 truncate">
+                          {posTable.displayId}
+                        </h4>
+                      </div>
+
+                      {/* Lista de productos en el ticket */}
+                      <div className="mt-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                          Productos a Trasladar
+                        </p>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                          {posCart.length === 0 ? (
+                            <p className="text-xs text-slate-450 italic py-4">
+                              Sin productos en la orden activa.
+                            </p>
+                          ) : (
+                            posCart.map((item) => (
+                              <div key={item.lineId} className="flex justify-between items-start text-xs py-1.5 border-b border-slate-200/60 last:border-0">
+                                <div className="min-w-0 pr-2">
+                                  <p className="font-bold text-slate-700 truncate">{item.name}</p>
+                                  {item.opcionesResumen && (
+                                    <p className="text-[9px] text-slate-500 truncate leading-snug">{item.opcionesResumen}</p>
+                                  )}
+                                  <p className="text-[10px] text-slate-500 mt-0.5">
+                                    {item.qty} x {formatCurrency(item.price, currencySymbol)}
+                                  </p>
+                                </div>
+                                <span className="font-bold text-violet-600 shrink-0">
+                                  {formatCurrency(item.price * item.qty, currencySymbol)}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Resumen del Total */}
+                    <div className="pt-4 border-t border-slate-200 mt-4 md:mt-0">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subtotal</span>
+                        <span className="text-xl font-black text-violet-600">
+                          {formatCurrency(posSubtotal, currencySymbol)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Columna Derecha: Selector de Mesa Destino (Fondo Blanco Limpio) */}
+                  <div className="md:w-3/5 bg-white p-6 flex flex-col justify-between">
+                    <div className="flex flex-col gap-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-800">
+                          Seleccionar Mesa Destino
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Elige una de las mesas libres en el catálogo.
+                        </p>
+                      </div>
+
+                      {/* Buscador de Mesas */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Buscar mesa por nombre o zona..."
+                          value={moveOrderSearch}
+                          onChange={(e) => setMoveOrderSearch(e.target.value)}
+                          className="w-full rounded-xl border border-slate-200 pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500/25 focus:border-violet-500 transition bg-slate-50/50 hover:bg-slate-50"
+                        />
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                        </span>
+                      </div>
+
+                      {/* Selector de Zona (Tabs) */}
+                      <div className="flex flex-wrap gap-1 border-b border-slate-100 pb-2">
+                        {moveOrderZones.map((z) => (
+                          <button
+                            key={z}
+                            type="button"
+                            onClick={() => setMoveOrderSelectedZone(z)}
+                            className={`rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${moveOrderSelectedZone === z
+                              ? "bg-violet-600 text-white shadow-sm shadow-violet-100"
+                              : "bg-slate-50 text-slate-650 hover:bg-slate-100 hover:text-slate-800"
+                              }`}
+                          >
+                            {z || "TODAS"}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Grid de Mesas */}
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/30 p-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                          {filteredCandidates.length === 0 ? (
+                            <div className="col-span-full py-12 text-center text-xs text-slate-400 italic">
+                              Ninguna mesa libre coincide con los filtros.
+                            </div>
+                          ) : (
+                            filteredCandidates.map((t) => {
+                              const isSelected = String(t.id) === moveOrderTargetId;
+                              return (
+                                <button
+                                  key={t.id}
+                                  type="button"
+                                  onClick={() => setMoveOrderTargetId(String(t.id))}
+                                  className={`relative flex flex-col justify-between rounded-xl border p-3 text-left transition duration-200 ease-in-out cursor-pointer ${isSelected
+                                    ? "border-violet-600 bg-violet-50/70 shadow-sm shadow-violet-100"
+                                    : "border-slate-200/80 bg-white hover:border-slate-350 hover:bg-slate-50/80 hover:shadow-sm"
+                                    }`}
+                                >
+                                  <div>
+                                    <span className={`text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded ${isSelected
+                                      ? "bg-violet-100 text-violet-700"
+                                      : "bg-slate-100 text-slate-500"
+                                      }`}>
+                                      {t.zone}
+                                    </span>
+                                    <h5 className={`text-xs font-bold mt-2 ${isSelected ? "text-violet-950" : "text-slate-800"}`}>
+                                      {t.displayId}
+                                    </h5>
+                                  </div>
+
+                                  <span className="text-[10px] text-slate-400 mt-2 block font-medium">
+                                    Capacidad: {t.capacity} pers.
+                                  </span>
+
+                                  {isSelected && (
+                                    <span className="absolute top-3 right-3 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-white">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botones inferiores */}
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-4 border-t border-slate-100 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoveOrderOpen(false);
+                          setMoveOrderCandidates([]);
+                        }}
+                        disabled={posActionBusy}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-650 hover:bg-slate-50 transition active:scale-95 sm:w-auto"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={posActionBusy || !moveOrderTargetId}
+                        className="w-full rounded-xl bg-violet-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-violet-700 shadow-md shadow-violet-100 transition active:scale-95 disabled:opacity-50 sm:w-auto"
+                      >
+                        {posActionBusy ? "Trasladando..." : "Confirmar traslado"}
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </form>
+            </BackofficeDialog>
+          );
+        })()}
         {splitOrderOpen && (
           <SplitOrderModal
             open={splitOrderOpen}
@@ -2322,8 +2475,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               Reservadas: <span className="font-bold text-violet-950">{mesaStats.reservadas}</span>
             </span>
             <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold border ${cajaAbierta
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : "bg-rose-50 border-rose-200 text-rose-700"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : "bg-rose-50 border-rose-200 text-rose-700"
               }`}>
               Caja: {cajaAbierta ? "Abierta" : "Cerrada"}
             </span>

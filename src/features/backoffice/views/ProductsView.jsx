@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, History, PackageMinus, PackagePlus, Plus, Search, SlidersHorizontal, Tags } from "lucide-react";
+import { Download, History, PackageMinus, PackagePlus, Plus, Search, SlidersHorizontal, Tags, LayoutGrid, List } from "lucide-react";
 import { PAGINATION } from "../constants/pagination.js";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { BackofficePageShell, BackofficeStatCardsListSkeleton } from "../components/index.js";
 import { GlobalMovementsModal, ProductHistoryModal } from "../components/inventory/InventoryHistoryModals.jsx";
 import { ProductFormModal } from "../components/inventory/ProductFormModal.jsx";
 import { ProductGrid } from "../components/inventory/ProductGrid.jsx";
+import { ProductList } from "../components/inventory/ProductList.jsx";
 import { StockMovementModal } from "../components/inventory/StockMovementModal.jsx";
 import { tieneControlStock } from "../utils/inventoryMovementsView.js";
 import { getInitialProductForm, getNewProductForm } from "../utils/productFormDefaults.js";
@@ -21,6 +22,24 @@ import {
 
 export function ProductsView({ currencySymbol = "C$" }) {
   const snackbar = useSnackbar();
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem("pos_inventory_view_mode") || "grid";
+    } catch (err) {
+      void err;
+      return "grid";
+    }
+  });
+
+  const toggleViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("pos_inventory_view_mode", mode);
+    } catch (err) {
+      void err;
+    }
+  };
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [providers, setProviders] = useState([]);
@@ -537,68 +556,107 @@ export function ProductsView({ currencySymbol = "C$" }) {
           </button>
         </div>
 
-        <div className="mt-3 overflow-x-auto">
-          <div className="flex w-max min-w-full flex-wrap gap-2 md:w-auto md:min-w-0">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-4">
+          <div className="overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex w-max gap-2">
+              <button
+                type="button"
+                onClick={() => void openStockModal("entrada")}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 border border-emerald-100/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              >
+                <PackagePlus className="h-3.5 w-3.5 shrink-0" />
+                Entrada Stock
+              </button>
+              <button
+                type="button"
+                onClick={() => void openStockModal("salida")}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100/80 border border-rose-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              >
+                <PackageMinus className="h-3.5 w-3.5 shrink-0" />
+                Salida Stock
+              </button>
+              <button
+                type="button"
+                onClick={() => void openStockModal("ajuste")}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100/80 border border-blue-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+                Ajuste Stock
+              </button>
+              <button
+                type="button"
+                onClick={openGlobalMovements}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-50 text-indigo-750 hover:bg-indigo-100/80 border border-indigo-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              >
+                <History className="h-3.5 w-3.5 shrink-0" />
+                Ver Movimientos
+              </button>
+              <button
+                type="button"
+                onClick={exportProductsExcel}
+                disabled={saving}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100/80 border border-slate-200/80 px-3.5 py-2 text-xs font-bold transition active:scale-95 disabled:opacity-60 cursor-pointer"
+              >
+                <Download className="h-3.5 w-3.5 shrink-0" />
+                Exportar Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategoriesScreen(true)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100/80 border border-purple-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              >
+                <Tags className="h-3.5 w-3.5 shrink-0" />
+                Categorías
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-50/50 p-1 shrink-0 self-end sm:self-auto shadow-sm">
             <button
               type="button"
-              onClick={() => void openStockModal("entrada")}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100/80 border border-emerald-100/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              onClick={() => toggleViewMode("grid")}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all active:scale-95 cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-white text-indigo-650 shadow-sm border border-slate-200/50"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+              title="Vista Cuadrícula"
             >
-              <PackagePlus className="h-3.5 w-3.5 shrink-0" />
-              Entrada Stock
+              <LayoutGrid className="h-4.5 w-4.5" />
             </button>
             <button
               type="button"
-              onClick={() => void openStockModal("salida")}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100/80 border border-rose-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
+              onClick={() => toggleViewMode("list")}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all active:scale-95 cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-white text-indigo-650 shadow-sm border border-slate-200/50"
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+              title="Vista Lista"
             >
-              <PackageMinus className="h-3.5 w-3.5 shrink-0" />
-              Salida Stock
-            </button>
-            <button
-              type="button"
-              onClick={() => void openStockModal("ajuste")}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100/80 border border-blue-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
-              Ajuste Stock
-            </button>
-            <button
-              type="button"
-              onClick={openGlobalMovements}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-50 text-indigo-750 hover:bg-indigo-100/80 border border-indigo-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
-            >
-              <History className="h-3.5 w-3.5 shrink-0" />
-              Ver Movimientos
-            </button>
-            <button
-              type="button"
-              onClick={exportProductsExcel}
-              disabled={saving}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100/80 border border-slate-200/80 px-3.5 py-2 text-xs font-bold transition active:scale-95 disabled:opacity-60 cursor-pointer"
-            >
-              <Download className="h-3.5 w-3.5 shrink-0" />
-              Exportar Excel
-            </button>
-            <button
-              type="button"
-              onClick={() => setCategoriesScreen(true)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100/80 border border-purple-150/50 px-3.5 py-2 text-xs font-bold transition active:scale-95 cursor-pointer"
-            >
-              <Tags className="h-3.5 w-3.5 shrink-0" />
-              Categorías
+              <List className="h-4.5 w-4.5" />
             </button>
           </div>
         </div>
       </div>
 
-      <ProductGrid
-        products={filteredProducts}
-        currencySymbol={currencySymbol}
-        openEdit={openEdit}
-        openProductHistory={openProductHistory}
-        setConfirmAction={setConfirmAction}
-      />
+      {viewMode === "list" ? (
+        <ProductList
+          products={filteredProducts}
+          currencySymbol={currencySymbol}
+          openEdit={openEdit}
+          openProductHistory={openProductHistory}
+          setConfirmAction={setConfirmAction}
+        />
+      ) : (
+        <ProductGrid
+          products={filteredProducts}
+          currencySymbol={currencySymbol}
+          openEdit={openEdit}
+          openProductHistory={openProductHistory}
+          setConfirmAction={setConfirmAction}
+        />
+      )}
       {modalOpen && (
         <ProductFormModal
           saving={saving}

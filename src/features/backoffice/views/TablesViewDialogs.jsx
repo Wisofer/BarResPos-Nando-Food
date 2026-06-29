@@ -220,7 +220,7 @@ export function DetailDialog({ open, table, activeOrder, onClose }) {
   return (
     <BackofficeDialog maxWidthClass="max-w-lg" onBackdropClick={onClose}>
       <div className="w-full min-w-0">
-        <h3 className="text-lg font-semibold text-slate-800">Mesa {table.displayId}</h3>
+        <h3 className="text-lg font-semibold text-slate-800">{table.displayId}</h3>
         <p className="mt-1 text-sm text-slate-600">Estado: {table.status} | Capacidad: {table.capacity}</p>
         <div className="mt-4 rounded-lg border border-slate-200 p-3 text-sm">
           {activeOrder ? (
