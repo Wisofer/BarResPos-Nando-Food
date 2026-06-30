@@ -225,6 +225,8 @@ export const backofficeApi = {
       estado,
       Estado: estado,
     }),
+  cocinaItemsEstado: (items) =>
+    api.patch("/api/v1/cocina/items/estado", { items }),
   /** Salón / mesa / para llevar: envía pedido a cocina y devuelve `urlImpresionCocina` en data. */
   pedidoEnviarCocina: (pedidoId) =>
     api.patchWithEnvelope(`/api/v1/pedidos/${encodeURIComponent(pedidoId)}/enviar-cocina`, {}),

@@ -30,7 +30,7 @@ export function posCartToPedidoItemsPayload(cart) {
         servicioId: Number(x.id),
         cantidad: Number(x.qty),
         precioUnitario: Number(x.price || 0),
-        estado: x.estado || "Pendiente",
+        estado: x.estado || null,
         notas: String(x.notas ?? "").trim(),
       },
       x.opcionesSeleccionadas

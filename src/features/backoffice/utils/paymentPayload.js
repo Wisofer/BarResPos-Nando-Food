@@ -32,6 +32,7 @@ export function buildPagoPayload({ ordenId, form, defaultObservaciones = "Pago" 
     tipoPago: form.tipoPago,
     montoPagado,
     moneda: monedaPago,
+    idempotencyKey: crypto.randomUUID(),
     banco: null,
     tipoCuenta: null,
     observaciones: obsParts.join(" | ") || defaultObservaciones,

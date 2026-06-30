@@ -294,6 +294,15 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
     prevProps.table.hasActiveOrder === nextProps.table.hasActiveOrder &&
     prevProps.table.activeOrdersCount === nextProps.table.activeOrdersCount &&
     prevProps.table.displayId === nextProps.table.displayId &&
-    prevProps.table.capacity === nextProps.table.capacity
+    prevProps.table.capacity === nextProps.table.capacity &&
+    prevProps.isAdmin === nextProps.isAdmin &&
+    prevProps.onSelect === nextProps.onSelect &&
+    prevProps.onScaleCommit === nextProps.onScaleCommit &&
+    prevProps.onOpenPos === nextProps.onOpenPos &&
+    prevProps.onOpenEdit === nextProps.onOpenEdit &&
+    prevProps.onRequestDelete === nextProps.onRequestDelete &&
+    prevProps.onDragStop === nextProps.onDragStop &&
+    prevProps.tableIllustration === nextProps.tableIllustration &&
+    prevProps.setActiveTableMenu === nextProps.setActiveTableMenu
   );
 });

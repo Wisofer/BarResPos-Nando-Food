@@ -138,6 +138,7 @@ export function KitchenView() {
   const [mode, setMode] = useState("live");
 
   const isMounted = useRef(true);
+  const fetchSeqRef = useRef(0);
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -160,18 +161,21 @@ export function KitchenView() {
   };
 
   const loadKitchen = useCallback(async () => {
+    const seq = ++fetchSeqRef.current;
     try {
       const data = await backofficeApi.cocinaOrdenes();
+      if (seq !== fetchSeqRef.current) return;
       const items = Array.isArray(data) ? data : data?.items || [];
       if (isMounted.current) {
         setOrders(items);
       }
     } catch (e) {
+      if (seq !== fetchSeqRef.current) return;
       if (isMounted.current) {
         setError(e.message || "No se pudo cargar cocina.");
       }
     } finally {
-      if (isMounted.current) {
+      if (seq === fetchSeqRef.current && isMounted.current) {
         setLoading(false);
       }
     }
@@ -219,16 +223,14 @@ export function KitchenView() {
     setError("");
     try {
       if (current === "En Preparación") {
-        // Marcar todos los ítems de esta comanda como "Listo"
-        await Promise.all(
-          card.items.map(item => backofficeApi.cocinaItemEstado(item.id ?? item.Id, "Listo"))
-        );
+        // Marcar todos los ítems de esta comanda como "Listo" (batch atómico)
+        const batchItems = card.items.map(item => ({ id: item.id ?? item.Id, estado: "Listo" }));
+        await backofficeApi.cocinaItemsEstado(batchItems);
         snackbar.success(`Comanda de mesa ${card.mesa} marcada como lista`);
       } else if (current === "Listo") {
-        // Marcar todos los ítems de esta comanda como "Entregado"
-        await Promise.all(
-          card.items.map(item => backofficeApi.cocinaItemEstado(item.id ?? item.Id, "Entregado"))
-        );
+        // Marcar todos los ítems de esta comanda como "Entregado" (batch atómico)
+        const batchItems = card.items.map(item => ({ id: item.id ?? item.Id, estado: "Entregado" }));
+        await backofficeApi.cocinaItemsEstado(batchItems);
         snackbar.success(`Comanda de mesa ${card.mesa} marcada como entregada`);
       }
       await loadKitchen();

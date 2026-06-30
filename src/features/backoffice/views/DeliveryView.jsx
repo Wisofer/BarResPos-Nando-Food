@@ -122,7 +122,9 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const [deliveryPedidoId, setDeliveryPedidoId] = useState(null);
   const deliveryPedidoIdRef = useRef(null);
   const cartRef = useRef([]);
+  const mountedRef = useRef(true);
   const deliverySyncChainRef = useRef(Promise.resolve());
+  const saleProcessingGuardRef = useRef(false);
   const [deliveryCodigo, setDeliveryCodigo] = useState("");
   const [pedidoEstado, setPedidoEstado] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
@@ -153,7 +155,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const [detailOrder, setDetailOrder] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [cancelDeliveryPin, setCancelDeliveryPin] = useState({ open: false, row: null });
-  const [cajaAbierta, setCajaAbierta] = useState(true);
+  const [cajaAbierta, setCajaAbierta] = useState(false);
   const [posCancelItemPinOpen, setPosCancelItemPinOpen] = useState(false);
   const [pendingCancelItemLineId, setPendingCancelItemLineId] = useState(null);
   const cajaAbiertaRef = useRef(true);
@@ -168,8 +170,14 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       setCajaAbierta(abierta);
       return abierta;
     } catch {
-      return cajaAbiertaRef.current;
+      setCajaAbierta(false);
+      return false;
     }
+  }, []);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
   }, []);
 
   useEffect(() => {
@@ -193,6 +201,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   }, [cart]);
 
   const loadDeliveryList = useCallback(async () => {
+    if (!mountedRef.current) return;
     setListLoading(true);
     try {
       const params = {
@@ -202,15 +211,17 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       const q = listSearch.trim();
       if (q) params.q = q;
       const data = await backofficeApi.listDeliveryPedidos(params);
+      if (!mountedRef.current) return;
       const raw = data?.items ?? data?.Items ?? [];
       const mapped = raw.map(mapDeliveryListRow).filter(Boolean);
       setListRows(mapped);
       seedClientsFromPastOrders(mapped);
     } catch (e) {
+      if (!mountedRef.current) return;
       snackbar.error(e?.message || "No se pudo cargar pedidos delivery.");
       setListRows([]);
     } finally {
-      setListLoading(false);
+      if (mountedRef.current) setListLoading(false);
     }
   }, [listSearch, snackbar]);
 
@@ -350,6 +361,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       snackbar.error("Caja cerrada. No se puede guardar el pedido.");
       return null;
     }
+    await deliverySyncChainRef.current.catch(() => {});
+    if (!mountedRef.current) return null;
     const body = buildDeliveryPedidoBody(customer, cart);
     if (manageBusy) {
       setDeliveryBusyMessage("Guardando pedido…");
@@ -359,6 +372,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       const currentId = deliveryPedidoIdRef.current;
       if (!currentId) {
         const data = await backofficeApi.createDeliveryPedido(body);
+        if (!mountedRef.current) return null;
         const id = Number(data?.id ?? data?.Id);
         const codigo = String(data?.codigo ?? data?.Codigo ?? "").trim();
         if (!Number.isFinite(id)) throw new Error("Respuesta inválida al crear pedido.");
@@ -367,6 +381,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         setDeliveryCodigo(codigo || `#${id}`);
         setPedidoEstado(String(data?.estado ?? data?.Estado ?? "Guardado"));
         await loadDeliveryList();
+        if (!mountedRef.current) return null;
         if (customer && (customer.nombre || customer.telefono)) {
           const saved = saveCachedClient(customer, true);
           if (saved) setCustomer(saved);
@@ -375,7 +390,9 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         return id;
       }
       await backofficeApi.updateDeliveryPedido(currentId, body);
+      if (!mountedRef.current) return null;
       const fresh = await backofficeApi.getDeliveryPedido(currentId);
+      if (!mountedRef.current) return null;
       setPedidoEstado(String(fresh?.estado ?? fresh?.Estado ?? ""));
       await loadDeliveryList();
       if (customer && (customer.nombre || customer.telefono)) {
@@ -832,6 +849,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
           const pid = await persistDelivery({ manageBusy: false });
           if (!pid) return;
           const { data, message } = await backofficeApi.deliveryPedidoEnviarCocina(pid);
+          if (!mountedRef.current) return;
           const infoMsg = typeof message === "string" ? message.trim() : "";
           if (infoMsg) snackbar.info(infoMsg);
           else snackbar.success("Pedido enviado a cocina.");
@@ -839,6 +857,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
           await printKitchenTicketAfterEnviarCocina(data, snackbar);
 
           const fresh = await backofficeApi.getDeliveryPedido(pid);
+          if (!mountedRef.current) return;
           if (fresh) {
             // applyPedidoDetail sincroniza TODO: estado, cart con lineIds "b-123"
             // y estado "En Preparación" → activa el candado 🔒 en items enviados
@@ -848,6 +867,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         },
       );
     } catch (e) {
+      if (!mountedRef.current) return;
       snackbar.error(e?.message || "No se pudo enviar a cocina.");
     }
   };
@@ -878,6 +898,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
           const pid = await persistDelivery({ manageBusy: false });
           if (!pid) return;
           const detail = await backofficeApi.getDeliveryPedido(pid);
+          if (!mountedRef.current) return;
           const rawItems = detail?.items ?? detail?.Items;
           const lineCart =
             Array.isArray(rawItems) && rawItems.length > 0 ? mapBackendItemsToCart(rawItems) : cart;
@@ -887,6 +908,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         },
       );
     } catch (e) {
+      if (!mountedRef.current) return;
       snackbar.error(e?.message || "No se pudo abrir el cobro.");
     }
   };
@@ -894,6 +916,8 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   const handleGuardarVenta = async (form) => {
     const pid = deliveryPedidoIdRef.current;
     if (!pid) return;
+    if (saleProcessingGuardRef.current) return;
+    saleProcessingGuardRef.current = true;
     setSaleProcessing(true);
     try {
       const payload = buildPagoPayload({
@@ -909,6 +933,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         resp = await backofficeApi.deliveryPedidoProcesarPago(pid, payload);
       }
 
+      if (!mountedRef.current) return;
       if (pagoResponseHasReciboPrintChannel(resp)) {
         const printed = await tryPrintReciboFromPagoResponse(resp);
         if (!printed) snackbar.warning("Venta procesada, pero no se pudo imprimir el recibo.");
@@ -926,9 +951,11 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
       setPedidoEstado("");
       setCart([]);
     } catch (e) {
+      if (!mountedRef.current) return;
       snackbar.error(e?.message || "No se pudo registrar el pago.");
     } finally {
-      setSaleProcessing(false);
+      saleProcessingGuardRef.current = false;
+      if (mountedRef.current) setSaleProcessing(false);
     }
   };
 

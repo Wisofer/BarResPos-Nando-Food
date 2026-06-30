@@ -9,7 +9,7 @@ export function buildDeliveryPedidoBody(customer, cart) {
       id: x.lineId ? parsePosBackendLineId(x.lineId) : undefined,
       servicioId: Number(x.id),
       cantidad: Number(x.qty),
-      precioUnitario: Number(x.price) > 0 ? Number(x.price) : null,
+      precioUnitario: Number(x.price || 0),
       estado: x.estado || null,
       notas: String(x.notas ?? "").trim() || null,
     };

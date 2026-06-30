@@ -42,7 +42,12 @@ async function runRefreshTokenFlow() {
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) return null;
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      return null;
+    }
     const data = unwrapApiResponse(json);
     if (!data?.accessToken) return null;
     setToken(data.accessToken);
@@ -109,7 +114,12 @@ async function request(path, options = {}, retryOnUnauthorized = true, withEnvel
     throw err;
   }
   if (res.status === 204) return null;
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    return null;
+  }
   if (withEnvelope) {
     const message =
       json && typeof json === "object"

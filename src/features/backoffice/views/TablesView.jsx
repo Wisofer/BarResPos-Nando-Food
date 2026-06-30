@@ -118,6 +118,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const posSyncPendingCountRef = useRef(0);
   const posCartRef = useRef([]);
   const posTableRef = useRef(posTable);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
   const [form, setForm] = useState({
     id: null,
     numero: "",
@@ -139,7 +143,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [locationForm, setLocationForm] = useState({ id: null, nombre: "", descripcion: "", activo: true });
   const [confirmDeleteLocation, setConfirmDeleteLocation] = useState({ open: false, id: null, name: "" });
   const [showInactiveLocations, setShowInactiveLocations] = useState(false);
-  const [cajaAbierta, setCajaAbierta] = useState(true);
+  const [cajaAbierta, setCajaAbierta] = useState(false);
   const [posOpcionesModal, setPosOpcionesModal] = useState({ open: false, product: null });
   const [posActiveOrders, setPosActiveOrders] = useState([]);
   const [splitOrderOpen, setSplitOrderOpen] = useState(false);
@@ -198,6 +202,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   useEffect(() => {
     let mounted = true;
+    let pollTimer = null;
     Promise.all([
       loadTables(),
       backofficeApi.catalogoUbicaciones(),
@@ -228,11 +233,17 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         } else if (!ez && ep) {
           setMesasLayoutMode("plano");
         }
+        // Poll each 15s so multi‑terminal changes are visible
+        pollTimer = setInterval(() => {
+          if (!mounted) return;
+          loadTables().catch(() => {});
+        }, 15000);
       })
       .catch((e) => mounted && setError(e.message || "No se pudo cargar mesas."))
       .finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;
+      if (pollTimer) clearInterval(pollTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -363,6 +374,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     setSaving(true);
     setError("");
     try {
+      if (!form.ubicacionId) {
+        setError("Seleccioná una ubicación para la mesa.");
+        setSaving(false);
+        return;
+      }
       const body = {
         numero: form.numero,
         capacidad: Number(form.capacidad),
@@ -514,6 +530,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
       // Cargar órdenes activas múltiples (para tabs si hay split previo)
       backofficeApi.getMesaOrdenesActivas(table.id).then((resp) => {
+        if (!mountedRef.current) return;
         const ords = unwrapEnvelope(resp) || [];
         if (ords.length > 1) setPosActiveOrders(ords);
       }).catch(() => { });

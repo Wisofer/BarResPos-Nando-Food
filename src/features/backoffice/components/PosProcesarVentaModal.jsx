@@ -25,6 +25,7 @@ export function PosProcesarVentaModal({
   const [moneda, setMoneda] = useState("C$");
   const [comentario, setComentario] = useState("");
   const montoInputRef = useRef(null);
+  const userEditedMontoRef = useRef(false);
   const tc = Number(exchangeRate) > 0 ? Number(exchangeRate) : DEFAULT_TIPO_CAMBIO_USD;
   const isUsd = moneda === "USD";
 
@@ -58,6 +59,7 @@ export function PosProcesarVentaModal({
 
   useEffect(() => {
     if (!open) return;
+    userEditedMontoRef.current = false;
     /* eslint-disable react-hooks/set-state-in-effect */
     setDescuento("");
     setComentario("");
@@ -69,6 +71,7 @@ export function PosProcesarVentaModal({
 
   useEffect(() => {
     if (!open) return;
+    if (userEditedMontoRef.current) return;
     /* eslint-disable react-hooks/set-state-in-effect */
     setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -76,6 +79,7 @@ export function PosProcesarVentaModal({
 
   useEffect(() => {
     if (tipoPago !== "Efectivo") {
+      if (userEditedMontoRef.current) return;
       /* eslint-disable react-hooks/set-state-in-effect */
       setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
       /* eslint-enable react-hooks/set-state-in-effect */
@@ -256,7 +260,10 @@ export function PosProcesarVentaModal({
                 step="0.01"
                 onWheel={(e) => e.target.blur()}
                 value={montoRecibido}
-                onChange={(e) => setMontoRecibido(e.target.value)}
+                onChange={(e) => {
+                  userEditedMontoRef.current = true;
+                  setMontoRecibido(e.target.value);
+                }}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                 disabled={busy || tipoPago !== "Efectivo"}
               />

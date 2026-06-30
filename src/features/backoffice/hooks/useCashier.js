@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { PAGINATION } from "../constants/pagination.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
@@ -31,9 +31,11 @@ export function useCashier(currencySymbol = "C$") {
 
   const loadAll = useCallback(
     async (page = historialPage) => {
+      if (!mountedRef.current) return;
       setError("");
       try {
         const estadoCaja = await backofficeApi.cajaEstado();
+        if (!mountedRef.current) return;
         const cajaAbierta = estadoCaja?.abierta || estadoCaja?.estado === "Abierto";
         const pendPromise = cajaAbierta
           ? backofficeApi.cajaOrdenesPendientes().catch(() => [])
@@ -46,12 +48,14 @@ export function useCashier(currencySymbol = "C$") {
             prev = null;
           }
         }
+        if (!mountedRef.current) return;
         const [hist, pend] = await Promise.all([
           backofficeApi
             .cajaHistorial({ page, pageSize: PAGINATION.LIST_DEFAULT })
             .catch(() => ({ items: [], totalPages: 1, page: 1 })),
           pendPromise,
         ]);
+        if (!mountedRef.current) return;
         setEstado(estadoCaja || null);
         setPreview(prev || null);
         const pendingRaw = Array.isArray(pend) ? pend : [];
@@ -63,24 +67,27 @@ export function useCashier(currencySymbol = "C$") {
 
         if (cajaAbierta && showApertura) setShowApertura(false);
       } catch (e) {
+        if (!mountedRef.current) return;
         setError(e.message || "Error al cargar datos de caja.");
       }
     },
     [historialPage, showApertura],
   );
 
+  const mountedRef = useRef(true);
+
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
     loadAll(1)
       .catch((e) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         setError(e.message || "No se pudo cargar caja.");
       })
       .finally(() => {
-        if (mounted) setLoading(false);
+        if (mountedRef.current) setLoading(false);
       });
     return () => {
-      mounted = false;
+      mountedRef.current = false;
     };
     // Carga inicial única; el resto va por loadAll(n) al paginar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,14 +104,16 @@ export function useCashier(currencySymbol = "C$") {
     setError("");
     try {
       await backofficeApi.cajaApertura(monto);
+      if (!mountedRef.current) return;
       snackbar.success("Caja abierta correctamente.");
       setMontoInicial("");
       setShowApertura(false);
       await loadAll(1);
     } catch (err) {
+      if (!mountedRef.current) return;
       snackbar.error(err.message || "No se pudo abrir la caja.");
     } finally {
-      setProcessing(false);
+      if (mountedRef.current) setProcessing(false);
     }
   };
 
@@ -117,6 +126,7 @@ export function useCashier(currencySymbol = "C$") {
         montoReal: Number(cierreForm.montoReal || 0),
         observaciones: cierreForm.observaciones || undefined,
       });
+      if (!mountedRef.current) return;
       const diffRaw = result?.diferencia ?? result?.Diferencia;
       const diffNum = diffRaw != null ? Number(diffRaw) : NaN;
       if (Number.isFinite(diffNum)) {
@@ -130,19 +140,21 @@ export function useCashier(currencySymbol = "C$") {
       await loadAll(1);
       
       // Auto-imprimir ticket
-      const cierreId = result?.id ?? result?.Id;
+      const cierreId = result?.id ?? result?.Id ?? result?.cierre?.id ?? result?.Cierre?.Id;
       if (cierreId) {
         try {
           await backofficeApi.cajaImprimirCorte(cierreId);
         } catch (printErr) {
+          if (!mountedRef.current) return;
           console.error("Auto-print error:", printErr);
           snackbar.warning("Caja cerrada, pero hubo un error al imprimir el corte automático.");
         }
       }
     } catch (err) {
+      if (!mountedRef.current) return;
       snackbar.error(err.message || "No se pudo cerrar la caja.");
     } finally {
-      setProcessing(false);
+      if (mountedRef.current) setProcessing(false);
     }
   };
 
@@ -151,19 +163,20 @@ export function useCashier(currencySymbol = "C$") {
     setError("");
     try {
       const data = await backofficeApi.cajaDetalleCierre(id);
+      if (!mountedRef.current) return;
       if (!data) {
-        snackbar.error("No se pudo cargar el detalle del cierre.");
+        setError("No se pudo cargar el detalle del cierre.");
         setCierreDetalle(null);
         return;
       }
       setCierreDetalle(normalizarDetalleCierreResponse(data));
     } catch (err) {
+      if (!mountedRef.current) return;
       const msg = err.message || "No se pudo cargar el detalle del cierre.";
       setError(msg);
-      snackbar.error(msg);
       setCierreDetalle(null);
     } finally {
-      setProcessing(false);
+      if (mountedRef.current) setProcessing(false);
     }
   };
 

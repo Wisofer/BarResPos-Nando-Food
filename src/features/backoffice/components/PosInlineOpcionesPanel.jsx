@@ -39,7 +39,7 @@ export function PosInlineOpcionesPanel({
           const add = Number(op?.precioAdicional ?? op?.PrecioAdicional ?? 0);
           const extra = Number.isFinite(add) && add > 0 ? `+${formatCurrency(add, currencySymbol)}` : "";
           const imgUrl = op?.imagenUrl ?? op?.ImagenUrl;
-          const fullImgUrl = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : getApiUrl() + imgUrl) : null;
+          const fullImgUrl = imgUrl ? encodeURI(imgUrl.startsWith('http') ? imgUrl : getApiUrl() + imgUrl) : null;
 
           return (
             <button
@@ -49,7 +49,7 @@ export function PosInlineOpcionesPanel({
               onClick={() => onPickOpcion?.(product, grupoId, op)}
               className={`${tileClassName} overflow-hidden`}
               style={fullImgUrl ? {
-                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.45)), url(${fullImgUrl})`,
+                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.05), rgba(0,0,0,0.45)), url("${fullImgUrl}")`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 color: 'white',

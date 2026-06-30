@@ -6,7 +6,7 @@ import { cierreFechaRaw, cierreHistorialMontoPrincipal, cierreId } from "../../u
 import { CierreDetallePanel } from "./CierreDetallePanel.jsx";
 import { backofficeApi } from "../../services/backofficeApi.js";
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
-import { Printer } from "lucide-react";
+import { Printer, FileSpreadsheet } from "lucide-react";
 
 export function CashierHistory({
   showHistorial,
@@ -20,6 +20,8 @@ export function CashierHistory({
   clearCierreDetalle,
   processing,
   currencySymbol,
+  onExportExcel,
+  exportingExcel,
 }) {
   const snackbar = useSnackbar();
 
@@ -46,6 +48,17 @@ export function CashierHistory({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {onExportExcel && (
+              <button
+                type="button"
+                onClick={onExportExcel}
+                disabled={exportingExcel}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                {exportingExcel ? "Exportando..." : "Excel"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowHistorial(!showHistorial)}
