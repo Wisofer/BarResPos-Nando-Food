@@ -7,7 +7,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.fill('input[placeholder="••••••••"]', "admin");
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/.*app/);
-    const dashboardHeader = page.locator("h1");
+    const dashboardHeader = page.locator("header h1");
     await expect(dashboardHeader).toContainText("Dashboard");
   });
 
@@ -44,7 +44,7 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
       const sidebarBtn = page.locator(`button:has-text("${section.name}")`).first();
       if (await sidebarBtn.isVisible()) {
         await sidebarBtn.click();
-        await expect(page.locator("h1")).toContainText(section.title);
+        await expect(page.locator("header h1")).toContainText(section.title);
       }
     }
   });
@@ -56,8 +56,9 @@ test.describe("Flujo de Autenticación y Navegación del POS", () => {
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/.*app/);
 
-    await expect(page.locator("h1")).toContainText("Dashboard");
-    const statCards = page.locator("main section > section > div > div");
+    await expect(page.locator("header h1")).toContainText("Dashboard");
+    const statCards = page.locator("article");
+    await statCards.first().waitFor({ state: "visible", timeout: 10000 });
     const count = await statCards.count();
     expect(count).toBeGreaterThanOrEqual(1);
   });

@@ -26,7 +26,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
     const productCode = `H${timestamp.toString().slice(-4)}`;
 
     await page.click('button:has-text("Productos")');
-    await expect(page.locator("h1")).toContainText("Gestion de productos");
+    await expect(page.locator("header h1")).toContainText("Gestion de productos");
 
     const categoriasBtn = page.locator('button:has-text("Categorías")');
     if (await categoriasBtn.isVisible()) {
@@ -81,7 +81,7 @@ test.describe("Flujo Completo de Inventario, POS y Cocina", () => {
 
   test("Debería verificar que la pantalla de inventario tiene los botones de entrada y salida de stock", async ({ page }) => {
     await page.click('button:has-text("Productos")');
-    await expect(page.locator("h1")).toContainText("Gestion de productos");
+    await expect(page.locator("header h1")).toContainText("Gestion de productos");
 
     const entradaBtn = page.locator('button:has-text("Entrada Stock")');
     const salidaBtn = page.locator('button:has-text("Salida Stock")');

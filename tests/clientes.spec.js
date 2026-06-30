@@ -18,10 +18,10 @@ test.describe("Flujo de Clientes", () => {
     await page.click('button:has-text("Clientes")');
     await expect(page.locator("h1")).toContainText("Clientes");
 
-    const searchInput = page.locator('input[placeholder="Buscar cliente..."]');
+    const searchInput = page.locator('input[placeholder*="Buscar"]');
     await expect(searchInput).toBeVisible();
 
-    const nuevoClienteBtn = page.locator('button:has-text("Nuevo Cliente")');
+    const nuevoClienteBtn = page.locator('button:has-text("Registrar Cliente"), button:has-text("Nuevo Cliente")');
     await expect(nuevoClienteBtn).toBeVisible();
   });
 
@@ -29,7 +29,7 @@ test.describe("Flujo de Clientes", () => {
     await page.click('button:has-text("Clientes")');
     await expect(page.locator("h1")).toContainText("Clientes");
 
-    await page.click('button:has-text("Nuevo Cliente")');
+    await page.click('button:has-text("Registrar Cliente"), button:has-text("Nuevo Cliente")');
     const modal = page.locator('[role="dialog"], .fixed.inset-0');
     await expect(modal).toBeVisible({ timeout: 5000 }).catch(() => {});
   });

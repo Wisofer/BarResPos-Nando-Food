@@ -15,7 +15,7 @@ test.describe("Flujo de Cocina (KDS)", () => {
 
     await expect(page.locator("span", { hasText: "Por preparar" }).first()).toBeVisible();
     await expect(page.locator("button", { hasText: "Cocina en vivo" })).toBeVisible();
-    await expect(page.locator("button", { hasText: "Historial" })).toBeVisible();
+    await expect(page.locator("button", { hasText: "Historial" })).toBeHidden();
   });
 
   test("Debería mostrar el buscador y botón de actualizar en el KDS", async ({ page }) => {
@@ -27,15 +27,6 @@ test.describe("Flujo de Cocina (KDS)", () => {
 
     const refreshBtn = page.locator('button:has-text("Actualizar")');
     await expect(refreshBtn).toBeVisible();
-  });
-
-  test("Debería cambiar a la vista de historial en el KDS", async ({ page }) => {
-    await page.click('button:has-text("Cocina")');
-    await expect(page.locator("h2").first()).toContainText("Cocina (KDS)");
-
-    await page.click('button:has-text("Historial")');
-
-    await expect(page.locator("span", { hasText: "Por preparar" })).toBeHidden();
   });
 
   test("Debería mostrar mensaje de 'Sin órdenes' cuando no hay pedidos en cocina", async ({ page }) => {

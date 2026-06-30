@@ -16,8 +16,16 @@ test.describe("Flujo de Mesero: Mesas y Pedidos", () => {
     const mesaCard = page.locator("article").filter({ hasText: /Barra 1/i }).first();
     await expect(mesaCard).toBeVisible();
 
-    await mesaCard.locator("button").filter({ hasText: /Ocupada|Doble clic|Atender|Abrir/i }).click().catch(() => mesaCard.click());
+    await mesaCard.click().catch(() => mesaCard.locator("button").first().click());
     await expect(page.locator("h2").first()).toContainText("Barra 1");
+
+    // Esperar a que el catálogo de productos y el estado de la caja se carguen completamente
+    await page.waitForTimeout(2000);
+
+    // Agregar un producto sin modificadores (como Batidos o Burritos) para activar los botones de la orden
+    const productItems = page.locator("button").filter({ hasText: /Batidos|Burritos/i });
+    await productItems.first().dispatchEvent("click");
+    await page.waitForTimeout(1000);
 
     await expect(page.locator('button:has-text("Mandar orden")').first()).toBeVisible();
     await expect(page.locator('button:has-text("Imprimir cuenta")').first()).toBeVisible();
