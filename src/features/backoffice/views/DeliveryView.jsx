@@ -1310,7 +1310,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                                 prev.map((x) => (x.lineId === item.lineId ? { ...x, notas: e.target.value } : x))
                               )
                             }
-                            disabled={loading || isPedidoBloqueado || !cajaAbierta}
+                            disabled={loading || isPedidoBloqueado || !cajaAbierta || (item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null)}
                             placeholder="ej. sin cebolla"
                             className="box-border w-full min-w-0 rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 placeholder:text-slate-400"
                           />

@@ -1877,7 +1877,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                                 type="text"
                                 value={item.notas ?? ""}
                                 onChange={(e) => updateCartNotas(item.lineId, e.target.value)}
-                                disabled={posActionBusy}
+                                disabled={posActionBusy || (item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null)}
                                 placeholder="Nota adicional"
                                 className="mt-1.5 w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-800 placeholder:text-slate-400"
                               />
@@ -2059,7 +2059,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                               type="text"
                               value={item.notas ?? ""}
                               onChange={(e) => updateCartNotas(item.lineId, e.target.value)}
-                              disabled={posActionBusy}
+                              disabled={posActionBusy || (item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null)}
                               placeholder="Nota adicional"
                               className="box-border w-full min-w-0 rounded border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-800 placeholder:text-slate-400"
                             />
