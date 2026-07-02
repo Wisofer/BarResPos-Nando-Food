@@ -1,8 +1,8 @@
 const STORAGE_KEY = "barrest-mesas-plano-positions-v2";
 
 const CELL_W = 132;
-const CELL_H = 92;
-const COLS = 6;
+const CELL_H = 108;
+const COLS = 4;
 
 /** Tamaño base de la tarjeta en el plano (px), coincide con el layout visual */
 export const MESA_PLANO_BASE_W = 110;

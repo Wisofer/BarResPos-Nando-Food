@@ -32,9 +32,11 @@ export function saveCachedClient(client, isNewOrder = false) {
   let idx = -1;
   if (client.id) {
     idx = clients.findIndex((c) => c.id === client.id);
-  } else if (telefono) {
+  }
+  if (idx === -1 && telefono) {
     idx = clients.findIndex((c) => c.telefono === telefono);
-  } else if (nombre) {
+  }
+  if (idx === -1 && nombre) {
     idx = clients.findIndex((c) => String(c.nombre || "").trim().toLowerCase() === nombre.toLowerCase());
   }
 
@@ -59,7 +61,11 @@ export function saveCachedClient(client, isNewOrder = false) {
     clients.push(updatedClient);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+  } catch (e) {
+    console.error("No se pudo guardar el cliente en caché:", e);
+  }
   return updatedClient;
 }
 
@@ -68,7 +74,12 @@ export function deleteCachedClient(id) {
   const clients = getCachedClients();
   const filtered = clients.filter((c) => c.id !== id);
   if (filtered.length === clients.length) return false;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  } catch (e) {
+    console.error("No se pudo eliminar el cliente del caché:", e);
+    return false;
+  }
   return true;
 }
 
@@ -149,7 +160,11 @@ export function seedClientsFromPastOrders(pastOrders) {
   });
 
   if (modified) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    } catch (e) {
+      console.error("No se pudo actualizar el caché de clientes:", e);
+    }
   }
   return modified;
 }

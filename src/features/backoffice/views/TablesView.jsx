@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -96,8 +96,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [activeOrder, setActiveOrder] = useState(null);
+  const [selectedTable] = useState(null);
+  const [activeOrder] = useState(null);
   const [posOpen, setPosOpen] = useState(false);
   const [posLoading, setPosLoading] = useState(false);
   const [posTable, setPosTable] = useState(null);
@@ -118,10 +118,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const posSyncPendingCountRef = useRef(0);
   const posCartRef = useRef([]);
   const posTableRef = useRef(posTable);
-  const mountedRef = useRef(true);
-  useEffect(() => {
-    return () => { mountedRef.current = false; };
-  }, []);
   const [form, setForm] = useState({
     id: null,
     numero: "",
@@ -146,6 +142,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [posOpcionesModal, setPosOpcionesModal] = useState({ open: false, product: null });
   const [posActiveOrders, setPosActiveOrders] = useState([]);
+  const posActiveOrdersRef = useRef(posActiveOrders);
+  useEffect(() => { posActiveOrdersRef.current = posActiveOrders; }, [posActiveOrders]);
   const [splitOrderOpen, setSplitOrderOpen] = useState(false);
   const [posInlineOpcionesProduct, setPosInlineOpcionesProduct] = useState(null);
   const [moveOrderOpen, setMoveOrderOpen] = useState(false);
@@ -164,7 +162,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const isAdmin = isAdminUser(user);
   const isCajeroOrAdmin = isAdmin || isCajeroUser(user);
 
-  const syncCajaEstado = async () => {
+  const syncCajaEstado = useCallback(async () => {
     try {
       const caja = await backofficeApi.cajaEstado();
       const abierta = Boolean(caja?.abierta ?? caja?.Abierta ?? (caja?.estado || "").toLowerCase() === "abierto");
@@ -174,7 +172,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       setCajaAbierta(false);
       return false;
     }
-  };
+  }, []);
 
   const normalizeLocation = (l) => ({
     id: l?.id ?? l?.Id,
@@ -239,7 +237,15 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           loadTables().catch(() => {});
         }, 15000);
       })
-      .catch((e) => mounted && setError(e.message || "No se pudo cargar mesas."))
+      .catch((e) => {
+        if (!mounted) return;
+        setError(e.message || "No se pudo cargar mesas.");
+        // Start poll even on initial load failure
+        pollTimer = setInterval(() => {
+          if (!mounted) return;
+          loadTables().catch(() => {});
+        }, 15000);
+      })
       .finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;
@@ -397,20 +403,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
   };
 
-  const _changeStatus = async (id, estado) => {
-    setSaving(true);
-    setError("");
-    try {
-      await backofficeApi.patchMesaEstado(id, estado);
-      await loadTables();
-      snackbar.success("Estado de mesa actualizado.");
-    } catch (e) {
-      snackbar.error(e.message || "No se pudo cambiar el estado.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const refreshPosTableFromBackend = async (mesaId) => {
     try {
       const m = await backofficeApi.getMesa(mesaId);
@@ -474,18 +466,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
   };
 
-  const _openDetail = async (table) => {
-    setSelectedTable(table);
-    setDetailOpen(true);
-    setActiveOrder(null);
-    try {
-      const order = await backofficeApi.getMesaOrdenActiva(table.id);
-      setActiveOrder(order || null);
-    } catch {
-      setActiveOrder(null);
-    }
-  };
-
   const openPosView = async (table) => {
     const abiertaAhora = await syncCajaEstado();
     if (!abiertaAhora) {
@@ -507,19 +487,26 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     setPosInlineOpcionesProduct(null);
     setPosOpcionesModal({ open: false, product: null });
     try {
-      const [orderActiva, catalog] = await Promise.all([
-        backofficeApi.getMesaOrdenActiva(table.id).catch(() => null),
+      const [ordenesResp, catalog] = await Promise.all([
+        backofficeApi.getMesaOrdenesActivas(table.id).catch(() => null),
         fetchPosProductosYCategorias(backofficeApi, PAGINATION.POS_PRODUCTOS),
       ]);
-      const orderActive = unwrapEnvelope(orderActiva);
-      setPosOrderId(getOrdenPedidoId(orderActive, null));
+      const ordenes = unwrapEnvelope(ordenesResp) || [];
 
-      // Si ya hay productos agregados en backend para esta mesa,
-      // sincronizamos la UI para que no se "pierdan" al volver a entrar al POS.
-      const backendItems = getOrdenItems(orderActive);
-      if (backendItems) {
-        setPosCart(mapBackendItemsToCart(backendItems));
-        setPosCommitted(true);
+      if (ordenes.length > 0) {
+        const primera = ordenes[0];
+        setPosOrderId(getOrdenPedidoId(primera, null));
+        const backendItems = getOrdenItems(primera);
+        if (backendItems) {
+          setPosCart(mapBackendItemsToCart(backendItems));
+          setPosCommitted(true);
+        } else {
+          setPosCart([]);
+          setPosCommitted(false);
+        }
+        if (ordenes.length > 1) {
+          setPosActiveOrders(ordenes);
+        }
       } else {
         setPosCart([]);
         setPosCommitted(false);
@@ -527,13 +514,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
       setPosProducts(catalog.products);
       setPosCategories(catalog.categories);
-
-      // Cargar órdenes activas múltiples (para tabs si hay split previo)
-      backofficeApi.getMesaOrdenesActivas(table.id).then((resp) => {
-        if (!mountedRef.current) return;
-        const ords = unwrapEnvelope(resp) || [];
-        if (ords.length > 1) setPosActiveOrders(ords);
-      }).catch(() => { });
     } catch (e) {
       snackbar.error(e.message || "No se pudo cargar productos para la mesa.");
     } finally {
@@ -594,9 +574,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
   }, [posInlineOpcionesProduct, posInlineOpcionesPick]);
 
-  const posProductGridClassMobile =
-    "grid auto-rows-min grid-cols-2 gap-2 overflow-auto content-start items-stretch sm:grid-cols-3";
-  const posProductGridClassDesktop =
+  const posProductGridClass =
     "grid auto-rows-min grid-cols-2 gap-2 overflow-auto content-start items-stretch sm:grid-cols-3";
   /** Sub-opciones de un producto (sin imagen). Mismo gradiente que `PosProductCatalogTile` sin imagen. */
   const posOpcionTileShell =
@@ -612,6 +590,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       const newQty = Math.max(0, currentQty - Number(cantidad || 1));
       if (newQty <= 0) next.splice(idx, 1);
       else next[idx] = { ...next[idx], qty: newQty };
+      posCartRef.current = next;
       return next;
     });
   };
@@ -640,7 +619,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           const data = await backofficeApi.posOrdenes(body);
           const newOrderId = extractPosOrdenResponseId(data, currentId);
 
-          if (newOrderId && newOrderId !== posOrderIdRef.current) {
+          if (newOrderId && newOrderId !== currentId) {
             setPosOrderId(newOrderId);
             posOrderIdRef.current = newOrderId;
           }
@@ -653,6 +632,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             /* el backend puede haberla marcado ya */
           }
           await refreshPosTableFromBackend(tableForSync.id);
+          if (posActiveOrdersRef.current.length > 1) {
+            refreshPosActiveOrders().catch(() => {});
+          }
         } catch (e) {
           rollbackPosLineByLineId(rollbackLineId, cantidad);
           const msg = e?.message || "No se pudo agregar el producto en backend.";
@@ -676,7 +658,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const addProductToCart = async (product) => {
-    if (posActionBusy) return;
+    if (posActionBusy || saleProcessing || saleModalOpen) return;
     if (!cajaAbierta) {
       const abiertaAhora = await syncCajaEstado();
       if (!abiertaAhora) {
@@ -730,6 +712,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
     posCartRef.current = next;
     setPosCart(next);
+    setPosCommitted(false);
     void syncPosDeltaAdd(product, 1, ops, notas, rollbackLineId);
   };
 
@@ -742,6 +725,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const confirmAddProductWithOpciones = (product, opcionesSeleccionadas) => {
+    if (posActionBusy || saleProcessing || saleModalOpen) return;
     const pid = Number(product?.id ?? product?.Id);
     const grupos = normalizeOpcionesGrupos(product);
     const opsNorm = normalizeOpcionesSeleccionadas(opcionesSeleccionadas);
@@ -786,6 +770,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
     posCartRef.current = next;
     setPosCart(next);
+    setPosCommitted(false);
     void syncPosDeltaAdd(product, 1, ops, notas, rollbackLineId);
   };
 
@@ -797,12 +782,32 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     if (posTable) await refreshPosTableFromBackend(posTable.id);
   };
 
-  const switchPosOrder = (order) => {
+  const refreshPosActiveOrders = async () => {
+    if (!posTable) return [];
+    const env = await backofficeApi.getMesaOrdenesActivas(posTable.id).catch(() => null);
+    const ordenes = unwrapEnvelope(env) || [];
+    setPosActiveOrders(ordenes);
+    return ordenes;
+  };
+
+  const switchPosOrder = async (orderId, skipRefresh) => {
+    if (!orderId) return;
+    if (!skipRefresh && posSyncPendingCountRef.current > 0) {
+      try { await posSyncChainRef.current; } catch { /* ignore */ }
+    }
+    let ordenes = posActiveOrders;
+    if (!skipRefresh && ordenes.length > 1) {
+      ordenes = await refreshPosActiveOrders();
+    }
+    const order = ordenes.find((o) => Number(o.id) === Number(orderId));
+    if (!order) return;
     setPosOrderId(order.id);
+    posOrderIdRef.current = order.id;
     const backendItems = getOrdenItems(order);
     const mapped = backendItems ? mapBackendItemsToCart(backendItems) : [];
     setPosCart(mapped);
     posCartRef.current = mapped;
+    setPosCommitted(true);
   };
 
   const handleSepararCuenta = async (lineasAMover) => {
@@ -824,7 +829,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       const env = await backofficeApi.getMesaOrdenesActivas(posTable.id);
       const ordenes = unwrapEnvelope(env) || [];
       setPosActiveOrders(ordenes);
-      if (ordenes.length > 0) switchPosOrder(ordenes[0]);
+      if (ordenes.length > 0) switchPosOrder(ordenes[0].id, true);
     } catch (e) {
       snackbar.error(e?.message || "Error al separar la cuenta.");
     } finally {
@@ -910,7 +915,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
         if (isPosOrdenVacioResponse(updateResp)) {
           if (snapshot.length > 0) {
-            snackbar.error("No se pudo actualizar la orden; recargando desde el servidor.");
+                snackbar.error("No se pudo actualizar la orden; recargando desde el servidor.");
             await reloadPosCartFromMesaActiva();
             setPosCommitted(true);
             return;
@@ -920,6 +925,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           return;
         }
 
+        if (posActiveOrdersRef.current.length > 1) {
+          refreshPosActiveOrders().catch(() => {});
+        }
         setPosCommitted(true);
       })
       .catch(async (e) => {
@@ -999,11 +1007,15 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const removeFromCart = (lineId) => {
-    if (posActionBusy) return;
-    const item = posCart.find((x) => x.lineId === lineId);
+    if (posActionBusy || saleProcessing) return;
+    const item = posCartRef.current.find((x) => x.lineId === lineId);
     const isSentToKitchen = item && item.estado !== "Pendiente" && parsePosBackendLineId(lineId) !== null;
 
     if (isSentToKitchen) {
+      if (posCancelItemPinOpen) {
+        snackbar.info("Ya hay un producto pendiente de cancelación.");
+        return;
+      }
       setPendingCancelItemLineId(lineId);
       setPosCancelItemPinOpen(true);
       return;
@@ -1020,7 +1032,24 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     setPosCart(next);
     setPosCommitted(false);
 
-    if (!posTable) return;
+    if (!posTable) {
+      // Still sync if we have an order ID
+      const oid = posOrderIdRef.current;
+      const lineaId = parsePosBackendLineId(lineId);
+      if (oid && lineaId) {
+        posSyncPendingCountRef.current += 1;
+        posSyncChainRef.current = posSyncChainRef.current
+          .then(async () => {
+            await backofficeApi.pedidoEliminarLinea(oid, lineaId);
+          })
+          .catch(() => {})
+          .finally(() => {
+            posSyncPendingCountRef.current = Math.max(0, posSyncPendingCountRef.current - 1);
+          });
+        void posSyncChainRef.current;
+      }
+      return;
+    }
 
     const lineaId = parsePosBackendLineId(lineId);
     const ordenId = posOrderIdRef.current;
@@ -1064,6 +1093,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const confirmCancelItemWithPin = async (codigo) => {
+    await posSyncChainRef.current.catch(() => {});
     const lineId = pendingCancelItemLineId;
     if (!lineId) return;
 
@@ -1105,6 +1135,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
   };
 
+  const posNotasSyncTimerRef = useRef(null);
   const updateCartNotas = (lineId, notas) => {
     const next = posCartRef.current.map((item) =>
       item.lineId === lineId ? { ...item, notas: String(notas ?? "") } : item
@@ -1112,6 +1143,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     posCartRef.current = next;
     setPosCart(next);
     setPosCommitted(false);
+    if (posNotasSyncTimerRef.current) clearTimeout(posNotasSyncTimerRef.current);
+    posNotasSyncTimerRef.current = setTimeout(() => {
+      posNotasSyncTimerRef.current = null;
+      syncPosCartSnapshot(next);
+    }, 500);
   };
 
   const posSubtotal = useMemo(() => posCart.reduce((sum, x) => sum + Number(x.price || 0) * Number(x.qty || 0), 0), [posCart]);
@@ -1129,8 +1165,11 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   }, [posTable]);
 
   const closePosView = async () => {
-    // Esperar sincronizaciones pendientes antes de limpiar estado
-    await posSyncChainRef.current.catch(() => { });
+    // Esperar sincronizaciones pendientes antes de limpiar estado (con timeout 30s)
+    await Promise.race([
+      posSyncChainRef.current.catch(() => {}),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("sync timeout")), 30000)),
+    ]).catch(() => {});
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
     setPosOpcionesModal({ open: false, product: null });
@@ -1199,6 +1238,10 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     if (!oid || !Number.isFinite(destId) || destId === posTable.id) {
       snackbar.error("Selecciona una mesa destino válida.");
       return;
+    }
+
+    if (posActiveOrders.length > 1) {
+      snackbar.warning("Solo la cuenta actual será trasladada. Las demás cuentas permanecerán en esta mesa.");
     }
 
     try {
@@ -1272,6 +1315,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           setPosTable(newTable);
           setPosOrderId(nextId);
           setPosCart(nextCart);
+          posCartRef.current = nextCart;
           setPosMobileTab("order");
           setPosCommitted(true);
           setMoveOrderOpen(false);
@@ -1389,8 +1433,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   };
 
   const openCancelPosPin = () => {
-    if (!posTable || posActionBusy) return;
-    if (!posOrderId) {
+    if (!posTable || posActionBusy || saleProcessing) return;
+    if (!posOrderIdRef.current) {
       snackbar.info("No había una orden activa para cancelar.");
       return;
     }
@@ -1404,10 +1448,16 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       async () => {
         setError("");
         await backofficeApi.posCancelarOrden(posOrderId, codigo);
-        snackbar.success("Pedido cancelado y mesa liberada.");
+        snackbar.success("Pedido cancelado.");
         setPosCancelPinOpen(false);
-        await closePosView();
-        await loadTables();
+        const remainingOrders = await refreshPosActiveOrders();
+        if (remainingOrders.length > 0) {
+          await switchPosOrder(remainingOrders[0].id, true);
+        } else {
+          snackbar.success("Mesa liberada.");
+          await closePosView();
+          await loadTables();
+        }
       },
     );
   };
@@ -1462,6 +1512,13 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         async () => {
           setError("");
           if (posCart.length > 0) await ensurePosOrderSynced({ manageBusy: false });
+
+          // Si hay múltiples cuentas en la mesa, refrescar antes de cobrar para evitar
+          // cobros duplicados en entornos multi-terminal donde otra terminal pudo
+          // haber separado o cobrado una cuenta en el intervalo.
+          if (posActiveOrdersRef.current.length > 1) {
+            await refreshPosActiveOrders();
+          }
 
           let ordenId = posOrderId ?? posOrderIdRef.current;
           let lines = posCartToModalLines(posCartRef.current);
@@ -1531,7 +1588,13 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       setSaleOrdenId(null);
       setSaleModalLines([]);
       setSaleBackendTotal(null);
-      await closePosView();
+      const remainingOrders = await refreshPosActiveOrders();
+      if (remainingOrders.length > 0) {
+        await switchPosOrder(remainingOrders[0].id, true);
+      } else {
+        await closePosView();
+        await loadTables();
+      }
     } catch (e) {
       const msg = e?.message || "No se pudo registrar el pago.";
       snackbar.error(msg);
@@ -1808,7 +1871,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     onBack={() => setPosInlineOpcionesProduct(null)}
                     currencySymbol={currencySymbol}
                     disabled={posActionBusy || !cajaAbierta}
-                    gridClassName={`max-h-[55vh] ${posProductGridClassMobile}`}
+                    gridClassName={`max-h-[55vh] ${posProductGridClass}`}
                     tileClassName={posOpcionTileShell}
                   />
                 ) : (
@@ -1822,7 +1885,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                     {posLoading ? (
                       <ListSkeleton rows={4} />
                     ) : (
-                      <div className={`max-h-[55vh] ${posProductGridClassMobile}`}>
+                      <div className={`max-h-[55vh] ${posProductGridClass}`}>
                         {filteredPosProducts.map((p) => (
                           <PosProductCatalogTile
                             key={p.id}
@@ -1847,7 +1910,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                       <button
                         key={ord.id}
                         type="button"
-                        onClick={() => switchPosOrder(ord)}
+                        onClick={() => switchPosOrder(ord.id)}
                         className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${ord.id === posOrderId
                           ? "bg-orange-500 text-white shadow"
                           : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
@@ -2012,7 +2075,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                       <button
                         key={ord.id}
                         type="button"
-                        onClick={() => switchPosOrder(ord)}
+                        onClick={() => switchPosOrder(ord.id)}
                         className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold transition-all ${ord.id === posOrderId
                           ? "bg-orange-500 text-white shadow"
                           : "border border-orange-300 bg-orange-50 text-orange-800 hover:bg-orange-100"
@@ -2160,7 +2223,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   onBack={() => setPosInlineOpcionesProduct(null)}
                   currencySymbol={currencySymbol}
                   disabled={posActionBusy || !cajaAbierta}
-                  gridClassName={`max-h-[420px] ${posProductGridClassDesktop} lg:h-[calc(100%-5.5rem)] lg:max-h-full`}
+                  gridClassName={`max-h-[420px] ${posProductGridClass} lg:h-[calc(100%-5.5rem)] lg:max-h-full`}
                   tileClassName={posOpcionTileShell}
                 />
               ) : (
@@ -2174,7 +2237,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
                   {posLoading ? (
                     <ListSkeleton rows={4} />
                   ) : (
-                    <div className={`max-h-[420px] ${posProductGridClassDesktop} lg:h-[calc(100%-2.5rem)] lg:max-h-full`}>
+                    <div className={`max-h-[420px] ${posProductGridClass} lg:h-[calc(100%-2.5rem)] lg:max-h-full`}>
                       {filteredPosProducts.map((p) => (
                         <PosProductCatalogTile
                           key={p.id}

@@ -11,19 +11,39 @@ function categoriaRequiereCocina(c) {
   return v !== false;
 }
 
-function OptionImageUpload({ file, url, onChange }) {
+function OptionImageUpload({ file, url, onChange, onClear }) {
   const fileUrl = useObjectUrlForFile(file);
   const src = fileUrl || (url ? `${url.startsWith('http') ? url : getApiUrl() + url}` : null);
-  
+
   return (
-    <label className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded border border-slate-300 bg-slate-50 hover:bg-slate-100 shrink-0" title="Subir imagen">
-      {src ? (
-         <img src={src} className="h-full w-full object-cover" alt="" />
-      ) : (
-         <ImageIcon className="h-4 w-4 text-slate-400" />
+    <div className="relative h-8 w-8 shrink-0">
+      <label
+        className="flex h-full w-full cursor-pointer items-center justify-center overflow-hidden rounded border border-slate-300 bg-slate-50 hover:bg-slate-100"
+        title="Subir imagen"
+      >
+        {src ? (
+          <img src={src} className="h-full w-full object-cover" alt="" />
+        ) : (
+          <ImageIcon className="h-4 w-4 text-slate-400" />
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => onChange(e.target.files?.[0] || null)}
+        />
+      </label>
+      {src && onClear && (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClear(); }}
+          className="absolute -right-1.5 -top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600"
+          title="Quitar imagen"
+        >
+          <X className="h-2 w-2" />
+        </button>
       )}
-      <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} />
-    </label>
+    </div>
   );
 }
 
@@ -392,6 +412,13 @@ export function ProductFormModal({
                             next[idx] = file;
                             return { ...f, opcionesEspecialesFiles: next };
                           })}
+                          onClear={() => setForm(f => {
+                            const nextFiles = [...(f.opcionesEspecialesFiles ?? f.opcionesEspecialesLines.map(() => null))];
+                            nextFiles[idx] = null;
+                            const nextImages = [...(f.opcionesEspecialesImages ?? f.opcionesEspecialesLines.map(() => ""))];
+                            nextImages[idx] = "";
+                            return { ...f, opcionesEspecialesFiles: nextFiles, opcionesEspecialesImages: nextImages };
+                          })}
                         />
                         {/* Nombre */}
                         <input
@@ -477,7 +504,7 @@ export function ProductFormModal({
                     />
                     <button
                       type="button"
-                      onClick={() => setImageUploadFile(null)}
+                      onClick={() => { setImageUploadFile(null); setForm((f) => ({ ...f, imagenUrl: "" })); }}
                       className="absolute right-2 top-2 h-6 w-6 flex items-center justify-center rounded bg-white border border-slate-300 text-slate-500 hover:text-red-500"
                     >
                       <X className="h-3 w-3" />
