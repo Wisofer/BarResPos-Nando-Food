@@ -39,6 +39,7 @@ import {
 } from "../utils/backofficePrint.js";
 import { buildPagoPayload } from "../utils/paymentPayload.js";
 import { OrderDetailPanel } from "../components/orders/OrderDetailPanel.jsx";
+import { printOrderTicket } from "../utils/orderTicketPrint.js";
 import { clearBusyUi, runWithBusyUi } from "../utils/runWithBusyUi.js";
 import {
   getPedidoMontoNumeric,
@@ -962,21 +963,14 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
   };
 
   const printDeliveryFromDetail = async (detail) => {
-    const pid = Number(detail?.id ?? detail?.Id);
-    if (!Number.isFinite(pid)) {
-      snackbar.error("No se encontró el ID del pedido.");
-      return;
-    }
+    if (!detail) return;
+    setActionBusy(true);
     try {
-      await runWithBusyUi(
-        { setBusy: setActionBusy, setMessage: setDeliveryBusyMessage, caption: "Imprimiendo cuenta…" },
-        async () => {
-          const printed = await printDeliveryPrecuenta(pid);
-          if (printed) return;
-        },
-      );
+      await printOrderTicket({ order: detail, currencySymbol, snackbar });
     } catch (e) {
-      snackbar.error(e?.message || "No se pudo imprimir la cuenta.");
+      snackbar.error(e?.message || "No se pudo imprimir el ticket.");
+    } finally {
+      setActionBusy(false);
     }
   };
 

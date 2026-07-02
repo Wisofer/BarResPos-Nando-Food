@@ -165,6 +165,9 @@ export function KitchenView() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [mode, setMode] = useState("live");
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [desde, setDesde] = useState(todayStr);
+  const [hasta, setHasta] = useState(todayStr);
 
   const isMounted = useRef(true);
   const fetchSeqRef = useRef(0);
@@ -191,7 +194,12 @@ export function KitchenView() {
   const loadKitchen = useCallback(async () => {
     const seq = ++fetchSeqRef.current;
     try {
-      const data = await backofficeApi.cocinaOrdenes();
+      const params = {};
+      if (mode === "history") {
+        if (desde) params.desde = `${desde}T00:00:00`;
+        if (hasta) params.hasta = `${hasta}T23:59:59`;
+      }
+      const data = await backofficeApi.cocinaOrdenes(Object.keys(params).length > 0 ? params : undefined);
       if (seq !== fetchSeqRef.current) return;
       const items = Array.isArray(data) ? data : data?.items || [];
       if (isMounted.current) setOrders(items);
@@ -201,7 +209,7 @@ export function KitchenView() {
     } finally {
       if (seq === fetchSeqRef.current && isMounted.current) setLoading(false);
     }
-  }, []);
+  }, [mode, desde, hasta]);
 
   useEffect(() => {
     let mounted = true;
@@ -258,10 +266,16 @@ export function KitchenView() {
     const q = search.trim().toLowerCase();
     const list = orders.filter((o) => {
       const state = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
-      if (mode === "history" && state !== "Entregado") return false;
-      if (mode === "live" && state === "Entregado") return false;
+      const estado = (o?.estado ?? o?.Estado ?? "").toLowerCase();
+      // Historial: muestra órdenes entregadas o ya pagadas (delivery paga sin pasar por "Entregado")
+      if (mode === "history" && state !== "Entregado" && estado !== "pagado") return false;
+      // En vivo: oculta las ya entregadas Y las pagadas (ya terminaron)
+      if (mode === "live" && (state === "Entregado" || estado === "pagado")) return false;
       if (!q) return true;
-      const text = `${o?.numero || o?.id || ""} ${o?.mesa || o?.mesaNombre || ""}`.toLowerCase();
+      // Búsqueda: incluye número, mesa resuelta (p.ej. "Delivery 🛵") y cliente delivery
+      const mesaDisplay = resolveMesaNombre(o).toLowerCase();
+      const clienteDelivery = (o?.deliveryClienteNombre ?? o?.DeliveryClienteNombre ?? "").toLowerCase();
+      const text = `${o?.numero || o?.id || ""} ${o?.mesa || o?.mesaNombre || ""} ${mesaDisplay} ${clienteDelivery}`.toLowerCase();
       return text.includes(q);
     });
     if (mode === "history") {
@@ -269,6 +283,7 @@ export function KitchenView() {
     }
     return list;
   }, [orders, search, mode]);
+
 
   const liveCards = useMemo(() => {
     if (mode !== "live") return [];
@@ -321,6 +336,29 @@ export function KitchenView() {
             </button>
           </div>
         </div>
+        {mode === "history" && (
+          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-slate-400" />
+              <label className="text-xs font-medium text-slate-500">Desde:</label>
+              <input
+                type="date"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-slate-500">Hasta:</label>
+              <input
+                type="date"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+                className="rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition outline-none"
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {mode === "live" ? (
