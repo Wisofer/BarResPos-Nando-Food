@@ -25,6 +25,7 @@ import {
   TablesView,
   UsersView,
   LocationsView,
+  AuditView,
 } from "../features/backoffice/views";
 
 const SIDEBAR_COLLAPSED_KEY = "barrest-sidebar-collapsed";
@@ -42,6 +43,7 @@ const TITLES = {
   settings: "Configuraciones",
   reports: "Reportes",
   locations: "Ubicaciones de mesas",
+  audit: "Auditoría de Actividad",
 };
 
 /** Lista que envía el resumen del dashboard (varias formas posibles del API). */
@@ -299,6 +301,7 @@ export function AuthHome() {
     if (activeView === "delivery") return DeliveryView;
     if (activeView === "clients") return ClientsView;
     if (activeView === "reports") return ReportsView;
+    if (activeView === "audit") return AuditView;
     return DashboardView;
   }, [activeView]);
 

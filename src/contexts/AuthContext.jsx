@@ -50,6 +50,11 @@ async function fetchAndCacheLogo() {
     } else {
       localStorage.removeItem("pos_phone");
     }
+
+    // Cache Sound preference
+    const hasSonidos = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "POS:SonidosNotificacion");
+    const sonidosVal = hasSonidos ? (hasSonidos.valor ?? hasSonidos.Valor ?? "true") : "true";
+    localStorage.setItem("pos_sonidos_notificacion", sonidosVal !== "false" ? "true" : "false");
   } catch (e) {
     console.error("No se pudo pre-cargar el logo y nombre al iniciar sesión", e);
   }

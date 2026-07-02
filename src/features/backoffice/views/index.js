@@ -12,3 +12,4 @@ export { CashierView } from "./CashierView.jsx";
 export { KitchenView } from "./KitchenView.jsx";
 export { ClientsView } from "./ClientsView.jsx";
 export { LocationsView } from "./LocationsView.jsx";
+export { AuditView } from "./AuditView.jsx";

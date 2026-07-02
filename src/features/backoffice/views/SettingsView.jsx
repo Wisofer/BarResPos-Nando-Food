@@ -132,6 +132,12 @@ export function SettingsView() {
     const hasCocina = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Restaurante:HabilitarPantallaCocina");
     setEnablePantallaCocina(hasCocina ? hasCocina.valor !== "false" && hasCocina.Valor !== "false" : true);
 
+    const hasSonidos = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "POS:SonidosNotificacion");
+    const sonidosVal = hasSonidos ? (hasSonidos.valor ?? hasSonidos.Valor ?? "true") : "true";
+    setSonidosNotificacion(sonidosVal !== "false");
+    // Sync al localStorage para que SnackbarContext lo pueda leer sin necesidad de API
+    localStorage.setItem("pos_sonidos_notificacion", sonidosVal !== "false" ? "true" : "false");
+
     const impCaja = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraCaja");
     setImpresoraCaja(impCaja ? impCaja.valor || impCaja.Valor || "" : "");
     const impCoc = list.find(cfg => String(cfg?.clave ?? cfg?.Clave ?? "") === "Tickets:ImpresoraCocina");
@@ -365,6 +371,25 @@ export function SettingsView() {
     }
   };
 
+  const handleToggleSonidos = async () => {
+    const newValue = !sonidosNotificacion;
+    setSaving(true);
+    try {
+      await backofficeApi.upsertConfiguracion(
+        "POS:SonidosNotificacion",
+        String(newValue),
+        "Habilitar sonidos de notificaci\u00f3n del sistema (true/false)",
+      );
+      localStorage.setItem("pos_sonidos_notificacion", String(newValue));
+      await loadAll();
+      snackbar.success(`Sonidos ${newValue ? "activados" : "desactivados"}.`);
+    } catch (err) {
+      snackbar.error(err.message || "Error al actualizar la configuraci\u00f3n.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const savePrinters = async () => {
     setSaving(true);
     try {
@@ -484,7 +509,10 @@ export function SettingsView() {
       k !== "tickets:direccionrestaurante" &&
       k !== "tickets:telefonorestaurante" &&
       k !== "tickets:rucrestaurante" &&
-      !k.startsWith("tickets:impresora")
+      k !== "restaurante:habilitarpantallacocina" &&
+      k !== "pos:sonidosnotificacion" &&
+      !k.startsWith("tickets:impresora") &&
+      !k.startsWith("sistema:")
     );
   });
 
@@ -717,9 +745,6 @@ export function SettingsView() {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">Personalización del Sistema y Tickets</p>
                   </div>
                 </div>
-                <p className="mb-4 text-xs text-slate-500">
-                  Configura el nombre comercial, la dirección y el teléfono del negocio. Esta información se imprimirá en los tickets de tus clientes y pre-cuentas de mesero (excepto en comandas de cocina/bar para mantenerlas limpias).
-                </p>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
@@ -802,8 +827,8 @@ export function SettingsView() {
                 <h3 className="mb-5 text-[11px] font-black uppercase tracking-widest text-slate-400">Preferencias del POS</h3>
                 <div className="divide-y divide-slate-100">
                   {[
-                    { label: "Alertas Stock Mínimo", desc: "Avisar cuando se agota", state: alertasStockMinimo, setter: setAlertasStockMinimo },
-                    { label: "Sonidos de Notificación", desc: "Feedback auditivo (Vol 30%)", state: sonidosNotificacion, setter: setSonidosNotificacion },
+                    { label: "Alertas Stock M\u00ednimo", desc: "Avisar cuando se agota", state: alertasStockMinimo, onToggle: () => setAlertasStockMinimo((v) => !v) },
+                    { label: "Sonidos de Notificaci\u00f3n", desc: "Feedback auditivo — guardado en base de datos", state: sonidosNotificacion, onToggle: handleToggleSonidos },
                   ].map((pref, i) => (
                     <div key={i} className="flex items-center justify-between py-4 first:pt-0">
                       <div>
@@ -812,9 +837,10 @@ export function SettingsView() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => pref.setter((v) => !v)}
+                        onClick={pref.onToggle}
+                        disabled={saving}
                         className={cn(
-                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                          "relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50",
                           pref.state ? "bg-blue-600" : "bg-slate-200",
                         )}
                         aria-pressed={pref.state}

@@ -54,6 +54,7 @@ export function getAllowedViewIds(user) {
       "kitchen",
       "cashier",
       "users",
+      "audit",
       "settings",
       "reports",
     ];

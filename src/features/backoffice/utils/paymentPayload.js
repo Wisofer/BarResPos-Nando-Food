@@ -32,7 +32,7 @@ export function buildPagoPayload({ ordenId, form, defaultObservaciones = "Pago" 
     tipoPago: form.tipoPago,
     montoPagado,
     moneda: monedaPago,
-    idempotencyKey: crypto.randomUUID(),
+    idempotencyKey: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + "-" + String(Math.random()).slice(2, 8),
     banco: null,
     tipoCuenta: null,
     observaciones: obsParts.join(" | ") || defaultObservaciones,

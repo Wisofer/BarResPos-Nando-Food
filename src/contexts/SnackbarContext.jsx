@@ -12,8 +12,11 @@ export function SnackbarProvider({ children }) {
   const add = useCallback((message, variant = "success") => {
     const id = nextId++;
     setItems((prev) => [...prev, { id, message, variant }]);
-    if (variant === "error") playSound("error");
-    else playSound("success");
+    const sonidosActivos = localStorage.getItem("pos_sonidos_notificacion") !== "false";
+    if (sonidosActivos) {
+      if (variant === "error") playSound("error");
+      else playSound("success");
+    }
     return id;
   }, []);
 

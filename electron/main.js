@@ -93,19 +93,19 @@ function createWindow() {
   // Maximiza la ventana automáticamente para ocupar toda la pantalla
   win.maximize()
 
-  // Configura el factor de zoom predeterminado al 100% (1.0)
+  // Configura el factor de zoom predeterminado al 90% (0.9)
   win.webContents.on('did-finish-load', () => {
-    win.webContents.setZoomFactor(win.isMaximized() ? 1.0 : 0.9)
+    win.webContents.setZoomFactor(win.isMaximized() ? 0.9 : 0.8)
   })
 
-  // Ajuste dinámico: Si el cliente achica la pantalla (restaurar), bajar a 90% para que quepa todo
+  // Ajuste dinámico: Si el cliente achica la pantalla (restaurar), bajar a 80% para que quepa todo
   win.on('unmaximize', () => {
-    win.webContents.setZoomFactor(0.9)
+    win.webContents.setZoomFactor(0.8)
   })
 
-  // Si el cliente vuelve a maximizar la pantalla, regresar al 100%
+  // Si el cliente vuelve a maximizar la pantalla, regresar al 90%
   win.on('maximize', () => {
-    win.webContents.setZoomFactor(1.0)
+    win.webContents.setZoomFactor(0.9)
   })
 
   // Captura y gestiona los atajos de teclado para Zoom de manera manual
@@ -120,7 +120,7 @@ function createWindow() {
         win.webContents.setZoomFactor(Math.max(0.8, currentZoom - 0.05)) // Mínimo 80%
         event.preventDefault()
       } else if (input.key === '0' || input.key === 'Numpad0') {
-        win.webContents.setZoomFactor(1.1) // Restablecer al 110% por defecto
+        win.webContents.setZoomFactor(0.9) // Restablecer al 90% por defecto
         event.preventDefault()
       }
     }

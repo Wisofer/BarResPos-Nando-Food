@@ -349,4 +349,5 @@ export const backofficeApi = {
     const data = payload?.data ?? payload?.Data ?? payload;
     return data;
   },
+  listAuditoria: (params) => api.get(`/api/v1/auditoria${qs(params)}`),
 };

@@ -5,6 +5,7 @@ import {
   Home,
   Package,
   Settings,
+  ShieldAlert,
   ShieldUser,
   SquareTerminal,
   Table,
@@ -24,6 +25,7 @@ export const NAV_ITEMS = [
   { id: "kitchen", label: "Cocina", icon: UtensilsCrossed },
   { id: "cashier", label: "Caja", icon: SquareTerminal },
   { id: "users", label: "Usuarios", icon: ShieldUser },
+  { id: "audit", label: "Auditoría", icon: ShieldAlert },
   { id: "settings", label: "Configuraciones", icon: Settings },
   { id: "reports", label: "Reportes", icon: BarChart3 },
 ];

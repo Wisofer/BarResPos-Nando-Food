@@ -1,14 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ChefHat, RefreshCw, Send } from "lucide-react";
+import { CheckCircle2, ChefHat, RefreshCw, Search, History, LayoutGrid, Clock } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { BackofficeListSkeletonLoading } from "../components/index.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { opcionesResumenSoloTextoOpcion } from "../utils/productoOpciones.js";
 
-const KDS_SECTIONS = [
-  { key: "por_preparar", label: "Por preparar", states: ["Pendiente", "En Preparación"] },
-  { key: "listo", label: "Listo para entregar", states: ["Listo"] },
-];
+const resolveMesaNombre = (o) => {
+  const mesaRaw = o?.mesa ?? o?.Mesa ?? o?.mesaNombre;
+  const origen = o?.origenPedido ?? o?.OrigenPedido;
+  
+  if (origen && origen.toLowerCase() === "delivery") {
+    return "Delivery 🛵";
+  }
+  if (origen && origen.toLowerCase() === "para llevar") {
+    return "Para Llevar 🛍️";
+  }
+  if (!mesaRaw || mesaRaw === "S/M") {
+    return origen || "S/M";
+  }
+  return mesaRaw;
+};
 
 const getKdsCards = (orders) => {
   const cards = [];
@@ -16,18 +27,14 @@ const getKdsCards = (orders) => {
     const orderId = o?.id ?? o?.Id;
     const allItems = Array.isArray(o?.items ?? o?.Items) ? (o?.items ?? o?.Items) : [];
 
-    // Group items by FechaEnvioCocina (fallback to fechaCreacion if null)
     const batches = {};
     allItems.forEach((item) => {
       const rawTime = item?.fechaEnvioCocina ?? item?.FechaEnvioCocina ?? o?.fechaCreacion ?? o?.FechaCreacion ?? "unknown";
       const batchKey = typeof rawTime === "string" ? rawTime : new Date(rawTime).toISOString();
-      if (!batches[batchKey]) {
-        batches[batchKey] = [];
-      }
+      if (!batches[batchKey]) batches[batchKey] = [];
       batches[batchKey].push(item);
     });
 
-    // Generate separate cards for each batch depending on item status
     Object.entries(batches).forEach(([batchKey, batchItems]) => {
       const activeItems = batchItems.filter((it) => {
         const est = it?.estado ?? it?.Estado ?? "Pendiente";
@@ -44,7 +51,8 @@ const getKdsCards = (orders) => {
           id: `${orderId}-preparar-${batchKey}`,
           orderId,
           numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
-          mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          mesa: resolveMesaNombre(o),
+          mesaOrigen: o?.mesaOrigen ?? o?.MesaOrigen ?? null,
           mesero: o?.mesero ?? o?.Mesero ?? "",
           fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
           estadoCocina: "En Preparación",
@@ -58,7 +66,8 @@ const getKdsCards = (orders) => {
           id: `${orderId}-listo-${batchKey}`,
           orderId,
           numero: o?.numero ?? o?.Numero ?? `#${orderId}`,
-          mesa: o?.mesa ?? o?.mesaNombre ?? o?.Mesa ?? "Mesa",
+          mesa: resolveMesaNombre(o),
+          mesaOrigen: o?.mesaOrigen ?? o?.MesaOrigen ?? null,
           mesero: o?.mesero ?? o?.Mesero ?? "",
           fechaCreacion: batchKey !== "unknown" ? batchKey : o?.fechaCreacion ?? o?.FechaCreacion,
           estadoCocina: "Listo",
@@ -68,14 +77,33 @@ const getKdsCards = (orders) => {
       }
     });
   });
+  cards.sort((a, b) => new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime());
   return cards;
 };
 
 function stateStyle(state) {
-  if (state === "Pendiente") return "border-amber-200 bg-amber-50 text-amber-800";
-  if (state === "En Preparación") return "border-blue-200 bg-blue-50 text-blue-800";
-  if (state === "Listo") return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  return "border-violet-200 bg-violet-50 text-violet-800";
+  return "bg-white border border-slate-200/80 shadow-[0_2px_12px_rgb(0,0,0,0.04)]";
+}
+
+function stateTopBorder(state) {
+  if (state === "Pendiente") return "border-t-[4px] border-t-amber-400";
+  if (state === "En Preparación") return "border-t-[4px] border-t-blue-500";
+  if (state === "Listo") return "border-t-[4px] border-t-emerald-500";
+  return "border-t-[4px] border-t-slate-400";
+}
+
+function stateBadge(state) {
+  if (state === "Pendiente") return "text-amber-700 bg-amber-100 border border-amber-200";
+  if (state === "En Preparación") return "text-blue-700 bg-blue-100 border border-blue-200";
+  if (state === "Listo") return "text-emerald-700 bg-emerald-100 border border-emerald-200";
+  return "text-slate-700 bg-slate-200 border border-slate-300";
+}
+
+function stateButton(state) {
+  if (state === "Pendiente") return "bg-amber-500 hover:bg-amber-600 text-white shadow-sm shadow-amber-300/50";
+  if (state === "En Preparación") return "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-300/50";
+  if (state === "Listo") return "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-300/50";
+  return "bg-slate-600 hover:bg-slate-700 text-white";
 }
 
 function nextState(state) {
@@ -112,18 +140,19 @@ function OrderTimer({ date }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${isDelayed
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide border transition ${
+        isDelayed
           ? "bg-rose-50 border-rose-200 text-rose-600 animate-pulse"
-          : "bg-slate-100 border-slate-200 text-slate-600"
-        }`}
+          : "bg-white/60 border-slate-200 text-slate-500"
+      }`}
     >
       <span className="relative flex h-1.5 w-1.5">
         {isDelayed && (
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
         )}
-        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isDelayed ? "bg-rose-500" : "bg-slate-400"}`}></span>
+        <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isDelayed ? "bg-rose-500" : "bg-slate-400"}`} />
       </span>
-      <span>{elapsed} min</span>
+      {elapsed} min
     </span>
   );
 }
@@ -141,12 +170,11 @@ export function KitchenView() {
   const fetchSeqRef = useRef(0);
   useEffect(() => {
     isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
+    return () => { isMounted.current = false; };
   }, []);
 
-  const toggleItemCheck = async (order, item) => {
+  const toggleItemCheck = async (order, item, e) => {
+    e.stopPropagation();
     const orderId = order?.orderId ?? order?.id ?? order?.Id;
     const itemId = item?.id ?? item?.Id;
     if (!orderId || !itemId) return;
@@ -155,8 +183,8 @@ export function KitchenView() {
     try {
       await backofficeApi.cocinaItemEstado(itemId, nextStateVal);
       await loadKitchen();
-    } catch (e) {
-      snackbar.error(e.message || "Error al cambiar estado del producto.");
+    } catch (err) {
+      snackbar.error(err.message || "Error al cambiar estado del producto.");
     }
   };
 
@@ -166,47 +194,33 @@ export function KitchenView() {
       const data = await backofficeApi.cocinaOrdenes();
       if (seq !== fetchSeqRef.current) return;
       const items = Array.isArray(data) ? data : data?.items || [];
-      if (isMounted.current) {
-        setOrders(items);
-      }
-    } catch (e) {
+      if (isMounted.current) setOrders(items);
+    } catch (err) {
       if (seq !== fetchSeqRef.current) return;
-      if (isMounted.current) {
-        setError(e.message || "No se pudo cargar cocina.");
-      }
+      if (isMounted.current) setError(err.message || "No se pudo cargar cocina.");
     } finally {
-      if (seq === fetchSeqRef.current && isMounted.current) {
-        setLoading(false);
-      }
+      if (seq === fetchSeqRef.current && isMounted.current) setLoading(false);
     }
-  }, [isMounted]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
     let timer = null;
-
     const startPolling = () => {
       if (timer) clearInterval(timer);
       const intervalMs = document.hidden ? 15000 : 3000;
-      timer = setInterval(() => {
-        loadKitchen().catch(() => { });
-      }, intervalMs);
+      timer = setInterval(() => { loadKitchen().catch(() => { }); }, intervalMs);
     };
-
     (async () => {
       await loadKitchen();
       if (!mounted) return;
       startPolling();
     })();
-
     const handleVisibilityChange = () => {
       if (!mounted) return;
-      // Reconfigura el intervalo según si la pestaña está visible o no.
       startPolling();
     };
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
     return () => {
       mounted = false;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -223,26 +237,20 @@ export function KitchenView() {
     setError("");
     try {
       if (current === "En Preparación") {
-        // Marcar todos los ítems de esta comanda como "Listo" (batch atómico)
         const batchItems = card.items.map(item => ({ id: item.id ?? item.Id, estado: "Listo" }));
         await backofficeApi.cocinaItemsEstado(batchItems);
-        snackbar.success(`Comanda de mesa ${card.mesa} marcada como lista`);
+        snackbar.success(`Comanda de ${card.mesa} marcada como lista`);
       } else if (current === "Listo") {
-        // Marcar todos los ítems de esta comanda como "Entregado" (batch atómico)
         const batchItems = card.items.map(item => ({ id: item.id ?? item.Id, estado: "Entregado" }));
         await backofficeApi.cocinaItemsEstado(batchItems);
-        snackbar.success(`Comanda de mesa ${card.mesa} marcada como entregada`);
+        snackbar.success(`Comanda de ${card.mesa} entregada`);
       }
       await loadKitchen();
-    } catch (e) {
-      const msg = e?.message || "No se pudo actualizar estado de la comanda.";
-      if (isMounted.current) {
-        snackbar.error(msg);
-      }
+    } catch (err) {
+      const msg = err?.message || "No se pudo actualizar estado.";
+      if (isMounted.current) snackbar.error(msg);
     } finally {
-      if (isMounted.current) {
-        setBusyId(null);
-      }
+      if (isMounted.current) setBusyId(null);
     }
   };
 
@@ -250,21 +258,14 @@ export function KitchenView() {
     const q = search.trim().toLowerCase();
     const list = orders.filter((o) => {
       const state = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
-      if (mode === "history") {
-        if (state !== "Entregado") return false;
-      } else if (state === "Entregado") {
-        return false;
-      }
+      if (mode === "history" && state !== "Entregado") return false;
+      if (mode === "live" && state === "Entregado") return false;
       if (!q) return true;
       const text = `${o?.numero || o?.id || ""} ${o?.mesa || o?.mesaNombre || ""}`.toLowerCase();
       return text.includes(q);
     });
     if (mode === "history") {
-      list.sort((a, b) => {
-        const da = new Date(a?.fechaCreacion ?? a?.FechaCreacion ?? 0).getTime();
-        const db = new Date(b?.fechaCreacion ?? b?.FechaCreacion ?? 0).getTime();
-        return db - da;
-      });
+      list.sort((a, b) => new Date(b?.fechaCreacion ?? b?.FechaCreacion ?? 0).getTime() - new Date(a?.fechaCreacion ?? a?.FechaCreacion ?? 0).getTime());
     }
     return list;
   }, [orders, search, mode]);
@@ -274,325 +275,263 @@ export function KitchenView() {
     return getKdsCards(filtered);
   }, [filtered, mode]);
 
-  const grouped = useMemo(() => {
-    const base = Object.fromEntries(KDS_SECTIONS.map((s) => [s.key, []]));
-    liveCards.forEach((c) => {
-      const state = c.estadoCocina;
-      const section = KDS_SECTIONS.find((s) => s.states.includes(state));
-      if (!section) return;
-      base[section.key].push(c);
-    });
-    return base;
-  }, [liveCards]);
-
   if (loading) return <BackofficeListSkeletonLoading rows={6} />;
+
   return (
-    <div className="min-w-0 space-y-4">
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+    <div className="min-w-0 flex flex-col h-[calc(100vh-80px)]">
+      {error && <div className="shrink-0 mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <section className="shrink-0 mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">Cocina (KDS)</h2>
-            <p className="text-xs text-slate-500">
-              Solo aparecen ítems de categorías marcadas para cocina; bebidas u otras categorías “solo barra” no se listan aquí.
-            </p>
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight">KDS <span className="font-medium text-slate-400">/ Cocina</span></h2>
           </div>
-          <button
-            type="button"
-            onClick={() => loadKitchen()}
-            className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Actualizar
-          </button>
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por orden o mesa"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          />
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-1 items-center justify-end gap-2">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar mesa o # orden..."
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 pl-9 pr-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition outline-none"
+              />
+            </div>
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setMode("live")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${mode === "live" ? "bg-white text-slate-800 shadow" : "text-slate-500 hover:text-slate-800"}`}
+              >
+                <LayoutGrid className="h-4 w-4" /> En vivo
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("history")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${mode === "history" ? "bg-white text-slate-800 shadow" : "text-slate-500 hover:text-slate-800"}`}
+              >
+                <History className="h-4 w-4" /> Historial
+              </button>
+            </div>
             <button
               type="button"
-              onClick={() => setMode("live")}
-              className={`min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "live" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              onClick={() => loadKitchen()}
+              className="flex h-[36px] w-[36px] items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition active:scale-95"
             >
-              Cocina en vivo
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode("history");
-              }}
-              className={`hidden min-h-[44px] rounded-full px-3 py-1 text-xs font-semibold ${mode === "history" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
-            >
-              Historial
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
       </section>
 
       {mode === "live" ? (
-        <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {KDS_SECTIONS.map((section) => (
-            <article key={section.key} className="min-h-[400px] rounded-[24px] border border-slate-200/80 bg-slate-50/40 p-4 shadow-inner">
-              <div className="mb-4 flex items-center justify-between px-1">
-                <span className={`rounded-xl border px-3 py-1 text-xs font-bold ${stateStyle(section.states[0])}`}>{section.label}</span>
-                <span className="rounded-full bg-slate-200/80 px-2 py-0.5 text-xs font-bold text-slate-600 tabular-nums">
-                  {grouped[section.key]?.length || 0}
-                </span>
-              </div>
-              <div className="space-y-3">
-                {(grouped[section.key] || []).length === 0 && (
-                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/50 py-10 px-4 text-center">
-                    <ChefHat className="h-8 w-8 text-slate-300 animate-pulse" />
-                    <p className="mt-2 text-xs font-medium text-slate-400">Sin órdenes en esta sección</p>
-                  </div>
-                )}
-                {(grouped[section.key] || []).map((o, i) => {
-                  const id = o?.id ?? o?.Id ?? i;
-                  const numero = o?.numero || o?.Numero || `#${id}`;
-                  const mesa = o?.mesa || o?.mesaNombre || o?.Mesa || "Mesa";
-                  const mesero = o?.mesero || o?.Mesero || o?.originalOrder?.mesero || o?.originalOrder?.Mesero || "";
-                  const createdAt = o?.fechaCreacion ?? o?.FechaCreacion;
-                  const current = o?.estadoCocina ?? o?.EstadoCocina ?? "Pendiente";
-                  const rawItems = o?.Items ?? o?.items ?? [];
-                  const items = Array.isArray(rawItems) ? rawItems : [];
-                  const next = nextState(current);
+        <section className="flex-1 min-h-0 overflow-y-auto">
+          {liveCards.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-white/50 rounded-2xl border border-dashed border-slate-200">
+              <ChefHat className="h-16 w-16 mb-4 opacity-30" />
+              <h3 className="text-lg font-semibold text-slate-600">Cocina despejada</h3>
+              <p className="text-sm">No hay órdenes pendientes en este momento.</p>
+            </div>
+          ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-max pb-10">
+              {liveCards.map((c) => {
+                const isBusy = busyId === c.id;
+                const current = c.estadoCocina;
+                const next = nextState(current);
 
-                  const borderTopClass = current === "Pendiente"
-                    ? "border-t-[5px] border-t-amber-400"
-                    : current === "En Preparación"
-                      ? "border-t-[5px] border-t-blue-500"
-                      : "border-t-[5px] border-t-emerald-500";
-
-                  const buttonStyleClass = current === "Pendiente"
-                    ? "bg-amber-500 hover:bg-amber-600 shadow-sm shadow-amber-200/40 text-white"
-                    : current === "En Preparación"
-                      ? "bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200/40 text-white"
-                      : "bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-200/40 text-white";
-
-                  return (
-                    <div key={id} className={`relative rounded-2xl bg-white border border-slate-200/60 p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 ${borderTopClass}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-extrabold text-slate-800 tracking-tight">{numero}</p>
-                        <div className="flex items-center gap-1.5">
-                          <OrderTimer date={createdAt} />
-                          <span className={`rounded-lg border px-2 py-0.5 text-[10px] font-bold ${stateStyle(current)}`}>
-                            {current}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-1 flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                            <span>📍</span>
-                            <span>{mesa}</span>
-                          </p>
-                          {mesero && mesero !== "N/A" && (
-                            <p className="text-[11px] font-medium text-slate-500 mt-0.5 flex items-center gap-1">
-                              <span className="opacity-80">🧑‍🍳</span>
-                              <span>{mesero}</span>
+                return (
+                  <article
+                    key={c.id}
+                    className={`relative flex flex-col rounded-2xl overflow-hidden select-none transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${stateStyle(current)} ${stateTopBorder(current)} ${isBusy ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    {/* Card Body */}
+                    <div className="p-4 flex-1">
+                      {/* Header: Mesa + State Badge */}
+                      <div className="flex items-start justify-between mb-1.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[18px] font-extrabold text-slate-800 tracking-tight leading-none truncate">{c.mesa}</p>
+                          {c.mesaOrigen && c.mesaOrigen !== c.mesa && (
+                            <p className="text-[10px] font-semibold text-orange-500 mt-1 flex items-center gap-1">
+                              🔀 De: {c.mesaOrigen}
                             </p>
                           )}
                         </div>
-                        <p className="text-[10px] font-medium text-slate-400 self-start">{formatDate(createdAt)}</p>
+                        <div className="flex flex-col items-end gap-1 ml-2 shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${stateBadge(current)}`}>
+                            {current}
+                          </span>
+                          <OrderTimer date={c.fechaCreacion} />
+                        </div>
                       </div>
 
-                      <div className="mt-3 rounded-xl border border-slate-100 bg-slate-50/50 p-2.5">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos</p>
-                        {items.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic">Sin items en la orden.</p>
-                        ) : (
-                          <ul className="space-y-1.5">
-                            {items.map((it, idx) => {
-                              const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
-                              const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
-                              const producto = it?.Producto ?? it?.producto ?? "Producto";
-                              const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
-                              const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
-                              const notas = it?.Notas ?? it?.notas ?? "";
-                              const isChecked = (it?.Estado ?? it?.estado ?? "") === "Listo";
-
-                              return (
-                                <li
-                                  key={itemId}
-                                  onClick={() => toggleItemCheck(o, it)}
-                                  className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition select-none min-h-[44px] ${isChecked
-                                      ? "border-emerald-100 bg-emerald-50/40 text-slate-400"
-                                      : "border-slate-200 bg-white hover:bg-slate-50 text-slate-800"
-                                    }`}
-                                >
-                                  <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${isChecked
-                                      ? "border-emerald-500 bg-emerald-500 text-white"
-                                      : "border-slate-300 bg-white"
-                                    }`}>
-                                    {isChecked && (
-                                      <svg className="h-3 w-3 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                  </span>
-                                  <div className="min-w-0 flex-1">
-                                    <p className={`text-xs font-semibold leading-tight ${isChecked ? "line-through opacity-60 text-slate-400" : "text-slate-800"}`}>
-                                      {qty > 0 && <span className="text-indigo-600 font-extrabold mr-1.5">{qty}x</span>}
-                                      {producto}
-                                    </p>
-                                    {opcionesTexto ? (
-                                      <p className={`mt-0.5 text-[11px] font-bold text-indigo-600 ${isChecked ? "line-through opacity-50 text-indigo-400" : ""}`}>
-                                        {opcionesTexto}
-                                      </p>
-                                    ) : null}
-                                    {notas ? (
-                                      <p className="mt-0.5 text-[10px] text-amber-600 font-medium">Nota: {notas}</p>
-                                    ) : null}
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
+                      {/* Sub-header: Orden + Mesero */}
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-3 pb-3 border-b border-black/5">
+                        <span className="font-semibold text-slate-700 shrink-0">{c.numero}</span>
+                        <span className="text-slate-300 shrink-0">•</span>
+                        {c.mesero && <span className="truncate">{c.mesero}</span>}
                       </div>
 
-                      {next ? (
-                        <div className="space-y-1">
-                          <button
-                            type="button"
-                            onClick={() => patchState(o)}
-                            disabled={busyId === id}
-                            className={`mt-3 inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${buttonStyleClass}`}
-                          >
-                            {current === "Pendiente" && <ChefHat className="h-3.5 w-3.5" />}
-                            {current === "En Preparación" && <CheckCircle2 className="h-3.5 w-3.5" />}
-                            {current === "Listo" && <Send className="h-3.5 w-3.5" />}
-                            {busyId === id ? "Procesando..." : `Marcar ${next}`}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="mt-3 rounded-xl bg-violet-50 border border-violet-100 px-3 py-2 text-center text-xs font-bold text-violet-700">
-                          ✓ Orden entregada
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </article>
-          ))}
-        </section>
-      ) : (
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-          <div className="space-y-2 md:hidden">
-            {filtered.length === 0 && <p className="rounded-lg border border-slate-200 px-3 py-5 text-center text-sm text-slate-500">No hay órdenes entregadas para mostrar.</p>}
-            {filtered.map((o, i) => {
-              const id = o?.id ?? o?.Id ?? i;
-              const numero = o?.numero ?? o?.Numero ?? `#${id}`;
-              const mesa = o?.mesa || o?.Mesa || "S/M";
-              const estado = o?.estadoCocina ?? o?.EstadoCocina ?? "Entregado";
-              const fecha = o?.fechaCreacion ?? o?.FechaCreacion;
-              const itemsRaw = o?.Items ?? o?.items ?? [];
-              const items = Array.isArray(itemsRaw) ? itemsRaw : [];
-              return (
-                <article key={id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-800">{numero}</p>
-                    <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">{estado}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-600">{mesa}</p>
-                  <p className="text-xs text-slate-500">{formatDate(fecha)}</p>
-                  <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2">
-                    <p className="text-[11px] font-semibold text-slate-700">Productos</p>
-                    {items.length === 0 ? (
-                      <p className="mt-1 text-[11px] text-slate-400">Sin productos</p>
-                    ) : (
-                      <ul className="mt-1 space-y-1">
-                        {items.map((it, idx) => {
-                          const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
+                      {/* Products List */}
+                      <ul className="space-y-0.5">
+                        {c.items.map((it, idx) => {
+                          const itemId = it?.Id ?? it?.id ?? `${c.id}-${idx}`;
                           const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                           const producto = it?.Producto ?? it?.producto ?? "Producto";
-                          const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
-                          const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
+                          const opts = opcionesResumenSoloTextoOpcion(it?.opcionesResumen ?? it?.OpcionesResumen ?? "");
+                          const notas = it?.Notas ?? it?.notas ?? "";
+                          const isChecked = (it?.Estado ?? it?.estado ?? "") === "Listo";
+
                           return (
-                            <li key={itemId} className="text-[11px] text-slate-700">
-                              {qty > 0 ? `${qty}x ` : ""}{producto}
-                              {opcionesTexto ? <span className="ml-1 text-[10px] font-bold text-indigo-600">({opcionesTexto})</span> : null}
+                            <li
+                              key={itemId}
+                              onClick={(e) => toggleItemCheck(c, it, e)}
+                              className={`flex items-start gap-2.5 rounded-xl border p-2 cursor-pointer transition-all duration-200 select-none min-h-[40px] ${
+                                isChecked
+                                  ? "border-emerald-200/60 bg-emerald-50/60 opacity-70"
+                                  : "border-black/5 bg-white/60 hover:bg-white hover:shadow-sm"
+                              }`}
+                            >
+                              <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                                isChecked
+                                  ? "border-emerald-500 bg-emerald-500 text-white"
+                                  : "border-slate-300 bg-white"
+                              }`}>
+                                {isChecked && (
+                                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-[13px] font-semibold leading-tight transition-all duration-300 ${
+                                  isChecked ? "line-through text-slate-400" : "text-slate-800"
+                                }`}>
+                                  {qty > 0 && <span className={`font-extrabold mr-1 ${
+                                    isChecked ? "text-slate-400" : (current === "En Preparación" ? "text-blue-600" : current === "Listo" ? "text-emerald-600" : "text-amber-600")
+                                  }`}>{qty}x</span>}
+                                  {producto}
+                                </p>
+                                {opts && (
+                                  <p className={`mt-0.5 text-[11px] font-semibold ${
+                                    isChecked ? "line-through text-slate-400 opacity-60" : "text-indigo-600"
+                                  }`}>{opts}</p>
+                                )}
+                                {notas && (
+                                  <p className="mt-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200/60 inline-block">Nota: {notas}</p>
+                                )}
+                              </div>
                             </li>
                           );
                         })}
                       </ul>
+                    </div>
+
+                    {/* Action Button */}
+                    {next ? (
+                      <div className="px-4 pb-4">
+                        <button
+                          type="button"
+                          onClick={() => patchState(c)}
+                          disabled={isBusy}
+                          className={`mt-1 w-full min-h-[44px] rounded-xl px-4 py-2.5 text-[13px] font-bold flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer ${stateButton(current)}`}
+                        >
+                          {current === "Pendiente" && <ChefHat className="h-4 w-4" />}
+                          {current === "En Preparación" && <CheckCircle2 className="h-4 w-4" />}
+                          {current === "Listo" && (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                          )}
+                          {isBusy ? "Procesando..." : `Marcar ${next}`}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-4 pb-4">
+                        <div className="mt-1 rounded-xl bg-violet-100 border border-violet-200 px-3 py-2.5 text-center text-[12px] font-bold text-violet-700">
+                          ✓ Orden entregada
+                        </div>
+                      </div>
                     )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm overflow-y-auto">
+          {filtered.length === 0 && <p className="text-center text-sm text-slate-500 mt-10">No hay órdenes entregadas para mostrar.</p>}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((o, i) => {
+              const id = o?.id ?? o?.Id ?? i;
+              const numero = o?.numero ?? o?.Numero ?? `#${id}`;
+              const mesa = resolveMesaNombre(o);
+              const items = Array.isArray(o?.Items ?? o?.items) ? (o?.Items ?? o?.items) : [];
+              return (
+                <article key={id} className="relative flex flex-col rounded-2xl overflow-hidden bg-white border border-slate-200/80 shadow-[0_2px_12px_rgb(0,0,0,0.04)] border-t-[4px] border-t-slate-400">
+                  {/* Card Body */}
+                  <div className="p-4 flex-1">
+                    {/* Header: Mesa + State Badge */}
+                    <div className="flex items-start justify-between mb-1.5">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[18px] font-extrabold text-slate-800 tracking-tight leading-none truncate">{mesa}</p>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border border-slate-200 shrink-0">
+                        Entregado
+                      </span>
+                    </div>
+
+                    {/* Sub-header: Orden + Fecha */}
+                    <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-500 font-medium mb-3 pb-3 border-b border-black/5">
+                      <span className="font-semibold text-slate-700 shrink-0">{numero}</span>
+                      <span className="text-slate-300 shrink-0">•</span>
+                      <span className="shrink-0">{formatDate(o?.fechaCreacion ?? o?.FechaCreacion)}</span>
+                      {o?.mesero && (
+                        <>
+                          <span className="text-slate-300 shrink-0">•</span>
+                          <span className="truncate">{o.mesero}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Products Container */}
+                    <div className="rounded-xl border border-black/5 bg-slate-50/50 p-2.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Productos</p>
+                      {items.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">Sin items.</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {items.map((it, idx) => {
+                            const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
+                            const producto = it?.Producto ?? it?.producto ?? "Producto";
+                            const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
+                            const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
+                            return (
+                              <li key={idx} className="flex items-start gap-2 text-xs font-medium text-slate-500 line-through opacity-85">
+                                <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
+                                <div className="min-w-0 flex-1">
+                                  <span>
+                                    {qty > 0 && <span className="font-bold mr-1">{qty}x</span>}
+                                    {producto}
+                                  </span>
+                                  {opcionesTexto && (
+                                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">({opcionesTexto})</p>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom static banner */}
+                  <div className="px-4 pb-4">
+                    <div className="mt-1 rounded-xl bg-slate-100 border border-slate-200 px-3 py-2 text-center text-[12px] font-bold text-slate-600">
+                      ✓ Orden finalizada
+                    </div>
                   </div>
                 </article>
               );
             })}
-          </div>
-
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
-            <table className="min-w-[900px] w-full text-sm">
-              <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Orden</th>
-                  <th className="px-4 py-3 font-semibold">Mesa</th>
-                  <th className="px-4 py-3 font-semibold">Fecha</th>
-                  <th className="px-4 py-3 font-semibold">Estado</th>
-                  <th className="px-4 py-3 font-semibold">Productos</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 bg-white">
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-slate-500">
-                      No hay órdenes entregadas para mostrar.
-                    </td>
-                  </tr>
-                )}
-                {filtered.map((o, i) => {
-                  const id = o?.id ?? o?.Id ?? i;
-                  const numero = o?.numero ?? o?.Numero ?? `#${id}`;
-                  const mesa = o?.mesa || o?.Mesa || "S/M";
-                  const estado = o?.estadoCocina ?? o?.EstadoCocina ?? "Entregado";
-                  const fecha = o?.fechaCreacion ?? o?.FechaCreacion;
-                  const itemsRaw = o?.Items ?? o?.items ?? [];
-                  const items = Array.isArray(itemsRaw) ? itemsRaw : [];
-                  return (
-                    <tr key={id} className="align-top">
-                      <td className="px-4 py-3 font-semibold text-slate-800">{numero}</td>
-                      <td className="px-4 py-3 text-slate-700">{mesa}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatDate(fecha)}</td>
-                      <td className="px-4 py-3">
-                        <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-xs font-semibold text-violet-700">{estado}</span>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {items.length === 0 ? (
-                          "-"
-                        ) : (
-                          <ul className="space-y-1">
-                            {items.map((it, idx) => {
-                              const itemId = it?.Id ?? it?.id ?? `${id}-${idx}`;
-                              const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
-                              const producto = it?.Producto ?? it?.producto ?? "Producto";
-                              const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
-                              const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
-                              return (
-                                <li key={itemId} className="text-xs">
-                                  {qty > 0 ? `${qty}x ` : ""}{producto}
-                                  {opcionesTexto ? <span className="ml-1 text-[11px] font-bold text-indigo-600">({opcionesTexto})</span> : null}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         </section>
       )}
