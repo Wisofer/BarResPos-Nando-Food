@@ -1165,11 +1165,16 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   }, [posTable]);
 
   const closePosView = async () => {
-    // Esperar sincronizaciones pendientes antes de limpiar estado (con timeout 30s)
+    // Esperar sincronizaciones pendientes antes de limpiar estado (timeout 8s para no bloquear la UI)
+    if (posSyncPendingCountRef.current > 0) {
+      setPosBusyMessage("Finalizando sincronización…");
+      setPosActionBusy(true);
+    }
     await Promise.race([
       posSyncChainRef.current.catch(() => {}),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("sync timeout")), 30000)),
+      new Promise((resolve) => setTimeout(resolve, 8000)),
     ]).catch(() => {});
+    clearBusyUi(setPosActionBusy, setPosBusyMessage);
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
     setPosOpcionesModal({ open: false, product: null });

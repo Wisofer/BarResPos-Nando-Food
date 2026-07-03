@@ -1,7 +1,7 @@
 {
   "name": "barrespos",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Sistema de Punto de Venta para Bar y Restaurante",
   "author": {
     "name": "William Borge",
@@ -17,7 +17,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:linux": "cross-env NODE_NO_WARNINGS=1 vite build && cross-env NODE_NO_WARNINGS=1 electron-builder --linux",
-    "build:windows": "cross-env NODE_NO_WARNINGS=1 vite build && (robocopy dist \"../BarResPos-Nando-Food-Backend/bin/Debug/net9.0/wwwroot\" /E /NFL /NDL /NJH /NJS /NP /NS >nul 2>&1 || ver>nul) && cross-env NODE_NO_WARNINGS=1 electron-builder --windows",
+    "build:windows": "dotnet build \"../BarResPos-Nando-Food-Backend\" -c Release && cross-env NODE_NO_WARNINGS=1 vite build && (robocopy dist \"../BarResPos-Nando-Food-Backend/bin/Release/net9.0/wwwroot\" /E /NFL /NDL /NJH /NJS /NP /NS >nul 2>&1 || ver>nul) && cross-env NODE_NO_WARNINGS=1 electron-builder --windows",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -73,7 +73,7 @@
     ],
     "extraResources": [
       {
-        "from": "../BarResPos-Nando-Food-Backend/bin/Debug/net9.0",
+        "from": "../BarResPos-Nando-Food-Backend/bin/Release/net9.0",
         "to": "backend",
         "filter": [
           "**/*"
@@ -87,6 +87,22 @@
         "deb"
       ],
       "category": "Utility"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "requestedExecutionLevel": "user",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BarResPos",
+      "runAfterFinish": true
     }
   }
 }

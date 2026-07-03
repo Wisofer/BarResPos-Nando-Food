@@ -26,6 +26,41 @@ function writeLog(message) {
   }
 }
 
+/**
+ * Preserva appsettings.json del cliente entre actualizaciones.
+ * - Primera instalación: copia el appsettings.json incluido en el paquete hacia AppData\BarRestPOS\
+ * - Actualizaciones siguientes: restaura el appsettings.json de AppData al directorio del backend
+ *   (el instalador sobreescribió el del paquete con valores de fábrica, pero AppData no se toca).
+ */
+function ensureAppSettingsPersisted() {
+  try {
+    const barrestposAppData = path.join(app.getPath('appData'), 'BarRestPOS')
+    const persistedSettings = path.join(barrestposAppData, 'appsettings.json')
+
+    const backendDir = app.isPackaged
+      ? path.join(process.resourcesPath, 'backend')
+      : path.join(__dirname, '../../BarResPos-Nando-Food-Backend/bin/Debug/net9.0')
+    const bundledSettings = path.join(backendDir, 'appsettings.json')
+
+    if (!fs.existsSync(persistedSettings)) {
+      // Primera instalación: guardar la config original en AppData para futuras actualizaciones
+      if (fs.existsSync(bundledSettings)) {
+        fs.mkdirSync(barrestposAppData, { recursive: true })
+        fs.copyFileSync(bundledSettings, persistedSettings)
+        writeLog('[CONFIG] Primera instalación: appsettings.json guardado en AppData.')
+      }
+    } else {
+      // Actualización: restaurar la config del cliente al directorio del backend antes de arrancar
+      if (fs.existsSync(bundledSettings)) {
+        fs.copyFileSync(persistedSettings, bundledSettings)
+        writeLog('[CONFIG] Actualización detectada: appsettings.json del cliente restaurado desde AppData.')
+      }
+    }
+  } catch (err) {
+    writeLog(`[CONFIG ERROR]: No se pudo preservar appsettings.json: ${err.message}`)
+  }
+}
+
 function startBackend() {
   const backendBinName = 'BarRestPOS.exe'
   let backendPath = ''
@@ -194,6 +229,7 @@ ipcMain.on('open-external', async (event, url) => {
 })
 
 app.whenReady().then(() => {
+  ensureAppSettingsPersisted()
   startBackend()
   createWindow()
 })

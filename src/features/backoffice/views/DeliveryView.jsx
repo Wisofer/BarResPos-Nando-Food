@@ -348,7 +348,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
 
   const persistDelivery = async ({ manageBusy = true } = {}) => {
     if (pedidoEstadoRef.current === "Pagado" || pedidoEstadoRef.current === "Cancelado") return null;
-    if (cart.length === 0) {
+    if (cartRef.current.length === 0 && cart.length === 0) {
       snackbar.info("Agrega productos para el pedido delivery.");
       return null;
     }
