@@ -118,6 +118,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const posSyncPendingCountRef = useRef(0);
   const posCartRef = useRef([]);
   const posTableRef = useRef(posTable);
+  const posSyncBufferRef = useRef([]);
+  const posSyncTimeoutIdRef = useRef(null);
   const [form, setForm] = useState({
     id: null,
     numero: "",
@@ -472,6 +474,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       snackbar.info("Caja cerrada: no se puede abrir POS en mesas.");
       return;
     }
+    // Cancelar y limpiar cualquier buffer/temporizador de la mesa anterior antes de abrir la nueva.
+    if (posSyncTimeoutIdRef.current) {
+      clearTimeout(posSyncTimeoutIdRef.current);
+      posSyncTimeoutIdRef.current = null;
+    }
+    posSyncBufferRef.current = [];
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
     setPosOpen(true);
@@ -595,26 +603,39 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     });
   };
 
-  const syncPosDeltaAdd = (product, cantidad = 1, opcionesSeleccionadas = [], notas = "", rollbackLineId = null) => {
-    const tableForSync = posTableRef.current;
-    if (!tableForSync) return;
-    if (!cajaAbierta) return;
+  const flushPosSyncBuffer = () => {
+    if (posSyncTimeoutIdRef.current) {
+      clearTimeout(posSyncTimeoutIdRef.current);
+      posSyncTimeoutIdRef.current = null;
+    }
+    if (posSyncBufferRef.current.length === 0) return Promise.resolve();
 
-    const opsNorm = normalizeOpcionesSeleccionadas(opcionesSeleccionadas);
-    const notasTrim = String(notas ?? "").trim();
+    const buffer = [...posSyncBufferRef.current];
+    posSyncBufferRef.current = [];
+
+    const tableForSync = posTableRef.current;
+    if (!tableForSync) return Promise.resolve();
+    if (!cajaAbierta) return Promise.resolve();
 
     posSyncPendingCountRef.current += 1;
     posSyncChainRef.current = posSyncChainRef.current
       .then(async () => {
         const currentId = posOrderIdRef.current;
-        const pid = Number(product?.id ?? product?.Id);
-        const line = withOpcionesNormalizadas({ productoId: pid, cantidad, notas: notasTrim }, opsNorm);
+        const productosPayload = buffer.map((item) => {
+          const pid = Number(item.product?.id ?? item.product?.Id);
+          return withOpcionesNormalizadas(
+            { productoId: pid, cantidad: item.cantidad, notas: item.notas },
+            item.opsNorm
+          );
+        });
+
         const body = {
           mesaId: Number(tableForSync.id),
           ordenId: currentId ?? undefined,
           observaciones: "",
-          productos: [line],
+          productos: productosPayload,
         };
+
         try {
           const data = await backofficeApi.posOrdenes(body);
           const newOrderId = extractPosOrdenResponseId(data, currentId);
@@ -636,8 +657,12 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             refreshPosActiveOrders().catch(() => {});
           }
         } catch (e) {
-          rollbackPosLineByLineId(rollbackLineId, cantidad);
-          const msg = e?.message || "No se pudo agregar el producto en backend.";
+          for (const item of buffer) {
+            for (const rb of item.rollbackLines) {
+              rollbackPosLineByLineId(rb.lineId, rb.cantidad);
+            }
+          }
+          const msg = e?.message || "No se pudo agregar los productos en backend.";
           const status = e?.status;
           const normalized = normalizeApiErrorMessage(msg);
           const cajaCerrada = isCajaCerradaMessageNormalized(normalized);
@@ -649,12 +674,55 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
           snackbar.error(stockConflict && !/^stock\b/i.test(msg) ? `Stock: ${msg}` : msg);
         }
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => {
         posSyncPendingCountRef.current = Math.max(0, posSyncPendingCountRef.current - 1);
       });
 
-    void posSyncChainRef.current;
+    return posSyncChainRef.current;
+  };
+
+  const syncPosDeltaAdd = (product, cantidad = 1, opcionesSeleccionadas = [], notas = "", rollbackLineId = null) => {
+    const tableForSync = posTableRef.current;
+    if (!tableForSync) return;
+    if (!cajaAbierta) return;
+
+    const opsNorm = normalizeOpcionesSeleccionadas(opcionesSeleccionadas);
+    const notasTrim = String(notas ?? "").trim();
+    const pid = Number(product?.id ?? product?.Id);
+
+    if (posSyncTimeoutIdRef.current) {
+      clearTimeout(posSyncTimeoutIdRef.current);
+    }
+
+    const buf = posSyncBufferRef.current;
+    const key = opcionesSeleccionadasKey(opsNorm);
+    const existingIdx = buf.findIndex(
+      (item) =>
+        Number(item.product?.id ?? item.product?.Id) === pid &&
+        opcionesSeleccionadasKey(item.opsNorm) === key &&
+        item.notas === notasTrim
+    );
+
+    if (existingIdx >= 0) {
+      buf[existingIdx].cantidad += cantidad;
+      if (rollbackLineId) {
+        buf[existingIdx].rollbackLines.push({ lineId: rollbackLineId, cantidad });
+      }
+    } else {
+      buf.push({
+        product,
+        cantidad,
+        opsNorm,
+        notas: notasTrim,
+        rollbackLines: rollbackLineId ? [{ lineId: rollbackLineId, cantidad }] : [],
+      });
+    }
+
+    posSyncTimeoutIdRef.current = setTimeout(() => {
+      posSyncTimeoutIdRef.current = null;
+      void flushPosSyncBuffer();
+    }, 400);
   };
 
   const addProductToCart = async (product) => {
@@ -790,13 +858,14 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     return ordenes;
   };
 
-  const switchPosOrder = async (orderId, skipRefresh) => {
+  const switchPosOrder = async (orderId, skipRefresh, ordenesOverride) => {
     if (!orderId) return;
+    await flushPosSyncBuffer();
     if (!skipRefresh && posSyncPendingCountRef.current > 0) {
       try { await posSyncChainRef.current; } catch { /* ignore */ }
     }
-    let ordenes = posActiveOrders;
-    if (!skipRefresh && ordenes.length > 1) {
+    let ordenes = ordenesOverride ?? posActiveOrders;
+    if (!skipRefresh && !ordenesOverride && ordenes.length > 1) {
       ordenes = await refreshPosActiveOrders();
     }
     const order = ordenes.find((o) => Number(o.id) === Number(orderId));
@@ -829,7 +898,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
       const env = await backofficeApi.getMesaOrdenesActivas(posTable.id);
       const ordenes = unwrapEnvelope(env) || [];
       setPosActiveOrders(ordenes);
-      if (ordenes.length > 0) switchPosOrder(ordenes[0].id, true);
+      if (ordenes.length > 0) switchPosOrder(ordenes[0].id, true, ordenes);
     } catch (e) {
       snackbar.error(e?.message || "Error al separar la cuenta.");
     } finally {
@@ -1166,6 +1235,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   const closePosView = async () => {
     // Esperar sincronizaciones pendientes antes de limpiar estado (timeout 8s para no bloquear la UI)
+    await flushPosSyncBuffer();
     if (posSyncPendingCountRef.current > 0) {
       setPosBusyMessage("Finalizando sincronización…");
       setPosActionBusy(true);
@@ -1343,6 +1413,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     if (!tableForSync) return posOrderId;
     if (manageBusy && posActionBusy) return posOrderId;
 
+    await flushPosSyncBuffer();
     await posSyncChainRef.current.catch(() => { });
 
     if (manageBusy) {
