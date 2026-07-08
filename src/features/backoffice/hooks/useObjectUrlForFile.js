@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 /**
  * Genera una object URL para un `File` y la revoca al cambiar o desmontar.
@@ -6,21 +6,18 @@ import { useEffect, useState } from "react";
  * @returns {string | null}
  */
 export function useObjectUrlForFile(file) {
-  const [url, setUrl] = useState(null);
+  const url = useMemo(() => {
+    if (!file) return null;
+    return URL.createObjectURL(file);
+  }, [file]);
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    if (!file) {
-      setUrl(null);
-      return;
-    }
-    const u = URL.createObjectURL(file);
-    setUrl(u);
-    /* eslint-enable react-hooks/set-state-in-effect */
     return () => {
-      URL.revokeObjectURL(u);
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
     };
-  }, [file]);
+  }, [url]);
 
   return url;
 }

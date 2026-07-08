@@ -1,6 +1,6 @@
 import React from "react";
 import { History } from "lucide-react";
-import { BackofficeDialog } from "../index.js";
+import { BackofficeDialog } from "../BackofficeDialog.jsx";
 import { formatCurrency } from "../../utils/currency.js";
 import { cierreFechaRaw, cierreHistorialMontoPrincipal, cierreId } from "../../utils/caja.js";
 import { CierreDetallePanel } from "./CierreDetallePanel.jsx";

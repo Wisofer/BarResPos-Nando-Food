@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, History, PackageMinus, PackagePlus, Plus, Search, SlidersHorizontal, Tags, LayoutGrid, List } from "lucide-react";
 import { PAGINATION } from "../constants/pagination.js";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { BackofficePageShell, BackofficeStatCardsListSkeleton } from "../components/index.js";
+import { BackofficePageShell, BackofficeStatCardsListSkeleton } from "../components/Skeletons.jsx";
 import { GlobalMovementsModal, ProductHistoryModal } from "../components/inventory/InventoryHistoryModals.jsx";
 import { ProductFormModal } from "../components/inventory/ProductFormModal.jsx";
 import { ProductGrid } from "../components/inventory/ProductGrid.jsx";
@@ -76,6 +76,15 @@ export function ProductsView({ currencySymbol = "C$" }) {
   const [stockSuggestOpen, setStockSuggestOpen] = useState(false);
   const [imageUploadFile, setImageUploadFile] = useState(null);
   const stockSuggestBlurTimerRef = useRef(null);
+
+  const closeStockModal = () => {
+    setStockModalOpen(false);
+    setStockSuggestOpen(false);
+    if (stockSuggestBlurTimerRef.current) {
+      window.clearTimeout(stockSuggestBlurTimerRef.current);
+      stockSuggestBlurTimerRef.current = null;
+    }
+  };
 
   const loadProducts = async (categoriaId = selectedCategory) => {
     try {
@@ -156,15 +165,6 @@ export function ProductsView({ currencySymbol = "C$" }) {
       .slice(0, 10);
   }, [stockModalProducts, products, stockProductQuery]);
 
-  useEffect(() => {
-    if (!stockModalOpen) {
-      setStockSuggestOpen(false);
-      if (stockSuggestBlurTimerRef.current) {
-        window.clearTimeout(stockSuggestBlurTimerRef.current);
-        stockSuggestBlurTimerRef.current = null;
-      }
-    }
-  }, [stockModalOpen]);
 
   const selectedStockProduct = useMemo(() => {
     const raw = stockModalProducts.length > 0 ? stockModalProducts : products;
@@ -261,7 +261,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
         });
       }
       await loadProducts(selectedCategory);
-      setStockModalOpen(false);
+      closeStockModal();
       snackbar.success("Movimiento de inventario aplicado.");
       window.dispatchEvent(new CustomEvent("barrest-inventory-updated"));
     } catch (e2) {
@@ -361,9 +361,9 @@ export function ProductsView({ currencySymbol = "C$" }) {
     setError("");
     try {
       const codigo = resolveProductCodigoForSave(form.codigo, form.nombre, peerCodigos(form.id));
-      // Si el producto usa opciones especiales con precio propio, el precio base es 0
       const usaPreciosPorOpcion =
         form.opcionesEspecialesOn &&
+        form.opcionesEspecialesReemplaza &&
         (form.opcionesEspecialesPrices ?? []).some((p) => Number(p) > 0);
       const precioBaseEfectivo = usaPreciosPorOpcion ? 0 : Number(form.precioVenta || 0);
       const body = {
@@ -671,7 +671,7 @@ export function ProductsView({ currencySymbol = "C$" }) {
 
       <StockMovementModal
         stockModalOpen={stockModalOpen}
-        setStockModalOpen={setStockModalOpen}
+        setStockModalOpen={closeStockModal}
         saving={saving}
         stockModalLoading={stockModalLoading}
         stockMode={stockMode}

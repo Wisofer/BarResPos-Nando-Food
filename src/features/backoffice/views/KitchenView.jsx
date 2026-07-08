@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, ChefHat, RefreshCw, Search, History, LayoutGrid, Clock } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { BackofficeListSkeletonLoading } from "../components/index.js";
+import { BackofficeListSkeletonLoading } from "../components/Skeletons.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { opcionesResumenSoloTextoOpcion } from "../utils/productoOpciones.js";
 

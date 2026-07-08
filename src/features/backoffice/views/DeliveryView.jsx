@@ -16,16 +16,14 @@ import {
   XCircle,
 } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
-import {
-  BackofficeDialog,
-  ListSkeleton,
-  PosInlineOpcionesPanel,
-  PosProductCatalogTile,
-  PosProductOpcionesModal,
-  PosProcesarVentaModal,
-  PosActionLoadingOverlay,
-  CancelPedidoPinModal,
-} from "../components/index.js";
+import { ListSkeleton } from "../components/Skeletons.jsx";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
+import { PosInlineOpcionesPanel } from "../components/PosInlineOpcionesPanel.jsx";
+import { PosProductCatalogTile } from "../components/PosProductCatalogTile.jsx";
+import { PosProductOpcionesModal } from "../components/PosProductOpcionesModal.jsx";
+import { PosProcesarVentaModal } from "../components/PosProcesarVentaModal.jsx";
+import { PosActionLoadingOverlay } from "../components/PosActionLoadingOverlay.jsx";
+import { CancelPedidoPinModal } from "../components/CancelPedidoPinModal.jsx";
 import { PAGINATION } from "../constants/pagination.js";
 import { DEFAULT_TIPO_CAMBIO_USD, formatCurrency } from "../utils/currency.js";
 import {
@@ -259,11 +257,9 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     [deliveryInlineOpcionesProduct]
   );
 
-  useEffect(() => {
-    if (deliveryInlineOpcionesProduct && !deliveryInlineOpcionesPick) {
-      setDeliveryInlineOpcionesProduct(null);
-    }
-  }, [deliveryInlineOpcionesProduct, deliveryInlineOpcionesPick]);
+  if (deliveryInlineOpcionesProduct && !deliveryInlineOpcionesPick) {
+    setDeliveryInlineOpcionesProduct(null);
+  }
 
   const applyPedidoDetail = (detail) => {
     const id = Number(detail?.id ?? detail?.Id);
@@ -1473,6 +1469,7 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
         </div>
         <PosProcesarVentaModal
           open={saleModalOpen}
+          sessionKey={deliveryPedidoId ?? "sale"}
           onClose={() => !saleProcessing && setSaleModalOpen(false)}
           mesaLabel={`DELIVERY | ${deliveryCodigo || "Pedido"}`}
           currencySymbol={currencySymbol}

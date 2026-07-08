@@ -1,4 +1,5 @@
-import { BackofficeListSkeletonLoading, BackofficePageShell, CancelPedidoPinModal } from "../components/index.js";
+import { BackofficeListSkeletonLoading, BackofficePageShell } from "../components/Skeletons.jsx";
+import { CancelPedidoPinModal } from "../components/CancelPedidoPinModal.jsx";
 import { useOrdersManagement } from "../hooks/useOrdersManagement.js";
 import { OrdersKpiGrid } from "../components/orders/OrdersKpiGrid.jsx";
 import { OrdersListHeader } from "../components/orders/OrdersListHeader.jsx";

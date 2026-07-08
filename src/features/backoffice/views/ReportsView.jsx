@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
-import { BackofficePageShell } from "../components/index.js";
+import { BackofficePageShell } from "../components/Skeletons.jsx";
 import { ReportCatalog } from "../components/reports/ReportCatalog.jsx";
 import { ReportFilters } from "../components/reports/ReportFilters.jsx";
 import { ReportTables } from "../components/reports/ReportTables.jsx";

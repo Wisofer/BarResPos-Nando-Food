@@ -24,7 +24,18 @@ function normalizeListResponse(data) {
 }
 
 export function useClients(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
-  const [page, setPage] = useState(1);
+  const [pageState, setPageState] = useState({ key: searchParam, page: 1 });
+  const page = pageState.key === searchParam ? pageState.page : 1;
+  const setPage = useCallback(
+    (next) => {
+      setPageState((prev) => {
+        const currentPage = prev.key === searchParam ? prev.page : 1;
+        const resolved = typeof next === "function" ? next(currentPage) : next;
+        return { key: searchParam, page: resolved };
+      });
+    },
+    [searchParam]
+  );
   const [clients, setClients] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -123,14 +134,12 @@ export function useClients(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
     };
   }, [searchParam, page, pageSize]);
 
-  // Al cambiar búsqueda, volver a página 1
-  const prevSearchRef = useRef(searchParam);
-  useEffect(() => {
-    if (prevSearchRef.current !== searchParam) {
-      prevSearchRef.current = searchParam;
-      setPage(1);
-    }
-  }, [searchParam]);
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParam);
+  if (searchParam !== prevSearchParam) {
+    setPrevSearchParam(searchParam);
+    setPage(1);
+  }
+
 
   const create = useCallback(
     async (body) => {

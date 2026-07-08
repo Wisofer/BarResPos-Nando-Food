@@ -24,6 +24,11 @@ function normalizeListResponse(data) {
 
 export function useServices(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
   const [page, setPage] = useState(1);
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParam);
+  if (searchParam !== prevSearchParam) {
+    setPrevSearchParam(searchParam);
+    setPage(1);
+  }
   const [services, setServices] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -54,9 +59,6 @@ export function useServices(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
     fetchServices();
   }, [fetchServices]);
 
-  useEffect(() => {
-    if (searchParam !== undefined) setPage(1);
-  }, [searchParam]);
 
   const create = useCallback(async (body) => {
     const created = await servicesApi.create(body);

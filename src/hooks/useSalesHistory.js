@@ -18,6 +18,11 @@ function normalizeListResponse(data) {
 
 export function useSalesHistory(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
   const [page, setPage] = useState(1);
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParam);
+  if (searchParam !== prevSearchParam) {
+    setPrevSearchParam(searchParam);
+    setPage(1);
+  }
   const [sales, setSales] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -47,9 +52,6 @@ export function useSalesHistory(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) 
     fetchList();
   }, [fetchList]);
 
-  useEffect(() => {
-    if (searchParam !== undefined) setPage(1);
-  }, [searchParam]);
 
   const cancel = useCallback(async (id) => {
     await salesHistoryApi.cancel(id);

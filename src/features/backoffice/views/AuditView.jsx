@@ -18,7 +18,7 @@ import {
   Coffee,
   Package
 } from "lucide-react";
-import { BackofficePageShell } from "../components/index.js";
+import { BackofficePageShell } from "../components/Skeletons.jsx";
 import { backofficeApi } from "../services/backofficeApi.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { formatDateTime } from "../../../utils/format.js";

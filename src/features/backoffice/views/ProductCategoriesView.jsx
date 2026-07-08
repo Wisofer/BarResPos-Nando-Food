@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Pencil, Plus, PowerOff, Trash2 } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { BackofficeDialog, BackofficeListSkeletonLoading } from "../components/index.js";
+import { BackofficeListSkeletonLoading } from "../components/Skeletons.jsx";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
 

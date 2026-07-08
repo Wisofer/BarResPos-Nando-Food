@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { ListSkeleton } from "../components/index.js";
+import { ListSkeleton } from "../components/Skeletons.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
 import { ProviderFormModal } from "./components/ProviderFormModal.jsx";
 import { ProvidersTable } from "./components/ProvidersTable.jsx";

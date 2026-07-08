@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { PAGINATION } from "../constants/pagination.js";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { BackofficeDialog, BackofficeListSkeletonLoading } from "../components/index.js";
+import { BackofficeListSkeletonLoading } from "../components/Skeletons.jsx";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
 

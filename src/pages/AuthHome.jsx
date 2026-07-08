@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useAuth } from "../contexts/AuthContext";
 import { useSnackbar } from "../contexts/SnackbarContext.jsx";
 import { TicketPreviewModal } from "../components/ui/TicketPreviewModal.jsx";
-import { BackofficeShellHeaderActions, MobileNav, SidebarNav } from "../features/backoffice/components";
+import { BackofficeShellHeaderActions } from "../features/backoffice/components/BackofficeShellHeaderActions.jsx";
+import { MobileNav } from "../features/backoffice/components/MobileNav.jsx";
+import { SidebarNav } from "../features/backoffice/components/SidebarNav.jsx";
 import { NAV_ITEMS } from "../features/backoffice/constants.js";
 import { backofficeApi } from "../features/backoffice/services/backofficeApi.js";
 import { PAGINATION } from "../features/backoffice/constants/pagination.js";
@@ -11,22 +13,20 @@ import { POS_EXCHANGE_RATE_UPDATED_EVENT } from "../features/backoffice/constant
 import { pickPortalTagline } from "../features/backoffice/utils/portalConfig.js";
 import { canAccessView, getAllowedViewIds } from "../features/backoffice/utils/auth.js";
 import { displayUserName } from "../utils/authUser.js";
-import {
-  CashierView,
-  ClientsView,
-  DashboardView,
-  DeliveryView,
-  KitchenView,
-  OrdersView,
-  ProductsView,
-  ProvidersView,
-  ReportsView,
-  SettingsView,
-  TablesView,
-  UsersView,
-  LocationsView,
-  AuditView,
-} from "../features/backoffice/views";
+import { CashierView } from "../features/backoffice/views/CashierView.jsx";
+import { ClientsView } from "../features/backoffice/views/ClientsView.jsx";
+import { DashboardView } from "../features/backoffice/views/DashboardView.jsx";
+import { DeliveryView } from "../features/backoffice/views/DeliveryView.jsx";
+import { KitchenView } from "../features/backoffice/views/KitchenView.jsx";
+import { OrdersView } from "../features/backoffice/views/OrdersView.jsx";
+import { ProductsView } from "../features/backoffice/views/ProductsView.jsx";
+import { ProvidersView } from "../features/backoffice/providers/ProvidersView.jsx";
+import { ReportsView } from "../features/backoffice/views/ReportsView.jsx";
+import { SettingsView } from "../features/backoffice/views/SettingsView.jsx";
+import { TablesView } from "../features/backoffice/views/TablesView.jsx";
+import { UsersView } from "../features/backoffice/views/UsersView.jsx";
+import { LocationsView } from "../features/backoffice/views/LocationsView.jsx";
+import { AuditView } from "../features/backoffice/views/AuditView.jsx";
 
 const SIDEBAR_COLLAPSED_KEY = "barrest-sidebar-collapsed";
 const TITLES = {
@@ -209,13 +209,10 @@ export function AuthHome() {
     setMobileMenuOpen(false);
   };
 
-  useEffect(() => {
-    if (!allowedViewIds.includes(activeView)) {
-      /* eslint-disable react-hooks/set-state-in-effect */
-      setActiveView(allowedViewIds[0] || "dashboard");
-      /* eslint-enable react-hooks/set-state-in-effect */
-    }
-  }, [activeView, allowedViewIds]);
+
+  if (!allowedViewIds.includes(activeView)) {
+    setActiveView(allowedViewIds[0] || "dashboard");
+  }
 
   /** Caché/HMR: quitar <nav> huérfano en body (portales viejos) antes de pintar. */
   useLayoutEffect(() => {

@@ -1,4 +1,4 @@
-import { BackofficeDialog } from "../../components/index.js";
+import { BackofficeDialog } from "../../components/BackofficeDialog.jsx";
 
 export function ProviderFormModal({ open, form, setForm, saving, onSubmit, onClose }) {
   if (!open) return null;

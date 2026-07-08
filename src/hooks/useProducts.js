@@ -24,6 +24,11 @@ function normalizeListResponse(data) {
 
 export function useProducts(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
   const [page, setPage] = useState(1);
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParam);
+  if (searchParam !== prevSearchParam) {
+    setPrevSearchParam(searchParam);
+    setPage(1);
+  }
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -59,9 +64,6 @@ export function useProducts(searchParam = "", pageSize = DEFAULT_PAGE_SIZE) {
     return () => { mountedRef.current = false; };
   }, [fetchProducts]);
 
-  useEffect(() => {
-    if (searchParam !== undefined) setPage(1);
-  }, [searchParam]);
 
   const create = useCallback(async (body) => {
     const created = await productsApi.create(body);

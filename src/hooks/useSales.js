@@ -75,13 +75,12 @@ export function useSales(filters = {}, pageSize = DEFAULT_PAGE_SIZE) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey]);
 
-  const prevFilterKeyRef = useRef(filterKey);
-  useEffect(() => {
-    if (prevFilterKeyRef.current !== filterKey) {
-      prevFilterKeyRef.current = filterKey;
-      setPage(1);
-    }
-  }, [filterKey]);
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setPage(1);
+  }
+
 
   const create = useCallback(async (body) => {
     const created = await salesApi.create(body);

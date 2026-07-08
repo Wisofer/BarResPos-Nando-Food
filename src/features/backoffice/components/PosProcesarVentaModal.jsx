@@ -2,30 +2,23 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { DEFAULT_TIPO_CAMBIO_USD, formatCurrency } from "../utils/currency.js";
 
-/**
- * Modal "Procesar venta": totales, efectivo recibido / vuelto, u otros métodos al total exacto.
- * No hay pago mixto en UI: Tarjeta/Transferencia fijan el monto al total (igual que antes con la opción Mixto retirada).
- */
-export function PosProcesarVentaModal({
-  open,
+function PosProcesarVentaForm({
   onClose,
   mesaLabel,
   currencySymbol = "C$",
   lines = [],
-  /** Total desde backend (preferido) */
   totalOrdenBackend,
   exchangeRate,
   busy = false,
   onGuardar,
 }) {
   const [descuento, setDescuento] = useState("");
-  const [tipoDescuento, setTipoDescuento] = useState("porcentaje"); // "porcentaje" o "monto"
-  const [montoRecibido, setMontoRecibido] = useState("");
+  const [tipoDescuento, setTipoDescuento] = useState("porcentaje");
+  const [montoRecibidoOverride, setMontoRecibidoOverride] = useState(null);
   const [tipoPago, setTipoPago] = useState("Efectivo");
   const [moneda, setMoneda] = useState("C$");
   const [comentario, setComentario] = useState("");
   const montoInputRef = useRef(null);
-  const userEditedMontoRef = useRef(false);
   const tc = Number(exchangeRate) > 0 ? Number(exchangeRate) : DEFAULT_TIPO_CAMBIO_USD;
   const isUsd = moneda === "USD";
 
@@ -36,7 +29,6 @@ export function PosProcesarVentaModal({
 
   const totalDesdeBackend =
     totalOrdenBackend != null && Number.isFinite(Number(totalOrdenBackend)) ? Number(totalOrdenBackend) : null;
-  /** Base imponible: preferimos total del sistema si existe; si no, suma de líneas. */
   const baseAntesDescuento =
     totalDesdeBackend != null && totalDesdeBackend > 0 ? totalDesdeBackend : subtotalLineas;
 
@@ -51,64 +43,31 @@ export function PosProcesarVentaModal({
 
   const totalAPagarCordobas = Math.max(0, baseAntesDescuento - descuentoNum);
   const totalAPagarMoneda = isUsd ? totalAPagarCordobas / tc : totalAPagarCordobas;
+  const defaultMontoRecibido = String(totalAPagarMoneda.toFixed(2));
+  const montoRecibido = montoRecibidoOverride ?? defaultMontoRecibido;
 
   const recibidoNum = Number(montoRecibido) || 0;
   const recibidoCordobas = isUsd ? recibidoNum * tc : recibidoNum;
   const vueltoCordobas = tipoPago === "Efectivo" ? Math.max(0, recibidoCordobas - totalAPagarCordobas) : 0;
   const vueltoMoneda = isUsd ? vueltoCordobas / tc : vueltoCordobas;
 
-  useEffect(() => {
-    if (!open) return;
-    userEditedMontoRef.current = false;
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setDescuento("");
-    setComentario("");
-    setTipoPago("Efectivo");
-    setMoneda("C$");
-    setTipoDescuento("porcentaje");
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    if (userEditedMontoRef.current) return;
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, totalAPagarMoneda, moneda]);
-
-  useEffect(() => {
-    if (tipoPago !== "Efectivo") {
-      if (userEditedMontoRef.current) return;
-      /* eslint-disable react-hooks/set-state-in-effect */
-      setMontoRecibido(String(totalAPagarMoneda.toFixed(2)));
-      /* eslint-enable react-hooks/set-state-in-effect */
+  const handleTipoPagoChange = (e) => {
+    const next = e.target.value;
+    setTipoPago(next);
+    if (next !== "Efectivo") {
+      setMontoRecibidoOverride(null);
     }
-  }, [tipoPago, totalAPagarMoneda, open]);
-
-  // --- NEW UX HOOKS ---
+  };
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape" && open && !busy) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, busy, onClose]);
-
-  useEffect(() => {
-    if (open && montoInputRef.current && tipoPago === "Efectivo") {
+    if (montoInputRef.current && tipoPago === "Efectivo") {
       const timer = setTimeout(() => {
         montoInputRef.current?.focus();
         montoInputRef.current?.select();
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [open, tipoPago]);
-
-  if (!open) return null;
+  }, [tipoPago]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -179,7 +138,6 @@ export function PosProcesarVentaModal({
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-600">Descuento aplicado</span>
                 <div className="flex items-center gap-1.5">
-                  {/* Toggle de Tipo de Descuento */}
                   <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 select-none">
                     <button
                       type="button"
@@ -213,7 +171,6 @@ export function PosProcesarVentaModal({
                     </button>
                   </div>
 
-                  {/* Input de Valor */}
                   <div className="relative">
                     <input
                       type="number"
@@ -260,10 +217,7 @@ export function PosProcesarVentaModal({
                 step="0.01"
                 onWheel={(e) => e.target.blur()}
                 value={montoRecibido}
-                onChange={(e) => {
-                  userEditedMontoRef.current = true;
-                  setMontoRecibido(e.target.value);
-                }}
+                onChange={(e) => setMontoRecibidoOverride(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none"
                 disabled={busy || tipoPago !== "Efectivo"}
               />
@@ -279,7 +233,7 @@ export function PosProcesarVentaModal({
             </label>
             <label className="text-xs font-medium text-slate-600">
               Método de pago
-              <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" disabled={busy}>
+              <select value={tipoPago} onChange={handleTipoPagoChange} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" disabled={busy}>
                 <option>Efectivo</option>
                 <option>Tarjeta</option>
                 <option>Transferencia</option>
@@ -287,7 +241,15 @@ export function PosProcesarVentaModal({
             </label>
             <label className="text-xs font-medium text-slate-600">
               Moneda
-              <select value={moneda} onChange={(e) => setMoneda(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" disabled={busy}>
+              <select
+                value={moneda}
+                onChange={(e) => {
+                  setMoneda(e.target.value);
+                  setMontoRecibidoOverride(null);
+                }}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                disabled={busy}
+              >
                 <option value="C$">Córdobas (C$)</option>
                 <option value="USD">Dólares ($)</option>
               </select>
@@ -329,5 +291,48 @@ export function PosProcesarVentaModal({
         </div>
       </form>
     </div>
+  );
+}
+
+/**
+ * Modal "Procesar venta": totales, efectivo recibido / vuelto, u otros métodos al total exacto.
+ * No hay pago mixto en UI: Tarjeta/Transferencia fijan el monto al total (igual que antes con la opción Mixto retirada).
+ */
+export function PosProcesarVentaModal({
+  open,
+  sessionKey = "sale",
+  onClose,
+  mesaLabel,
+  currencySymbol = "C$",
+  lines = [],
+  totalOrdenBackend,
+  exchangeRate,
+  busy = false,
+  onGuardar,
+}) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && open && !busy) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, busy, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <PosProcesarVentaForm
+      key={sessionKey}
+      onClose={onClose}
+      mesaLabel={mesaLabel}
+      currencySymbol={currencySymbol}
+      lines={lines}
+      totalOrdenBackend={totalOrdenBackend}
+      exchangeRate={exchangeRate}
+      busy={busy}
+      onGuardar={onGuardar}
+    />
   );
 }

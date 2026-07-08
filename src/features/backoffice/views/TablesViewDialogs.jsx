@@ -1,5 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react";
-import { BackofficeDialog } from "../components/index.js";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
 
 export function TableFormDialog({ open, form, setForm, saving, locations, onClose, onSave }) {
   if (!open) return null;

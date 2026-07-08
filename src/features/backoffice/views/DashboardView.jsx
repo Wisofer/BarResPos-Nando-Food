@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { backofficeApi } from "../services/backofficeApi.js";
-import { BackofficePageShell, BackofficeStatCardsListSkeleton } from "../components/index.js";
+import { BackofficePageShell, BackofficeStatCardsListSkeleton } from "../components/Skeletons.jsx";
 import { formatCurrency } from "../utils/currency.js";
 import { buildDashboardSalesSeries, dashboardTransaccionesHoy } from "../utils/dashboardResumen.js";
 

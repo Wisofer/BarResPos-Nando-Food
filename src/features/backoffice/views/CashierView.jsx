@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { BackofficeListSkeletonLoading, BackofficePageShell } from "../components/index.js";
+import { BackofficeListSkeletonLoading, BackofficePageShell } from "../components/Skeletons.jsx";
 import { useCashier } from "../hooks/useCashier.js";
 import { CashierPendingOrders } from "../components/cashier/CashierPendingOrders.jsx";
 import { CashierStatusCards } from "../components/cashier/CashierStatusCards.jsx";

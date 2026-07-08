@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { BackofficeDialog } from "./BackofficeDialog.jsx";
 import { formatCurrency } from "../utils/currency.js";
@@ -37,14 +37,12 @@ export function PosProductOpcionesModal({ open, product, currencySymbol = "C$", 
   }, [product]);
 
   const [seleccionPorGrupo, setSeleccionPorGrupo] = useState(() => new Map());
-
-  useEffect(() => {
-    if (open) {
-      /* eslint-disable react-hooks/set-state-in-effect */
-      setSeleccionPorGrupo(new Map());
-      /* eslint-enable react-hooks/set-state-in-effect */
-    }
-  }, [open, product?.id]);
+  const openSessionKey = open ? String(product?.id ?? "") : "";
+  const [trackedOpenSessionKey, setTrackedOpenSessionKey] = useState(openSessionKey);
+  if (openSessionKey !== trackedOpenSessionKey) {
+    setTrackedOpenSessionKey(openSessionKey);
+    setSeleccionPorGrupo(new Map());
+  }
 
   const toggleOpcion = (grupoId, opcionId, maxSel) => {
     setSeleccionPorGrupo((prev) => {

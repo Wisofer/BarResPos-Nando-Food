@@ -17,17 +17,17 @@ import {
 } from "lucide-react";
 import { backofficeApi } from "../services/backofficeApi.js";
 import {
-  BackofficeDialog,
   BackofficeStatCardsListSkeleton,
   ListSkeleton,
-  PosInlineOpcionesPanel,
-  PosProductCatalogTile,
-  PosProductOpcionesModal,
-  PosProcesarVentaModal,
-  PosActionLoadingOverlay,
-  CancelPedidoPinModal,
-  SplitOrderModal,
-} from "../components/index.js";
+} from "../components/Skeletons.jsx";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
+import { PosInlineOpcionesPanel } from "../components/PosInlineOpcionesPanel.jsx";
+import { PosProductCatalogTile } from "../components/PosProductCatalogTile.jsx";
+import { PosProductOpcionesModal } from "../components/PosProductOpcionesModal.jsx";
+import { PosProcesarVentaModal } from "../components/PosProcesarVentaModal.jsx";
+import { PosActionLoadingOverlay } from "../components/PosActionLoadingOverlay.jsx";
+import { CancelPedidoPinModal } from "../components/CancelPedidoPinModal.jsx";
+import SplitOrderModal from "../components/SplitOrderModal.jsx";
 import { TableFormDialog, LocationsManagerDialog, DetailDialog } from "./TablesViewDialogs.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
@@ -69,10 +69,10 @@ import {
   mesaEsOcupadaVisual,
   mesaEsReservada,
   normalizeMesaEstado,
-  TablesMesasFloorPlan,
-  TablesMesasStatsBar,
-  TablesMesasZonesGrid,
-} from "../tables/index.js";
+} from "../tables/mesaVisual.js";
+import { TablesMesasFloorPlan } from "../tables/TablesMesasFloorPlan.jsx";
+import { TablesMesasStatsBar } from "../tables/TablesMesasStatsBar.jsx";
+import { TablesMesasZonesGrid } from "../tables/TablesMesasZonesGrid.jsx";
 import {
   buildOpcionesResumenLocal,
   genPosLineId,
@@ -99,6 +99,14 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [selectedTable] = useState(null);
   const [activeOrder] = useState(null);
   const [posOpen, setPosOpen] = useState(false);
+
+  const setPosOpenAndNotify = useCallback(
+    (next) => {
+      setPosOpen(next);
+      if (typeof onPosOpenChange === "function") onPosOpenChange(next);
+    },
+    [onPosOpenChange]
+  );
   const [posLoading, setPosLoading] = useState(false);
   const [posTable, setPosTable] = useState(null);
   const [posCategories, setPosCategories] = useState([]);
@@ -482,7 +490,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     posSyncBufferRef.current = [];
     posSyncChainRef.current = Promise.resolve();
     posSyncPendingCountRef.current = 0;
-    setPosOpen(true);
+    setPosOpenAndNotify(true);
     setPosTable(table);
     setActiveTableMenu(null);
     setPosOrderId(null);
@@ -576,11 +584,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     [posInlineOpcionesProduct]
   );
 
-  useEffect(() => {
-    if (posInlineOpcionesProduct && !posInlineOpcionesPick) {
-      setPosInlineOpcionesProduct(null);
-    }
-  }, [posInlineOpcionesProduct, posInlineOpcionesPick]);
+  if (posInlineOpcionesProduct && !posInlineOpcionesPick) {
+    setPosInlineOpcionesProduct(null);
+  }
 
   const posProductGridClass =
     "grid auto-rows-min grid-cols-2 gap-2 overflow-auto content-start items-stretch sm:grid-cols-3";
@@ -1249,7 +1255,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     posSyncPendingCountRef.current = 0;
     setPosOpcionesModal({ open: false, product: null });
     setPosInlineOpcionesProduct(null);
-    setPosOpen(false);
+    setPosOpenAndNotify(false);
     setPosTable(null);
     setPosOrderId(null);
     setPosCommitted(false);
@@ -1791,9 +1797,6 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
     }
   };
 
-  useEffect(() => {
-    if (typeof onPosOpenChange === "function") onPosOpenChange(posOpen);
-  }, [onPosOpenChange, posOpen]);
 
   useEffect(() => {
     if (!activeTableMenu) return;
@@ -2354,6 +2357,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
         <PosProcesarVentaModal
           open={saleModalOpen}
+          sessionKey={saleOrdenId ?? "sale"}
           onClose={() => {
             if (!saleProcessing) {
               setSaleModalOpen(false);

@@ -3,7 +3,7 @@ import { ArrowLeft, Pencil, Trash2, MapPin, RefreshCw, Plus, X } from "lucide-re
 import { backofficeApi } from "../services/backofficeApi.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal.jsx";
-import { BackofficeDialog } from "../components/index.js";
+import { BackofficeDialog } from "../components/BackofficeDialog.jsx";
 
 export function LocationsView({ openView }) {
   const snackbar = useSnackbar();
