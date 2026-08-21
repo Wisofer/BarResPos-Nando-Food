@@ -92,7 +92,7 @@
     "win": {
       "icon": "build/icon.png",
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "requestedExecutionLevel": "user",
+      "requestedExecutionLevel": "asInvoker",
       "target": [
         {
           "target": "nsis",
