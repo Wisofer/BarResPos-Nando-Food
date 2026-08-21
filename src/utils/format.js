@@ -1,7 +1,11 @@
 // Nicaragua: Córdobas (NIO), locale es-NI
+const nioCurrencyFormatter = new Intl.NumberFormat("es-NI", { style: "currency", currency: "NIO" });
+const usdCurrencyFormatter = new Intl.NumberFormat("es-NI", { style: "currency", currency: "USD" });
+
 export function formatCurrency(amount, currency = "NIO") {
   if (amount == null || !Number.isFinite(Number(amount))) return "—";
-  return new Intl.NumberFormat("es-NI", { style: "currency", currency }).format(amount);
+  if (currency === "USD") return usdCurrencyFormatter.format(amount);
+  return nioCurrencyFormatter.format(amount);
 }
 
 /**
@@ -26,19 +30,22 @@ function safeFormatDate(value, formatter) {
   }
 }
 
+const dateFormatter = new Intl.DateTimeFormat("es-NI", { day: "2-digit", month: "short", year: "numeric" });
+const dateTimeFormatter = new Intl.DateTimeFormat("es-NI", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export function formatDate(dateStr) {
   if (!dateStr) return "—";
-  return safeFormatDate(dateStr, new Intl.DateTimeFormat("es-NI", { day: "2-digit", month: "short", year: "numeric" }));
+  return safeFormatDate(dateStr, dateFormatter);
 }
 
 export function formatDateTime(dateStr) {
   if (!dateStr) return "—";
   const normalized = typeof dateStr === "string" ? dateStr.replace(" ", "T") : dateStr;
-  return safeFormatDate(normalized, new Intl.DateTimeFormat("es-NI", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }));
+  return safeFormatDate(normalized, dateTimeFormatter);
 }
