@@ -213,26 +213,27 @@ export function KitchenView() {
 
   useEffect(() => {
     let mounted = true;
-    let timer = null;
-    const startPolling = () => {
-      if (timer) clearInterval(timer);
-      const intervalMs = document.hidden ? 15000 : 3000;
-      timer = setInterval(() => { loadKitchen().catch(() => { }); }, intervalMs);
-    };
-    (async () => {
-      await loadKitchen();
-      if (!mounted) return;
-      startPolling();
-    })();
+
+    loadKitchen().catch(() => {});
+
+    const intervalMs = typeof document !== "undefined" && document.hidden ? 15000 : 3000;
+    const timer = setInterval(() => {
+      if (mounted) {
+        loadKitchen().catch(() => {});
+      }
+    }, intervalMs);
+
     const handleVisibilityChange = () => {
-      if (!mounted) return;
-      startPolling();
+      if (mounted) {
+        loadKitchen().catch(() => {});
+      }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       mounted = false;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
   }, [loadKitchen]);
 
@@ -537,12 +538,13 @@ export function KitchenView() {
                       ) : (
                         <ul className="space-y-1">
                           {items.map((it, idx) => {
+                            const itemId = it?.id ?? it?.Id ?? idx;
                             const qty = Number(it?.Cantidad ?? it?.cantidad ?? 0);
                             const producto = it?.Producto ?? it?.producto ?? "Producto";
                             const rawOpciones = it?.opcionesResumen ?? it?.OpcionesResumen ?? "";
                             const opcionesTexto = opcionesResumenSoloTextoOpcion(rawOpciones);
                             return (
-                              <li key={idx} className="flex items-start gap-2 text-xs font-medium text-slate-500 line-through opacity-85">
+                              <li key={itemId} className="flex items-start gap-2 text-xs font-medium text-slate-500 line-through opacity-85">
                                 <span className="text-emerald-500 shrink-0 mt-0.5">✓</span>
                                 <div className="min-w-0 flex-1">
                                   <span>

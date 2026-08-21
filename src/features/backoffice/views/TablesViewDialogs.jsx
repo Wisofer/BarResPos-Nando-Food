@@ -79,6 +79,7 @@ export function TableFormDialog({ open, form, setForm, saving, locations, onClos
             Cancelar
           </button>
           <button
+            type="submit"
             disabled={saving}
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 shadow shadow-indigo-150 transition active:scale-95 disabled:opacity-55 sm:w-auto"
           >
@@ -146,7 +147,7 @@ export function LocationsManagerDialog({
               >
                 Limpiar
               </button>
-              <button disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 sm:w-auto">
+              <button type="submit" disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60 sm:w-auto">
                 {saving ? "Guardando..." : "Guardar"}
               </button>
             </div>

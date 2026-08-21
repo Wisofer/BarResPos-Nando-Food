@@ -422,36 +422,35 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
     const base = Number(product?.precio ?? product?.Precio ?? 0);
     const finalPrice = (tieneReemplazo ? precioReemplazo : base) + sumaExtras;
     const resumen = buildOpcionesResumenLocal(grupos, opsNorm);
-    setCart((prev) => {
-      const idx = prev.findIndex(
-        (x) =>
-          Number(x.id) === id && String(x.opcionesKey ?? "") === String(opsKey) && String(x.notas ?? "").trim() === "" &&
-          (!x.estado || x.estado === "Pendiente" || x.estado === "Pending")
-      );
-      let next;
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
-        next = copy;
-      } else {
-        next = [
-          ...prev,
-          {
-            lineId: genPosLineId(),
-            id,
-            name: String(product?.nombre || product?.Nombre || "Producto"),
-            qty: 1,
-            price: finalPrice,
-            notas: "",
-            opcionesSeleccionadas: opsNorm,
-            opcionesKey: opsKey,
-            opcionesResumen: resumen,
-          },
-        ];
-      }
-      cartRef.current = next;
-      return next;
-    });
+    const prev = cartRef.current;
+    const idx = prev.findIndex(
+      (x) =>
+        Number(x.id) === id && String(x.opcionesKey ?? "") === String(opsKey) && String(x.notas ?? "").trim() === "" &&
+        (!x.estado || x.estado === "Pendiente" || x.estado === "Pending")
+    );
+    let next;
+    if (idx >= 0) {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], qty: copy[idx].qty + 1 };
+      next = copy;
+    } else {
+      next = [
+        ...prev,
+        {
+          lineId: genPosLineId(),
+          id,
+          name: String(product?.nombre || product?.Nombre || "Producto"),
+          qty: 1,
+          price: finalPrice,
+          notas: "",
+          opcionesSeleccionadas: opsNorm,
+          opcionesKey: opsKey,
+          opcionesResumen: resumen,
+        },
+      ];
+    }
+    cartRef.current = next;
+    setCart(next);
   };
 
   const addToCart = (product) => {
@@ -1292,11 +1291,9 @@ export function DeliveryView({ currencySymbol = "C$", exchangeRate }) {
                             value={item.notas ?? ""}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setCart((prev) => {
-                                const next = prev.map((x) => (x.lineId === item.lineId ? { ...x, notas: val } : x));
-                                cartRef.current = next;
-                                return next;
-                              });
+                              const next = cartRef.current.map((x) => (x.lineId === item.lineId ? { ...x, notas: val } : x));
+                              cartRef.current = next;
+                              setCart(next);
                             }}
                             disabled={loading || isPedidoBloqueado || !cajaAbierta || (item.estado !== "Pending" && item.estado !== "Pendiente" && parsePosBackendLineId(item.lineId) !== null)}
                             placeholder="ej. sin cebolla"

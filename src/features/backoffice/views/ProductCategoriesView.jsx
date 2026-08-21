@@ -374,7 +374,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
               >
                 Cancelar
               </button>
-              <button disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 sm:w-auto">
+              <button type="submit" disabled={saving} className="w-full rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 sm:w-auto">
                 {saving ? "Guardando..." : "Guardar"}
               </button>
             </div>

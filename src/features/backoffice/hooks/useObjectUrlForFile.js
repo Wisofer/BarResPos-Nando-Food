@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Genera una object URL para un `File` y la revoca al cambiar o desmontar.
@@ -6,18 +6,21 @@ import { useEffect, useMemo } from "react";
  * @returns {string | null}
  */
 export function useObjectUrlForFile(file) {
-  const url = useMemo(() => {
-    if (!file) return null;
-    return URL.createObjectURL(file);
-  }, [file]);
+  const [objectUrl, setObjectUrl] = useState(null);
 
   useEffect(() => {
-    return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, [url]);
+    if (!file) {
+      setObjectUrl(null);
+      return;
+    }
 
-  return url;
+    const url = URL.createObjectURL(file);
+    setObjectUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  return objectUrl;
 }

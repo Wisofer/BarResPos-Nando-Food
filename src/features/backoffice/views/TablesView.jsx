@@ -210,7 +210,7 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   useEffect(() => {
     let mounted = true;
-    let pollTimer = null;
+
     Promise.all([
       loadTables(),
       backofficeApi.catalogoUbicaciones(),
@@ -241,25 +241,20 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
         } else if (!ez && ep) {
           setMesasLayoutMode("plano");
         }
-        // Poll each 15s so multi‑terminal changes are visible
-        pollTimer = setInterval(() => {
-          if (!mounted) return;
-          loadTables().catch(() => {});
-        }, 15000);
       })
       .catch((e) => {
         if (!mounted) return;
         setError(e.message || "No se pudo cargar mesas.");
-        // Start poll even on initial load failure
-        pollTimer = setInterval(() => {
-          if (!mounted) return;
-          loadTables().catch(() => {});
-        }, 15000);
       })
       .finally(() => mounted && setLoading(false));
+
+    const pollTimer = setInterval(() => {
+      if (mounted) loadTables().catch(() => {});
+    }, 15000);
+
     return () => {
       mounted = false;
-      if (pollTimer) clearInterval(pollTimer);
+      clearInterval(pollTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -596,17 +591,15 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
 
   const rollbackPosLineByLineId = (lineId, cantidad) => {
     if (lineId == null || lineId === "") return;
-    setPosCart((prev) => {
-      const next = [...prev];
-      const idx = next.findIndex((x) => x.lineId === lineId);
-      if (idx < 0) return prev;
-      const currentQty = Number(next[idx].qty || 0);
-      const newQty = Math.max(0, currentQty - Number(cantidad || 1));
-      if (newQty <= 0) next.splice(idx, 1);
-      else next[idx] = { ...next[idx], qty: newQty };
-      posCartRef.current = next;
-      return next;
-    });
+    const current = [...posCartRef.current];
+    const idx = current.findIndex((x) => x.lineId === lineId);
+    if (idx < 0) return;
+    const currentQty = Number(current[idx].qty || 0);
+    const newQty = Math.max(0, currentQty - Number(cantidad || 1));
+    if (newQty <= 0) current.splice(idx, 1);
+    else current[idx] = { ...current[idx], qty: newQty };
+    posCartRef.current = current;
+    setPosCart(current);
   };
 
   const flushPosSyncBuffer = () => {
