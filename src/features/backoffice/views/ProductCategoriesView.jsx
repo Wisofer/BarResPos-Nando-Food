@@ -11,6 +11,12 @@ function categoriaRequiereCocina(c) {
   return v !== false;
 }
 
+function categoriaRequiereBar(c) {
+  if (c?.requiereBar !== undefined && c?.requiereBar !== null) return Boolean(c.requiereBar);
+  if (c?.RequiereBar !== undefined && c?.RequiereBar !== null) return Boolean(c.RequiereBar);
+  return !categoriaRequiereCocina(c);
+}
+
 function formatCatDate(value) {
   if (!value) return "—";
   const d = new Date(value);
@@ -32,6 +38,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
     descripcion: "",
     iconoNombre: "",
     requiereCocina: true,
+    requiereBar: false,
     activo: true,
   });
   const [confirmAction, setConfirmAction] = useState({ open: false, type: "", id: null, name: "" });
@@ -75,14 +82,16 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
     return categories.map((c, idx) => {
       const id = c.id ?? c.Id;
       const count = countsByCatId[String(id)] ?? 0;
+      const reqCocina = categoriaRequiereCocina(c);
+      const reqBar = categoriaRequiereBar(c);
       const activo = (c.activo ?? c.Activo) !== false;
       const created = c.fechaCreacion ?? c.FechaCreacion ?? c.createdAt ?? c.CreatedAt ?? null;
-      return { c, idx, id, count, activo, created };
+      return { c, idx, id, count, reqCocina, reqBar, activo, created };
     });
   }, [categories, countsByCatId]);
 
   const openCreate = () => {
-    setCategoryForm({ id: null, nombre: "", descripcion: "", iconoNombre: "", requiereCocina: true, activo: true });
+    setCategoryForm({ id: null, nombre: "", descripcion: "", iconoNombre: "", requiereCocina: true, requiereBar: false, activo: true });
     setModalOpen(true);
   };
 
@@ -92,11 +101,12 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
     try {
       const c = await backofficeApi.getCategoriaProducto(id);
       setCategoryForm({
-        id: c.id,
-        nombre: c.nombre || "",
-        descripcion: c.descripcion || "",
+        id: c.id ?? c.Id,
+        nombre: c.nombre || c.Nombre || "",
+        descripcion: c.descripcion || c.Descripcion || "",
         iconoNombre: c.iconoNombre || c.IconoNombre || "",
         requiereCocina: categoriaRequiereCocina(c),
+        requiereBar: categoriaRequiereBar(c),
         activo: (c.activo ?? c.Activo) !== false,
       });
       setModalOpen(true);
@@ -117,6 +127,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
         descripcion: categoryForm.descripcion || null,
         iconoNombre: categoryForm.iconoNombre || null,
         requiereCocina: Boolean(categoryForm.requiereCocina),
+        requiereBar: Boolean(categoryForm.requiereBar),
         activo: Boolean(categoryForm.activo),
       };
       if (categoryForm.id) await backofficeApi.updateCategoriaProducto(categoryForm.id, body);
@@ -138,10 +149,11 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
     try {
       const c = await backofficeApi.getCategoriaProducto(id);
       await backofficeApi.updateCategoriaProducto(id, {
-        nombre: c.nombre || "",
-        descripcion: c.descripcion || null,
+        nombre: c.nombre || c.Nombre || "",
+        descripcion: c.descripcion || c.Descripcion || null,
         iconoNombre: c.iconoNombre || c.IconoNombre || null,
         requiereCocina: categoriaRequiereCocina(c),
+        requiereBar: categoriaRequiereBar(c),
         activo: false,
       });
       await reload();
@@ -179,7 +191,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-800">Categorías de producto</h2>
-            <p className="text-xs text-slate-500">Gestiona categorías; el catálogo de productos sigue en la vista anterior.</p>
+            <p className="text-xs text-slate-500">Gestiona categorías e impresiones de comanda (Cocina, Bar o Solo Cobro).</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {typeof onBackToProducts === "function" && (
@@ -218,7 +230,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
               <tr>
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Nombre</th>
-                <th className="px-4 py-3">Descripción</th>
+                <th className="px-4 py-3">Destino Comanda</th>
                 <th className="px-4 py-3">Productos</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Fecha creación</th>
@@ -233,7 +245,7 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
                   </td>
                 </tr>
               )}
-              {rows.map(({ c, idx, id, count, activo, created }) => (
+              {rows.map(({ c, idx, id, count, reqCocina, reqBar, activo, created }) => (
                 <tr key={id} className={activo ? "bg-white" : "bg-slate-50/80"}>
                   <td className="px-4 py-3 text-slate-500">{idx + 1}</td>
                   <td className="px-4 py-3">
@@ -244,15 +256,28 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
                     >
                       {c.nombre || `Categoría ${id}`}
                     </button>
+                    {c.descripcion && <p className="text-xs text-slate-400 line-clamp-1">{c.descripcion}</p>}
                   </td>
-                  <td className="max-w-[220px] px-4 py-3 text-slate-600">
-                    <span className="line-clamp-2">{c.descripcion || "—"}</span>
+                  <td className="px-4 py-3">
+                    {reqCocina ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 border border-amber-200/60">
+                        🍳 Cocina
+                      </span>
+                    ) : reqBar ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-800 border border-blue-200/60">
+                        🍹 Bar
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 border border-slate-200">
+                        🚫 Solo Cobro (Sin Comanda)
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
                       onClick={() => onOpenProducts?.(String(id))}
-                      className="text-primary-700 hover:underline"
+                      className="text-primary-700 hover:underline font-medium"
                     >
                       {count} producto{count === 1 ? "" : "s"}
                     </button>
@@ -343,20 +368,54 @@ export function ProductCategoriesView({ onBackToProducts, onOpenProducts, onCate
                   placeholder="Ej. glass-water"
                 />
               </label>
-              <label className="inline-flex items-start gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={categoryForm.requiereCocina}
-                  onChange={(e) => setCategoryForm((f) => ({ ...f, requiereCocina: e.target.checked }))}
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="font-medium">Enviar a cocina (KDS)</span>
-                  <span className="mt-0.5 block text-xs font-normal text-slate-500">
-                    Desmarcar para bebidas u otras categorías que no se preparan en cocina.
-                  </span>
-                </span>
-              </label>
+
+              {/* Selector de Destino de Comanda */}
+              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">Destino de Comanda / Impresión</span>
+                
+                <label className="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-slate-300">
+                  <input
+                    type="radio"
+                    name="destinoImpresion"
+                    checked={categoryForm.requiereCocina && !categoryForm.requiereBar}
+                    onChange={() => setCategoryForm((f) => ({ ...f, requiereCocina: true, requiereBar: false }))}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">🍳 Cocina (Platillos, Alimentos)</p>
+                    <p className="text-[11px] text-slate-500">Se imprime en la comanda de Cocina / KDS</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-slate-300">
+                  <input
+                    type="radio"
+                    name="destinoImpresion"
+                    checked={!categoryForm.requiereCocina && categoryForm.requiereBar}
+                    onChange={() => setCategoryForm((f) => ({ ...f, requiereCocina: false, requiereBar: true }))}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">🍹 Bar (Bebidas, Licores, Tragos)</p>
+                    <p className="text-[11px] text-slate-500">Se imprime en la comanda de la Barra</p>
+                  </div>
+                </label>
+
+                <label className="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-slate-300">
+                  <input
+                    type="radio"
+                    name="destinoImpresion"
+                    checked={!categoryForm.requiereCocina && !categoryForm.requiereBar}
+                    onChange={() => setCategoryForm((f) => ({ ...f, requiereCocina: false, requiereBar: false }))}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="text-xs font-semibold text-slate-800">🚫 Ninguno (Solo Cobro / Sin Comanda)</p>
+                    <p className="text-[11px] text-slate-500">Para Envíos, Propinas y Servicios. No genera comanda impresa.</p>
+                  </div>
+                </label>
+              </div>
+
               <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                 <input
                   type="checkbox"
