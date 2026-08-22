@@ -72,6 +72,8 @@ export function useReports(showSuccess, showError) {
   const [filtroVentas, setFiltroVentas] = useState("todas");
   const [topN, setTopN] = useState(10);
   const [peores, setPeores] = useState(false);
+  const [orden, setOrden] = useState("mas_vendidos");
+  const [categoriaFilter, setCategoriaFilter] = useState("");
   const [dateFilters, setDateFilters] = useState({ desde: todayISO(), hasta: todayISO() });
   const [reportData, setReportData] = useState({
     ventasResumen: null,
@@ -102,14 +104,16 @@ export function useReports(showSuccess, showError) {
     }
     if (activeReport === "productos-top") {
       p.top = topN;
+      p.orden = orden;
       if (peores) p.peores = true;
+      if (categoriaFilter) p.categoria = categoriaFilter;
     }
     // Inventario usa `<= fechaFin`; para incluir todo el "hasta" elegido sumamos 1 día.
     if (activeReport === "movimientos" && p.hasta) {
       p.hasta = addOneCalendarDay(p.hasta);
     }
     return p;
-  }, [activeReport, dateFilters, filtroVentas, topN, peores]);
+  }, [activeReport, dateFilters, filtroVentas, topN, peores, orden, categoriaFilter]);
 
   const loadReportData = useCallback(async () => {
     if (!activeReport) return;
@@ -162,14 +166,15 @@ export function useReports(showSuccess, showError) {
     if (activeReport === "movimientos") {
       try {
         const blob = await backofficeApi.exportMovimientosProductosExcel(params);
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
+        link.href = url;
         link.download = `movimientos-inventario-${todayISO()}.xlsx`;
         link.style.display = "none";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
         showSuccess?.("Excel exportado correctamente");
       } catch (e) {
         showError?.(e?.message || "No se pudo exportar");
@@ -178,30 +183,28 @@ export function useReports(showSuccess, showError) {
     }
     const query = new URLSearchParams({ ...params, exportar: "true" });
     const map = {
-      ventas: "/api/v1/reportes/resumen-ventas",
-      "productos-top": "/api/v1/reportes/productos-top",
-      meseros: "/api/v1/reportes/ventas-por-mesero",
-      categorias: "/api/v1/reportes/ventas-por-categoria",
+      ventas: "/api/v1/reportes/resumen-ventas/excel",
+      "productos-top": "/api/v1/reportes/productos-top/excel",
+      meseros: "/api/v1/reportes/ventas-por-mesero/excel",
+      categorias: "/api/v1/reportes/ventas-por-categoria/excel",
     };
     const path = map[activeReport];
-    if (!path) {
-      showError?.("Este reporte no soporta exportación Excel");
-      return;
-    }
+    if (!path) return;
     try {
       const res = await fetch(`${getApiUrl()}${path}?${query.toString()}`, {
         headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
       });
       if (!res.ok) throw new Error("No se pudo exportar el archivo");
       const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
+      link.href = url;
       link.download = `${activeReport}-${todayISO()}.xlsx`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
       showSuccess?.("Excel exportado correctamente");
     } catch (e) {
       showError?.(e?.message || "No se pudo exportar");
@@ -212,17 +215,18 @@ export function useReports(showSuccess, showError) {
     if (activeReport !== "categorias") return;
     try {
       const blob = await backofficeApi.exportReportesCategoriaDesgloseExcel(params);
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
+      link.href = url;
       link.download = `ventas-categoria-desglose-${todayISO()}.xlsx`;
       link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-      showSuccess?.("Desglose por categoría exportado correctamente");
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showSuccess?.("Excel exportado correctamente");
     } catch (e) {
-      showError?.(e?.message || "No se pudo exportar el desglose");
+      showError?.(e?.message || "No se pudo exportar");
     }
   }, [activeReport, params, showError, showSuccess]);
 
@@ -327,6 +331,10 @@ export function useReports(showSuccess, showError) {
     setTopN,
     peores,
     setPeores,
+    orden,
+    setOrden,
+    categoriaFilter,
+    setCategoriaFilter,
     dateFilters,
     setDateFilters,
     reportData,

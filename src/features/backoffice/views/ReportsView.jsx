@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { BackofficePageShell } from "../components/Skeletons.jsx";
 import { ReportCatalog } from "../components/reports/ReportCatalog.jsx";
 import { ReportFilters } from "../components/reports/ReportFilters.jsx";
@@ -24,6 +24,8 @@ export function ReportsView({ currencySymbol = "C$" }) {
     setTopN,
     peores,
     setPeores,
+    orden,
+    setOrden,
     dateFilters,
     setDateFilters,
     reportData,
@@ -68,50 +70,51 @@ export function ReportsView({ currencySymbol = "C$" }) {
                   onClick={() => setActiveReport(null)}
                   className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800 transition"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Volver
+                  &larr; Volver al catálogo de reportes
                 </button>
-                <h3 className="text-2xl font-bold tracking-tight text-slate-900 capitalize">
-                  {activeReport.replace("-", " ")}
-                </h3>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                  {activeReport === "ventas" && "Reporte General de Ventas"}
+                  {activeReport === "productos-top" && "Análisis Completo de Ventas por Producto"}
+                  {activeReport === "meseros" && "Reporte de Ventas por Mesero"}
+                  {activeReport === "categorias" && "Reporte de Ventas por Categoría"}
+                  {activeReport === "caja" && "Historial de Cierres de Caja"}
+                  {activeReport === "movimientos" && "Movimientos de Inventario"}
+                </h1>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={exportReport}
+                  onClick={loadReportData}
                   disabled={loading}
-                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800 disabled:opacity-70 transition"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition shadow-sm disabled:opacity-50"
                 >
-                  {activeReport === "categorias" ? "Resumen Excel" : "Exportar Excel"}
+                  {loading ? "Cargando..." : "Actualizar"}
                 </button>
-                {activeReport === "categorias" && typeof exportCategoriaDesglose === "function" && (
-                  <button
-                    type="button"
-                    onClick={exportCategoriaDesglose}
-                    disabled={loading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-200 transition"
-                  >
-                    Desglose
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={exportReport}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition shadow-sm"
+                >
+                  <Download className="h-4 w-4" /> Exportar Excel
+                </button>
               </div>
             </div>
 
             {activeReport === "ventas" && ventasResumenVista && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
-                  <p className="text-sm font-medium text-slate-500">Total Ventas</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">Ventas Totales</p>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
                     {formatCurrency(ventasResumenVista.totalVentas ?? 0)}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
-                  <p className="text-sm font-medium text-slate-500">Órdenes</p>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-sm font-medium text-slate-500">Órdenes Realizadas</p>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
                     {ventasResumenVista.totalOrdenes ?? 0}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
+                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <p className="text-sm font-medium text-slate-500">Ticket Promedio</p>
                   <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
                     {formatCurrency(ventasResumenVista.promedioTicket ?? 0)}
@@ -133,6 +136,8 @@ export function ReportsView({ currencySymbol = "C$" }) {
             setTopN={setTopN}
             peores={peores}
             setPeores={setPeores}
+            orden={orden}
+            setOrden={setOrden}
             loading={loading}
             resetFilters={resetFilters}
           />

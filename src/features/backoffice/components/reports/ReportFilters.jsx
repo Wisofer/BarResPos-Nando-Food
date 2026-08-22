@@ -21,6 +21,8 @@ export function ReportFilters({
   setTopN,
   peores,
   setPeores,
+  orden,
+  setOrden,
 }) {
   return (
     <div className="rounded-2xl border border-white/40 bg-white/60 p-4 shadow-sm backdrop-blur-md">
@@ -49,7 +51,7 @@ export function ReportFilters({
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar..."
+              placeholder="Buscar producto o categoría..."
               className="h-10 w-full rounded-xl bg-slate-100 pl-10 pr-10 text-sm outline-none transition focus:ring-2 focus:ring-slate-300"
             />
             {search && (
@@ -65,7 +67,7 @@ export function ReportFilters({
         </div>
 
         {/* Filters specific to Report Type */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
           {activeReport === "ventas" && (
             <div className="flex w-full md:w-auto items-center rounded-xl bg-slate-100 p-1 shadow-inner">
               {filtrosVentas.map((op) => (
@@ -86,37 +88,48 @@ export function ReportFilters({
           )}
 
           {activeReport === "productos-top" && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center rounded-xl bg-slate-100 p-1 shadow-inner">
                 <button
                   type="button"
-                  onClick={() => setPeores(false)}
+                  onClick={() => { setOrden?.("mas_vendidos"); setPeores?.(false); }}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-                    !peores ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    (orden === "mas_vendidos" || (!orden && !peores)) ? "bg-white text-slate-900 shadow-sm font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  Más Vendidos
+                  🔥 Más Vendidos
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPeores(true)}
+                  onClick={() => { setOrden?.("menos_vendidos"); setPeores?.(true); }}
                   className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-                    peores ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    (orden === "menos_vendidos" || peores) ? "bg-white text-slate-900 shadow-sm font-semibold" : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  Menos Vendidos
+                  🧊 Menos Vendidos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setOrden?.("mayor_ingreso"); setPeores?.(false); }}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+                    orden === "mayor_ingreso" ? "bg-white text-slate-900 shadow-sm font-semibold" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  💰 Mayor Ingreso
                 </button>
               </div>
+
               <div className="flex items-center rounded-xl bg-slate-100 px-3 py-1.5 shadow-inner">
-                <span className="text-sm font-medium text-slate-500 mr-2">Top</span>
+                <span className="text-xs font-semibold text-slate-500 mr-2 uppercase tracking-wider">Mostrar</span>
                 <select
                   value={topN}
-                  onChange={(e) => setTopN(Number(e.target.value))}
-                  className="bg-transparent text-sm font-medium text-slate-900 outline-none"
+                  onChange={(e) => setTopN?.(Number(e.target.value))}
+                  className="bg-transparent text-sm font-bold text-slate-900 outline-none cursor-pointer"
                 >
-                  {topOptions.map((n) => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
+                  <option value={10}>Top 10</option>
+                  <option value={25}>Top 25</option>
+                  <option value={50}>Top 50</option>
+                  <option value={0}>♾️ Ver Todos los Productos</option>
                 </select>
               </div>
             </div>
