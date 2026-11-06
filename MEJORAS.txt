@@ -1,0 +1,160 @@
+================================================================================
+                    BARRESPOS - PLAN DE MEJORAS Y HOJA DE RUTA
+================================================================================
+Fecha de creación: 6 de Noviembre de 2026
+Autor / Auditoría: Análisis Integral BarResPos (Frontend + Backend)
+Objetivo: Hoja de ruta para optimizaciones, sincronización multi-dispositivo,
+          costeo gastronómico y robustez operativa en restaurantes y bares.
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. NUEVO MÓDULO ESTRATÉGICO: INGENIERÍA DE MENÚ, COSTOS Y ESCANDALLOS
+   (Basado en el modelo financiero 'COSTOS Y PRODUCTOS NANDO V3.xlsm')
+--------------------------------------------------------------------------------
+[Objetivo del Módulo]
+Integrar de forma nativa en BarResPos la lógica matemática y contable de las 
+47 hojas de cálculo del restaurante Nando, eliminando la fragilidad de los 
+archivos Excel manuales y automatizando la rentabilidad del negocio.
+
+[Fase 1: Estudio de Costos y Calculadora de Rentabilidad (Inmediata)]
+1. Fichas Técnicas / Escandallos Interactivos:
+   - Catálogo de recetas de Nando (Hamburguesas, Alas, Nachos, Tacos, Batidos, etc.).
+   - Costos Directos: Desglose de insumos unitarios (carne, pan, papas, queso, salsas).
+   - Costos Indirectos: Mano de obra y nómina mensual del personal.
+   - Gastos Operativos Fijos: Servicios (luz, agua, gas, alquiler, préstamo, envíos).
+   - Cálculo automático del Costo Unitario Real por absorción total.
+2. Fijación Dinámica de Precios (Gross Margin Slider):
+   - Barra deslizable de margen de ganancia comercial (20%, 25%, 30%, 35%).
+   - Fórmula financiera en tiempo real: Precio = CostoTotal / (1 - MargenDeseado).
+   - Botón directo para aplicar el precio de venta sugerido al catálogo del POS.
+3. Simulador Mensual de Ganancias (Calculadora Nando):
+   - Simulación de volumen de ventas por producto.
+   - Cálculo del Punto de Equilibrio (Break-even), Ingresos brutos, Egresos 
+     totales y Utilidad Neta proyectada del restaurante.
+
+[Fase 2: Conexión con Inventario (Explosión de Recetas en POS)]
+- Al cobrar un plato en el punto de venta (ej. Hamburguesa de Res):
+  * Descuenta automáticamente los gramos/unidades de cada ingrediente del 
+    almacén central (150g carne, 1 pan, 30g queso, etc.).
+- Alertas de Pérdida de Margen por Inflación:
+  * Si el proveedor sube el costo de la carne o el queso, el sistema notifica 
+    automáticamente que el margen de ganancia bajó y sugiere nuevo precio.
+
+
+--------------------------------------------------------------------------------
+2. PRIORIDAD ALTA: SINCRONIZACIÓN CENTRAL DEL PLANO DE MESAS (CAJA <-> TABLETS)
+--------------------------------------------------------------------------------
+[Problema Actual]
+Actualmente, las coordenadas (X, Y) y la escala de las mesas en el plano 2D se 
+guardan únicamente en el localStorage del navegador (en cada dispositivo por separado).
+Esto provoca que:
+  a) El administrador organiza las mesas en la PC de caja, pero los meseros al
+     entrar desde una tablet o celular ven una cuadrícula por defecto desordenada.
+  b) Si se limpia la memoria caché o el historial de la PC, se pierde todo el
+     diseño del salón del restaurante.
+
+[Solución Recomendada: Clave Central en Configuraciones]
+Aprovechar la infraestructura que el backend YA TIENE construida sin alterar la
+base de datos ni requerir migraciones de Entity Framework.
+
+Detalles técnicos de implementación:
+- Backend:
+  * Ya cuenta con el endpoint: PUT /api/v1/configuraciones/{clave}
+  * Ya cuenta con el endpoint: GET /api/v1/configuraciones
+- Clave a utilizar: "Mesas:PlanoDistribucion"
+- Estructura del JSON guardado:
+  {
+    "1": { "x": 120, "y": 80,  "s": 1.0 },
+    "2": { "x": 280, "y": 80,  "s": 1.0 },
+    "3": { "x": 440, "y": 140, "s": 1.2 }
+  }
+
+[Flujo de Usuario con el Candado Creado]
+1. El Administrador hace clic en el candado para desbloquear el plano (🔓).
+2. Arrastra las mesas a su posición física real en el salón o terraza.
+3. Al volver a pulsar el candado para bloquearlo (🔒):
+   - Se envía silenciosamente un PUT a la API con las nuevas coordenadas.
+   - Se emite una alerta sutil (Snackbar): "Distribución de mesas guardada".
+4. Cada vez que una tablet de mesero o la PC de caja abre la vista de mesas:
+   - Descarga la distribución centralizada desde el backend.
+   - Guarda una copia local en localStorage como respaldo (fallback) por si 
+     la señal Wi-Fi sufre micro-cortes.
+
+
+--------------------------------------------------------------------------------
+3. MEJORAS EN GESTIÓN DE MESAS Y COMANDAS
+--------------------------------------------------------------------------------
+3.1 Semáforo Visual de Tiempo de Espera en Mesas
+  - Agregar un indicador de color en la tarjeta de cada mesa ocupada:
+    * Verde:   Menos de 15 minutos desde que se abrió la comanda.
+    * Naranja: Entre 15 y 30 minutos (tiempo de atención estándar).
+    * Rojo:    Más de 30 minutos sin consumir o esperando la cuenta.
+  - Beneficio: Permite al administrador y a los meseros detectar mesas desatendidas 
+    a simple vista sin tener que abrir el detalle de cada una.
+
+3.2 Bloqueo de Concurrencia de Comandas
+  - Si un mesero tiene abierta la comanda de la Mesa 4 en su tablet, evitar que 
+    otro mesero modifique la misma mesa al mismo tiempo, mostrando un aviso:
+    "Mesa 4 siendo atendida por [Nombre Mesero]".
+
+3.3 Sonido de Notificación al Despachar desde Cocina
+  - Cuando cocina presiona "Listo" en la pantalla KDS (KitchenView), emitir un 
+    timbre discreto en la tablet del mesero asignado a esa mesa para recoger 
+    los platos inmediatamente mientras están calientes.
+
+
+--------------------------------------------------------------------------------
+4. MEJORAS EN CAJA, COBROS Y CONTROL FINANCIERO
+--------------------------------------------------------------------------------
+4.1 Calculadora de Propinas Voluntarias Sugeridas
+  - En el modal de cobro (PosProcesarVentaModal), añadir botones de acceso rápido:
+    [ Sin propina ]  [ +10% ]  [ +15% ]  [ Monto personalizado ]
+  - Calcular e incluir la propina desglosada en el ticket de venta final.
+
+4.2 Opción de Arqueo Ciego de Caja
+  - Actualmente, el cajero puede ver el monto esperado antes de contar.
+  - Mejora de control interno: Permitir configurar "Arqueo Ciego" donde el 
+    cajero debe ingresar obligatoriamente su conteo físico de billetes y monedas 
+    a ciegas, y el sistema revela el descuadre (sobrante/faltante) solo después 
+    de confirmar el cierre.
+
+4.3 Historial de Movimientos de Entrada/Salida de Caja Chica
+  - Añadir soporte para registrar egresos menores de caja en el turno 
+    (ej. compra de hielo de emergencia, pago de taxi de un delivery) para que 
+    el arqueo cuadre al centavo al final del turno.
+
+
+--------------------------------------------------------------------------------
+5. MEJORAS EN IMPRESIÓN Y HARDWARE
+--------------------------------------------------------------------------------
+5.1 Reintentos Automáticos de Impresoras Térmicas de Red
+  - Para impresoras de cocina conectadas por cable de red (Ethernet/IP), añadir 
+    un mecanismo de reintento de 3 intentos si el socket de red no responde, 
+    alertando en pantalla: "Impresora de cocina no responde o sin papel".
+
+5.2 Selector de Destino de Pre-cuenta
+  - Permitir al mesero elegir si la pre-cuenta se imprime en la impresora del bar 
+    o en la impresora de caja según la estación que le quede más cerca.
+
+
+--------------------------------------------------------------------------------
+6. OPTIMIZACIÓN DE RENDIMIENTO Y CÓDIGO (REACT 19 + .NET 9)
+--------------------------------------------------------------------------------
+6.1 Subsanar Advertencias de React 19 (ESLint set-state-in-effect)
+  - React 19 introduce reglas estrictas sobre useEffect que invocan setState 
+    inmediatamente. Migrar los hooks de datos iniciales (useUsers, useCashier, 
+    useReports) a un patrón de carga reactiva con controladores AbortController.
+
+6.2 Carga Diferida (React.lazy / Suspense)
+  - Dividir el bundle del frontend con lazy loading para las pantallas pesadas:
+    * TablesView (121 KB)
+    * DeliveryView (73 KB)
+    * SettingsView (63 KB)
+  - Beneficio: Acelera aún más el arranque inicial en tablets de gama de entrada.
+
+6.3 Mantenimiento Automático de Base de Datos SQLite
+  - Incorporar en el cierre de caja diario un comando liviano:
+    PRAGMA optimize;
+  - Mantener los índices de búsqueda de productos y clientes en su máxima velocidad.
+================================================================================

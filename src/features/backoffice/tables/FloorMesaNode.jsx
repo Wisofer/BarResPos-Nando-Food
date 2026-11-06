@@ -19,6 +19,7 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
   onOpenEdit,
   onRequestDelete,
   onDragStop,
+  isEditing = false,
 }) {
   const nodeRef = useRef(null);
   const { scale, resizing, startResize } = useMesaResize(
@@ -67,12 +68,12 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
       handle=".mesa-plano-handle"
       position={{ x: position.x, y: position.y }}
       bounds="parent"
-      disabled={resizing}
+      disabled={resizing || !isEditing}
       onStop={handleStop}
     >
       <div
         ref={nodeRef}
-        className={`absolute left-0 top-0 z-10 select-none rounded-lg ${selected ? "ring-2 ring-indigo-500 ring-offset-1" : ""}`}
+        className={`absolute left-0 top-0 z-10 select-none rounded-lg ${selected && isEditing ? "ring-2 ring-indigo-500 ring-offset-1" : ""}`}
         style={{ width: outerW, height: outerH }}
         onMouseDown={(e) => {
           if (e.target.closest("[data-plano-resize-handle]")) return;
@@ -96,7 +97,9 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
             {!cajaAbierta && <div className="pointer-events-none absolute inset-0 z-20 rounded-lg bg-slate-950/[0.03] backdrop-blur-[0.5px]" />}
 
             <div
-              className={`mesa-plano-handle flex cursor-grab items-center gap-1 border-b px-1.5 py-0.5 active:cursor-grabbing transition ${
+              className={`mesa-plano-handle flex items-center gap-1 border-b px-1.5 py-0.5 transition ${
+                isEditing ? "cursor-grab active:cursor-grabbing" : "cursor-default"
+              } ${
                 isOcupada 
                   ? "border-rose-200 bg-rose-100/60" 
                   : isReservada 
@@ -104,7 +107,9 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
                     : "border-slate-100 bg-slate-50/40"
               }`}
             >
-              <GripVertical className="h-2.5 w-2.5 shrink-0 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              {isEditing && (
+                <GripVertical className="h-2.5 w-2.5 shrink-0 text-amber-500 animate-pulse transition-opacity duration-200" />
+              )}
               
               <span className="relative flex h-1.5 w-1.5 shrink-0">
                 {pulseClass && (
@@ -126,7 +131,7 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
               )}
             </div>
 
-            {isAdmin && (
+            {isAdmin && isEditing && (
               <>
                 <div className="absolute right-1 top-7 z-30 hidden gap-1 opacity-0 pointer-events-none transition-all duration-200 group-hover:opacity-100 group-hover:pointer-events-auto lg:flex">
                   <button
@@ -262,7 +267,7 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
           </div>
         </div>
 
-        {selected && (
+        {selected && isEditing && (
           <>
             <div className="pointer-events-none absolute -left-1 -top-1 z-20 h-2 w-2 rounded-sm border border-indigo-500 bg-white shadow-sm" />
             <div className="pointer-events-none absolute -right-1 -top-1 z-20 h-2 w-2 rounded-sm border border-indigo-500 bg-white shadow-sm" />
@@ -296,6 +301,7 @@ export const FloorMesaNode = React.memo(function FloorMesaNode({
     prevProps.table.displayId === nextProps.table.displayId &&
     prevProps.table.capacity === nextProps.table.capacity &&
     prevProps.isAdmin === nextProps.isAdmin &&
+    prevProps.isEditing === nextProps.isEditing &&
     prevProps.onSelect === nextProps.onSelect &&
     prevProps.onScaleCommit === nextProps.onScaleCommit &&
     prevProps.onOpenPos === nextProps.onOpenPos &&

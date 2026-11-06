@@ -1,4 +1,4 @@
-import { LayoutGrid, Map, Maximize2, Layers, Plus } from "lucide-react";
+import { LayoutGrid, Map, Maximize2, Layers, Plus, Lock, Unlock, RotateCcw } from "lucide-react";
 
 export function TablesMesasStatsBar({
   total,
@@ -14,6 +14,9 @@ export function TablesMesasStatsBar({
   enableVistaZonas = true,
   enableVistaPlano = true,
   isAdmin = false,
+  isEditingPlano = false,
+  onToggleEditingPlano,
+  onReorganizarPlano,
 }) {
   return (
     <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white/70 backdrop-blur-md border border-slate-100 p-3 rounded-xl shadow-sm">
@@ -88,6 +91,38 @@ export function TablesMesasStatsBar({
           </div>
         )}
 
+        {/* Controles del Plano: Candado y Reorganizar — solo visibles en modo plano */}
+        {layoutMode === "plano" && isAdmin && (
+          <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200/80 bg-slate-100 p-0.5 shadow-inner">
+            <button
+              type="button"
+              onClick={onToggleEditingPlano}
+              className={`p-1.5 rounded-md border transition-all cursor-pointer ${
+                isEditingPlano
+                  ? "border-amber-300 bg-amber-50 text-amber-700 ring-1 ring-amber-400/40 shadow-sm"
+                  : "border-transparent bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-200"
+              }`}
+              title={isEditingPlano ? "🔓 Edición activa — Clic para bloquear el plano" : "🔒 Plano bloqueado — Clic para mover mesas"}
+            >
+              {isEditingPlano
+                ? <Unlock className="h-3.5 w-3.5 text-amber-600 animate-bounce" />
+                : <Lock className="h-3.5 w-3.5" />
+              }
+            </button>
+
+            {isEditingPlano && (
+              <button
+                type="button"
+                onClick={onReorganizarPlano}
+                className="p-1.5 rounded-md border border-transparent bg-transparent text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-200 transition-all cursor-pointer"
+                title="🔄 Reorganizar mesas a la grilla por defecto"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
         {layoutMode === "plano" && typeof onToggleMaximize === "function" && (
           <button
             type="button"
@@ -124,3 +159,5 @@ export function TablesMesasStatsBar({
     </div>
   );
 }
+
+

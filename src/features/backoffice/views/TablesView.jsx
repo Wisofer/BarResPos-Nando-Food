@@ -9,9 +9,11 @@ import {
   MoreVertical,
   Plus,
   Printer,
+  RotateCcw,
   Save,
   Trash2,
   Lock,
+  Unlock,
   XCircle,
   X,
 } from "lucide-react";
@@ -169,6 +171,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
   const [enableVistaZonas, setEnableVistaZonas] = useState(true);
   const [enableVistaPlano, setEnableVistaPlano] = useState(true);
   const [planoFullScreen, setPlanoFullScreen] = useState(false);
+  const [isEditingPlano, setIsEditingPlano] = useState(false);
+  const reorganizarPlanoRef = useRef(() => {});
   const isAdmin = isAdminUser(user);
   const isCajeroOrAdmin = isAdmin || isCajeroUser(user);
 
@@ -2634,6 +2638,37 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               Caja: {cajaAbierta ? "Abierta" : "Cerrada"}
             </span>
 
+            {/* Botones Candado + Reorganizar en pantalla completa */}
+            {isAdmin && (
+              <div className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 p-0.5 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingPlano((p) => !p)}
+                  className={`p-1.5 rounded-md border transition-all cursor-pointer ${
+                    isEditingPlano
+                      ? "border-amber-300 bg-amber-50 text-amber-700 ring-1 ring-amber-400/40 shadow-sm"
+                      : "border-transparent bg-transparent text-slate-600 hover:bg-white hover:border-slate-200 hover:text-slate-900"
+                  }`}
+                  title={isEditingPlano ? "🔓 Edición activa — Clic para bloquear el plano" : "🔒 Plano bloqueado — Clic para mover mesas"}
+                >
+                  {isEditingPlano
+                    ? <Unlock className="h-3.5 w-3.5 text-amber-600 animate-bounce" />
+                    : <Lock className="h-3.5 w-3.5" />
+                  }
+                </button>
+                {isEditingPlano && (
+                  <button
+                    type="button"
+                    onClick={() => reorganizarPlanoRef.current?.()}
+                    className="p-1.5 rounded-md border border-transparent bg-transparent text-slate-600 hover:bg-white hover:border-slate-200 hover:text-slate-900 transition-all cursor-pointer"
+                    title="🔄 Reorganizar mesas a la grilla por defecto"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Botón Salir en tono claro premium */}
             <button
               type="button"
@@ -2660,6 +2695,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             onOpenEdit={openEdit}
             onRequestDelete={(id) => setConfirmDeleteTable({ open: true, id })}
             isFullscreen={true}
+            isEditingPlano={isEditingPlano}
+            onRegisterReorganizar={(fn) => { reorganizarPlanoRef.current = fn; }}
           />
         </div>
       </div>
@@ -2696,6 +2733,9 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
             enableVistaZonas={enableVistaZonas}
             enableVistaPlano={enableVistaPlano}
             isAdmin={isAdmin}
+            isEditingPlano={isEditingPlano}
+            onToggleEditingPlano={() => setIsEditingPlano((p) => !p)}
+            onReorganizarPlano={() => reorganizarPlanoRef.current?.()}
           />
         </div>
 
@@ -2711,6 +2751,8 @@ export function TablesView({ onPosOpenChange, currencySymbol = "C$", openView })
               onOpenPos={openPosView}
               onOpenEdit={openEdit}
               onRequestDelete={(id) => setConfirmDeleteTable({ open: true, id })}
+              isEditingPlano={isEditingPlano}
+              onRegisterReorganizar={(fn) => { reorganizarPlanoRef.current = fn; }}
             />
           </div>
         ) : (

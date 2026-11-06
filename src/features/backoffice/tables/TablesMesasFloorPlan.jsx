@@ -21,6 +21,8 @@ export function TablesMesasFloorPlan({
   onOpenEdit,
   onRequestDelete,
   isFullscreen = false,
+  isEditingPlano = false,
+  onRegisterReorganizar,
 }) {
   const [positions, setPositions] = useState(() => readMesaPlanoPositions());
   const [selectedMesaId, setSelectedMesaId] = useState(null);
@@ -38,6 +40,17 @@ export function TablesMesasFloorPlan({
       return merged;
     });
   }, [tableIdsKey]);
+
+  // Registra la función reorganizar para que el padre (TablesView) pueda llamarla desde la barra superior
+  useEffect(() => {
+    if (typeof onRegisterReorganizar === "function") {
+      onRegisterReorganizar(() => {
+        const fresh = buildPlanoPositionsWithDefaults(tablesRef.current, {});
+        writeMesaPlanoPositions(fresh);
+        setPositions(fresh);
+      });
+    }
+  }, [onRegisterReorganizar]);
 
   const onDragStop = useCallback((mesaId, x, y) => {
     const id = String(mesaId);
@@ -85,31 +98,11 @@ export function TablesMesasFloorPlan({
     selectedMesaId != null && tables.some((t) => t.id === selectedMesaId) ? selectedMesaId : null;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {/* Barra de herramientas del plano */}
-      <div className="shrink-0 flex items-center justify-end gap-2 px-2 py-1.5 border-b border-slate-200/70 bg-white/60">
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => {
-              const fresh = buildPlanoPositionsWithDefaults(tables, {});
-              writeMesaPlanoPositions(fresh);
-              setPositions(fresh);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all shadow-sm"
-            title="Restablecer posiciones de todas las mesas a la grilla por defecto"
-          >
-            🔄 Reorganizar
-          </button>
-        )}
-        <span className="text-[10px] text-slate-400 select-none">
-          {isAdmin ? "Arrastra las mesas para reposicionarlas" : "Plano de distribución"}
-        </span>
-      </div>
-
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col relative">
       <div className={`relative w-full flex-1 min-h-[min(42vh,16rem)] overflow-auto overscroll-contain bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[length:24px_24px] bg-slate-50/50 [-webkit-overflow-scrolling:touch] lg:min-h-0 transition-all duration-300 ${
-        isFullscreen ? "border-0 rounded-none shadow-none" : "rounded-b-2xl border border-slate-200/80 shadow-inner"
+        isFullscreen ? "border-0 rounded-none shadow-none" : "rounded-2xl border border-slate-200/80 shadow-inner"
       }`}>
+
         {!cajaAbierta && (
           <>
             <div className="pointer-events-none absolute inset-0 z-40 bg-slate-950/[0.02] backdrop-blur-[1px]" />
@@ -146,6 +139,7 @@ export function TablesMesasFloorPlan({
                 onOpenEdit={onOpenEdit}
                 onRequestDelete={onRequestDelete}
                 onDragStop={onDragStop}
+                isEditing={isEditingPlano}
               />
             );
           })}
