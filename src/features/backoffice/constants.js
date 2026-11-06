@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Bike,
+  Calculator,
   ClipboardList,
   Home,
   Package,
@@ -21,6 +22,7 @@ export const NAV_ITEMS = [
   { id: "delivery", label: "Delivery", icon: Bike },
   { id: "clients", label: "Clientes", icon: Users },
   { id: "products", label: "Productos", icon: Package },
+  { id: "costs", label: "Costos y Recetas", icon: Calculator },
   { id: "providers", label: "Proveedores", icon: Truck },
   { id: "kitchen", label: "Cocina", icon: UtensilsCrossed },
   { id: "cashier", label: "Caja", icon: SquareTerminal },

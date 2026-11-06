@@ -50,6 +50,7 @@ export function getAllowedViewIds(user) {
       "delivery",
       "clients",
       "products",
+      "costs",
       "providers",
       "kitchen",
       "cashier",

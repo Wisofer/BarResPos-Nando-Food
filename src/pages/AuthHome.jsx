@@ -20,6 +20,7 @@ import { DeliveryView } from "../features/backoffice/views/DeliveryView.jsx";
 import { KitchenView } from "../features/backoffice/views/KitchenView.jsx";
 import { OrdersView } from "../features/backoffice/views/OrdersView.jsx";
 import { ProductsView } from "../features/backoffice/views/ProductsView.jsx";
+import { CostosView } from "../features/backoffice/views/CostosView.jsx";
 import { ProvidersView } from "../features/backoffice/providers/ProvidersView.jsx";
 import { ReportsView } from "../features/backoffice/views/ReportsView.jsx";
 import { SettingsView } from "../features/backoffice/views/SettingsView.jsx";
@@ -36,6 +37,7 @@ const TITLES = {
   delivery: "Delivery",
   clients: "Clientes",
   products: "Gestion de productos",
+  costs: "Costos, Escandallos & Recetas",
   providers: "Proveedores",
   kitchen: "Cocina",
   cashier: "Caja",
@@ -287,6 +289,7 @@ export function AuthHome() {
 
   const ActiveView = useMemo(() => {
     if (activeView === "products") return ProductsView;
+    if (activeView === "costs") return CostosView;
     if (activeView === "providers") return ProvidersView;
     if (activeView === "kitchen") return KitchenView;
     if (activeView === "cashier") return CashierView;
